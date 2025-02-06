@@ -21,7 +21,7 @@
 # Releases
 | Among Us - Version| Mod Version | Link |
 |----------|-------------|-----------------|
-| v2024.11.26 | v1.0.1 | [Download](#) |
+| v2024.11.26 | v1.0.1 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.0.1) |
 
 <p align="center">This mod is not affiliated with Among Us or Innersloth LLC, and the content contained therein is not endorsed or otherwise sponsored by Innersloth LLC. Portions of the materials contained herein are property of Innersloth LLC.</p>
 <p align="center">© Innersloth LLC.</p>
