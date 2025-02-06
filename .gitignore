@@ -1,0 +1,31 @@
+# Build
+TownOfUs/obj/
+TownOfUs/bin/
+# JetBrains
+.idea/
+*.sln.DotSettings.user
+
+# Prerequisites
+*.d
+
+TownOfUs/bin/Debug/net6.0/TownOfUs.deps.json
+TownOfUs/bin/Debug/net6.0/TownOfUs.dll
+TownOfUs/bin/Debug/net6.0/TownOfUs.pdb
+TownOfUs/obj/Debug/net6.0/.NETCoreApp,Version=v6.0.AssemblyAttributes.cs
+TownOfUs/obj/Debug/net6.0/gen.cs
+TownOfUs/obj/Debug/net6.0/ref/TownOfUs.dll
+TownOfUs/obj/Debug/net6.0/refint/TownOfUs.dll
+TownOfUs/obj/Debug/net6.0/TownOfUs.AssemblyInfo.cs
+TownOfUs/obj/Debug/net6.0/TownOfUs.AssemblyInfoInputs.cache
+TownOfUs/obj/Debug/net6.0/TownOfUs.assets.cache
+TownOfUs/obj/Debug/net6.0/TownOfUs.csproj.AssemblyReference.cache
+TownOfUs/obj/Debug/net6.0/TownOfUs.csproj.CoreCompileInputs.cache
+TownOfUs/obj/Debug/net6.0/TownOfUs.csproj.FileListAbsolute.txt
+TownOfUs/obj/Debug/net6.0/TownOfUs.dll
+TownOfUs/obj/Debug/net6.0/TownOfUs.GeneratedMSBuildEditorConfig.editorconfig
+TownOfUs/obj/Debug/net6.0/TownOfUs.pdb
+TownOfUs/obj/project.assets.json
+TownOfUs/obj/project.nuget.cache
+TownOfUs/obj/TownOfUs.csproj.nuget.dgspec.json
+TownOfUs/obj/TownOfUs.csproj.nuget.g.props
+TownOfUs/obj/TownOfUs.csproj.nuget.g.targets
