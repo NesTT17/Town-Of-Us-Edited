@@ -313,17 +313,21 @@ namespace TownOfUs
 
         public static bool roleCanUseVents(this PlayerControl player) {
             bool roleCouldUse = false;
-            if (Engineer.engineer != null && Engineer.engineer == player)
+            if (Engineer.engineer != null && Engineer.engineer == player && PlayerControl.LocalPlayer)
                 roleCouldUse = true;
-            else if (Dracula.canUseVents && Dracula.dracula != null && Dracula.dracula == player)
+            else if (Dracula.canUseVents && Dracula.dracula != null && Dracula.dracula == player && PlayerControl.LocalPlayer)
                 roleCouldUse = true;
-            else if (Vampire.canUseVents && Vampire.vampire != null && Vampire.vampire == player)
+            else if (Vampire.canUseVents && Vampire.vampire != null && Vampire.vampire == player && PlayerControl.LocalPlayer)
                 roleCouldUse = true;
-            else if (Scavenger.canUseVents && Scavenger.scavenger != null && Scavenger.scavenger == player)
+            else if (Scavenger.canUseVents && Scavenger.scavenger != null && Scavenger.scavenger == player && PlayerControl.LocalPlayer)
                 roleCouldUse = true;
-            else if (Juggernaut.canUseVents && Juggernaut.juggernaut != null && Juggernaut.juggernaut == player)
+            else if (Juggernaut.canUseVents && Juggernaut.juggernaut != null && Juggernaut.juggernaut == player && PlayerControl.LocalPlayer)
                 roleCouldUse = true;
-            else if (player.Data?.Role != null && player.Data.Role.CanVent)
+            else if (Werewolf.canVent && Werewolf.isRampageActive && Werewolf.werewolf != null && Werewolf.werewolf == player && PlayerControl.LocalPlayer)
+                roleCouldUse = true;
+            else if (player.Data?.Role != null && player.Data.Role.CanVent && PlayerControl.LocalPlayer)
+                roleCouldUse = true;
+            else if (Glitch.canVent && Glitch.glitch != null && Glitch.glitch == player && PlayerControl.LocalPlayer)
                 roleCouldUse = true;
             return roleCouldUse;
         }
@@ -474,7 +478,9 @@ namespace TownOfUs
                 || (Jester.jester != null && Jester.jester.PlayerId == player.PlayerId && Jester.hasImpostorVision)
                 || ((Dracula.dracula != null && Dracula.dracula.PlayerId == player.PlayerId || Dracula.formerDraculas.Any(x => x.PlayerId == player.PlayerId)) && Dracula.hasImpostorVision)
                 || (Vampire.vampire != null && Vampire.vampire.PlayerId == player.PlayerId && Vampire.hasImpostorVision)
-                || (Juggernaut.juggernaut != null && Juggernaut.juggernaut.PlayerId == player.PlayerId && Juggernaut.hasImpostorVision);
+                || (Juggernaut.juggernaut != null && Juggernaut.juggernaut.PlayerId == player.PlayerId && Juggernaut.hasImpostorVision)
+                || (Werewolf.werewolf != null && Werewolf.werewolf.PlayerId == player.PlayerId && Werewolf.isRampageActive)
+                || (Glitch.glitch != null && Glitch.glitch.PlayerId == player.PlayerId && Glitch.hasImpostorVision);
         }
 
         public static SabatageTypes getActiveSabo()
@@ -638,16 +644,181 @@ namespace TownOfUs
 
                 if (p == 1f && renderer != null) renderer.enabled = false;
             })));
+
+            if (Grenadier.flashTimer > 0.5f) {
+                try {
+                    if (PlayerControl.LocalPlayer.Data.Role.IsImpostor && MapBehaviour.Instance.infectedOverlay.sabSystem.Timer < 0.5f)
+                        MapBehaviour.Instance.infectedOverlay.sabSystem.Timer = 0.5f;
+                } catch {}
+            }
         }
 
-        public static List<RoleInfo> allRoleInfos() {
-            var allRoleInfo = new List<RoleInfo>();
-            foreach (var role in RoleInfo.allRoleInfos)
-            {
-                if (role.factionId is FactionId.Modifier) continue;
-                allRoleInfo.Add(role);
+        public static bool isFlashedByGrenadier(this PlayerControl player) {
+            return Grenadier.grenadier != null && Grenadier.flashTimer > 0f && Grenadier.flashedPlayers.Contains(player);
+        }
+
+        public static IEnumerator Hack(PlayerControl hackPlayer) {
+            var lockImg = new GameObject[6];
+            if (Glitch.hackedPlayers.ContainsKey(hackPlayer)) {
+                Glitch.hackedPlayers[hackPlayer] = DateTime.UtcNow;
+                yield break;
             }
-            return allRoleInfo;
+            Glitch.hackedPlayers.Add(hackPlayer, DateTime.UtcNow);
+            float savedReportDistance = PlayerControl.LocalPlayer.MaxReportDistance;
+
+            bool useButtonEnabled = false;
+            bool petButtonEnabled = false;
+		    bool reportButtonEnabled = false;
+		    bool killButtonEnabled = false;
+		    bool saboButtonEnabled = false;
+		    bool ventButtonEnabled = false;
+            if (PlayerControl.LocalPlayer == hackPlayer) {
+                useButtonEnabled = FastDestroyableSingleton<HudManager>.Instance.UseButton.enabled;
+                petButtonEnabled = FastDestroyableSingleton<HudManager>.Instance.PetButton.enabled;
+                reportButtonEnabled = FastDestroyableSingleton<HudManager>.Instance.ReportButton.enabled;
+                killButtonEnabled = FastDestroyableSingleton<HudManager>.Instance.KillButton.enabled;
+                saboButtonEnabled = FastDestroyableSingleton<HudManager>.Instance.SabotageButton.enabled;
+                ventButtonEnabled = FastDestroyableSingleton<HudManager>.Instance.ImpostorVentButton.enabled;
+            }
+
+            while (true) {
+                if (PlayerControl.LocalPlayer == hackPlayer) {
+                    // Kill Button
+                    if (FastDestroyableSingleton<HudManager>.Instance.KillButton != null && killButtonEnabled) {
+                        if (lockImg[0] == null) {
+                            lockImg[0] = new GameObject();
+                            lockImg[0].AddComponent<SpriteRenderer>().sprite = CustomButton.getLockSprite();
+                        }
+                        FastDestroyableSingleton<HudManager>.Instance.KillButton.enabled = false;
+                        FastDestroyableSingleton<HudManager>.Instance.KillButton.graphic.color = Palette.DisabledClear;
+                        FastDestroyableSingleton<HudManager>.Instance.KillButton.graphic.material.SetFloat("_Desat", 1f);
+                    }
+                    if (lockImg[0] != null) {
+                        lockImg[0].layer = 5;
+                        lockImg[0].transform.position = new Vector3(FastDestroyableSingleton<HudManager>.Instance.KillButton.transform.position.x, FastDestroyableSingleton<HudManager>.Instance.KillButton.transform.position.y, -50f);
+                    }
+
+                    // Use Button
+                    if (FastDestroyableSingleton<HudManager>.Instance.UseButton != null && useButtonEnabled) {
+                        if (lockImg[1] == null) {
+                            lockImg[1] = new GameObject();
+                            lockImg[1].AddComponent<SpriteRenderer>().sprite = CustomButton.getLockSprite();
+                        }
+                        FastDestroyableSingleton<HudManager>.Instance.UseButton.enabled = false;
+                        FastDestroyableSingleton<HudManager>.Instance.UseButton.graphic.color = Palette.DisabledClear;
+                        FastDestroyableSingleton<HudManager>.Instance.UseButton.graphic.material.SetFloat("_Desat", 1f);
+                    }
+                    if (lockImg[1] != null) {
+                        lockImg[1].layer = 5;
+                        lockImg[1].transform.position = new Vector3(FastDestroyableSingleton<HudManager>.Instance.UseButton.transform.position.x, FastDestroyableSingleton<HudManager>.Instance.UseButton.transform.position.y, -50f);
+                    }
+
+                    // Pet Button
+                    if (FastDestroyableSingleton<HudManager>.Instance.PetButton != null && petButtonEnabled) {
+                        if (lockImg[2] == null) {
+                            lockImg[2] = new GameObject();
+                            lockImg[2].AddComponent<SpriteRenderer>().sprite = CustomButton.getLockSprite();
+                        }
+                        FastDestroyableSingleton<HudManager>.Instance.PetButton.enabled = false;
+                        FastDestroyableSingleton<HudManager>.Instance.PetButton.graphic.color = Palette.DisabledClear;
+                        FastDestroyableSingleton<HudManager>.Instance.PetButton.graphic.material.SetFloat("_Desat", 1f);
+                    }
+                    if (lockImg[2] != null) {
+                        lockImg[2].layer = 5;
+                        lockImg[2].transform.position = new Vector3(FastDestroyableSingleton<HudManager>.Instance.PetButton.transform.position.x, FastDestroyableSingleton<HudManager>.Instance.PetButton.transform.position.y, -50f);
+                    }
+
+                    // Report Button
+                    if (FastDestroyableSingleton<HudManager>.Instance.ReportButton != null && reportButtonEnabled) {
+                        if (lockImg[3] == null) {
+                            lockImg[3] = new GameObject();
+                            lockImg[3].AddComponent<SpriteRenderer>().sprite = CustomButton.getLockSprite();
+                        }
+                        FastDestroyableSingleton<HudManager>.Instance.ReportButton.enabled = false;
+                        FastDestroyableSingleton<HudManager>.Instance.ReportButton.SetActive(false);
+                        FastDestroyableSingleton<HudManager>.Instance.ReportButton.graphic.color = Palette.DisabledClear;
+                        FastDestroyableSingleton<HudManager>.Instance.ReportButton.graphic.material.SetFloat("_Desat", 1f);
+                    }
+                    if (lockImg[3] != null) {
+                        lockImg[3].layer = 5;
+                        lockImg[3].transform.position = new Vector3(FastDestroyableSingleton<HudManager>.Instance.ReportButton.transform.position.x, FastDestroyableSingleton<HudManager>.Instance.ReportButton.transform.position.y, -50f);
+                    }
+
+                    // Sabotage Button
+                    if (FastDestroyableSingleton<HudManager>.Instance.SabotageButton != null && saboButtonEnabled) {
+                        if (lockImg[4] == null) {
+                            lockImg[4] = new GameObject();
+                            lockImg[4].AddComponent<SpriteRenderer>().sprite = CustomButton.getLockSprite();
+                        }
+                        FastDestroyableSingleton<HudManager>.Instance.SabotageButton.enabled = false;
+                        FastDestroyableSingleton<HudManager>.Instance.SabotageButton.graphic.color = Palette.DisabledClear;
+                        FastDestroyableSingleton<HudManager>.Instance.SabotageButton.graphic.material.SetFloat("_Desat", 1f);
+                    }
+                    if (lockImg[4] != null) {
+                        lockImg[4].layer = 5;
+                        lockImg[4].transform.position = new Vector3(FastDestroyableSingleton<HudManager>.Instance.SabotageButton.transform.position.x, FastDestroyableSingleton<HudManager>.Instance.SabotageButton.transform.position.y, -50f);
+                    }
+
+                    // Vent Button
+                    if (PlayerControl.LocalPlayer.roleCanUseVents()) {
+                        if (FastDestroyableSingleton<HudManager>.Instance.ImpostorVentButton != null && ventButtonEnabled) {
+                            if (lockImg[5] == null) {
+                                lockImg[5] = new GameObject();
+                                lockImg[5].AddComponent<SpriteRenderer>().sprite = CustomButton.getLockSprite();
+                            }
+                            FastDestroyableSingleton<HudManager>.Instance.ImpostorVentButton.enabled = false;
+                            FastDestroyableSingleton<HudManager>.Instance.ImpostorVentButton.graphic.color = Palette.DisabledClear;
+                            FastDestroyableSingleton<HudManager>.Instance.ImpostorVentButton.graphic.material.SetFloat("_Desat", 1f);
+                        }
+                        if (lockImg[5] != null) {
+                            lockImg[5].layer = 5;
+                            lockImg[5].transform.position = new Vector3(FastDestroyableSingleton<HudManager>.Instance.ImpostorVentButton.transform.position.x, FastDestroyableSingleton<HudManager>.Instance.ImpostorVentButton.transform.position.y, -50f);
+                        }
+                    }
+
+                    // Custom Buttons
+                    if (PlayerControl.LocalPlayer) {
+                        CustomButton.buttons.ForEach(x => x.Hack());
+                    }
+
+                    if (Minigame.Instance) {
+                        Minigame.Instance.Close();
+                        Minigame.Instance.ForceClose();
+                    }
+
+                    if (MapBehaviour.Instance) {
+                        MapBehaviour.Instance.Close();
+                        MapBehaviour.Instance.Close();
+                    }
+
+                    PlayerControl.LocalPlayer.MaxReportDistance = 0f;
+                }
+                double totalHacktime = (DateTime.UtcNow - Glitch.hackedPlayers[hackPlayer]).TotalMilliseconds / 1000;
+                double remaining = Math.Round((double)(float)Glitch.hackDuration - totalHacktime);
+                if (MeetingHud.Instance || totalHacktime > (double)(float)Glitch.hackDuration || hackPlayer == null || hackPlayer.Data.IsDead)
+                    break;
+                yield return null;
+            }
+
+            GameObject[] array = lockImg;
+            foreach (GameObject obj in array)
+                if (obj != null)
+                    obj.SetActive(false);
+            
+            if (PlayerControl.LocalPlayer == hackPlayer) {
+                FastDestroyableSingleton<HudManager>.Instance.UseButton.enabled = useButtonEnabled;
+                FastDestroyableSingleton<HudManager>.Instance.PetButton.enabled = petButtonEnabled;
+                FastDestroyableSingleton<HudManager>.Instance.ReportButton.enabled = reportButtonEnabled;
+                FastDestroyableSingleton<HudManager>.Instance.KillButton.enabled = killButtonEnabled;
+                FastDestroyableSingleton<HudManager>.Instance.SabotageButton.enabled = saboButtonEnabled;
+                FastDestroyableSingleton<HudManager>.Instance.ImpostorVentButton.enabled = ventButtonEnabled;
+                if (PlayerControl.LocalPlayer) {
+                    CustomButton.buttons.ForEach(x => x.UnHack());
+                }
+                PlayerControl.LocalPlayer.MaxReportDistance = savedReportDistance;
+            }
+            Glitch.hackedPlayers.Remove(hackPlayer);
+            Glitch.hackedPlayer = null;
         }
     }
 }

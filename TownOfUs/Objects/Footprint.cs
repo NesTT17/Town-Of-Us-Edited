@@ -83,6 +83,11 @@ namespace TownOfUs.Objects
                     color = Palette.PlayerColors[6];
                 } else if (activeFootprint.Owner == Morphling.morphling && Morphling.morphTimer > 0 && Morphling.morphTarget && Morphling.morphTarget.Data != null) {
                     color = Palette.PlayerColors[Morphling.morphTarget.Data.DefaultOutfit.ColorId];
+                } else if (activeFootprint.Owner == Glitch.glitch && Glitch.morphTimer > 0 && Glitch.morphPlayer && Glitch.morphPlayer.Data != null) {
+                    color = Palette.PlayerColors[Glitch.morphPlayer.Data.DefaultOutfit.ColorId];
+                } else if (activeFootprint.Owner == Swooper.swooper && Swooper.isInvisble) {
+                    color = Color.clear;
+                    color.a = 0f;
                 } else {
                     color = Palette.PlayerColors[activeFootprint.Data.DefaultOutfit.ColorId];
                 }

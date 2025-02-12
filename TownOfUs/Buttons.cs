@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using HarmonyLib;
 using Hazel;
+using Reactor.Utilities;
 using UnityEngine;
 
 namespace TownOfUs
@@ -51,6 +52,14 @@ namespace TownOfUs
         public static CustomButton phantomInvisButton;
         public static CustomButton grenadierFlashButton;
         public static CustomButton doomsayerObserveButton;
+        public static CustomButton trackerTrackButton;
+        public static TMPro.TMP_Text trackerTrackButtonText;
+        public static CustomButton werewolfRampageButton;
+        public static CustomButton werewolfKillButton;
+        public static CustomButton detectiveExamineButton;
+        public static CustomButton glitchKillButton;
+        public static CustomButton glitchMimicButton;
+        public static CustomButton glichHackButton;
         
         public static void setCustomButtonCooldowns() {
             if (!initialized) {
@@ -103,6 +112,16 @@ namespace TownOfUs
             grenadierFlashButton.MaxTimer = Grenadier.cooldown;
             grenadierFlashButton.EffectDuration = Grenadier.duration;
             doomsayerObserveButton.MaxTimer = Doomsayer.cooldown;
+            trackerTrackButton.MaxTimer = Tracker.cooldown;
+            werewolfRampageButton.MaxTimer = Werewolf.cooldown;
+            werewolfRampageButton.EffectDuration = Werewolf.duration;
+            werewolfKillButton.MaxTimer = Werewolf.killCooldown;
+            detectiveExamineButton.MaxTimer = Detective.initialCooldown;
+            glitchKillButton.MaxTimer = Glitch.killCooldown;
+            glitchMimicButton.MaxTimer = Glitch.morphCooldown;
+            glitchMimicButton.EffectDuration = Glitch.morphDuration;
+            glichHackButton.MaxTimer = Glitch.hackCooldown;
+            glichHackButton.EffectDuration = Glitch.hackDuration;
             // Already set the timer to the max, as the button is enabled during the game and not available at the start
             zoomOutButton.MaxTimer = 0f;
         }
@@ -637,7 +656,10 @@ namespace TownOfUs
                     if (investigatorWatchButtonText != null) investigatorWatchButtonText.text = Investigator.watching == null ? "" : $"{Investigator.watching.Data.DefaultOutfit.PlayerName}";
                     return Investigator.currentTarget && Investigator.watching == null && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; 
                 },
-                () => { investigatorWatchButton.Timer = investigatorWatchButton.MaxTimer; },
+                () => {
+                    Investigator.watching = null;
+                    investigatorWatchButton.Timer = investigatorWatchButton.MaxTimer;
+                },
                 Investigator.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.F
             );
             // Investigator Watch show watching
@@ -997,7 +1019,14 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Grenadier.grenadier);
                 },
                 () => { return Grenadier.grenadier != null && Grenadier.grenadier == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => {
+                    bool sabotageActive = false;
+                    foreach (PlayerTask task in PlayerControl.LocalPlayer.myTasks.GetFastEnumerator())
+                        if (task.TaskType == TaskTypes.FixLights || task.TaskType == TaskTypes.RestoreOxy || task.TaskType == TaskTypes.ResetReactor || task.TaskType == TaskTypes.ResetSeismic || task.TaskType == TaskTypes.FixComms || task.TaskType == TaskTypes.StopCharles)
+                            sabotageActive = true;
+
+                    return !sabotageActive && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                },
                 () => {
                     grenadierFlashButton.Timer = grenadierFlashButton.MaxTimer;
                     grenadierFlashButton.isEffectActive = false;
@@ -1024,6 +1053,187 @@ namespace TownOfUs
                 () => { return Doomsayer.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
                 () => { doomsayerObserveButton.Timer = doomsayerObserveButton.MaxTimer; },
                 Doomsayer.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.F
+            );
+
+            // Tracker Track
+            trackerTrackButton = new CustomButton(
+                () => {
+                    if (Helpers.checkAndDoVetKill(Tracker.currentTarget)) return;
+
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.TrackerUseTrack, SendOption.Reliable, -1);
+                    writer.Write(Tracker.currentTarget.PlayerId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.trackerUseTrack(Tracker.currentTarget.PlayerId);
+                    trackerTrackButton.Timer = trackerTrackButton.MaxTimer;
+
+                    Helpers.checkWatchFlash(Tracker.currentTarget);
+                },
+                () => { return Tracker.tracker != null && Tracker.tracker == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => {
+                    if (trackerTrackButtonText != null) trackerTrackButtonText.text = $"{Tracker.maxTracksPerRound - Tracker.tracksInRound}";
+                    return Tracker.currentTarget && Tracker.tracksInRound < Tracker.maxTracksPerRound && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                },
+                () => {
+                    trackerTrackButton.Timer = trackerTrackButton.MaxTimer;
+                },
+                Tracker.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F
+            );
+            // Tracker tracks
+            trackerTrackButtonText = GameObject.Instantiate(trackerTrackButton.actionButton.cooldownTimerText, trackerTrackButton.actionButton.cooldownTimerText.transform.parent);
+            trackerTrackButtonText.text = "";
+            trackerTrackButtonText.enableWordWrapping = false;
+            trackerTrackButtonText.transform.localScale = Vector3.one * 0.5f;
+            trackerTrackButtonText.transform.localPosition += new Vector3(-0.05f, 0.7f, 0);
+
+            // Werewolf Rampage
+            werewolfRampageButton = new CustomButton(
+                () => {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.WerewolfRampage, SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.werewolfRampage();
+
+                    Helpers.checkWatchFlash(Werewolf.werewolf);
+                },
+                () => { return Werewolf.werewolf != null && Werewolf.werewolf == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => {
+                    werewolfRampageButton.Timer = werewolfRampageButton.MaxTimer;
+                    werewolfRampageButton.isEffectActive = false;
+                    werewolfRampageButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
+                },
+                Werewolf.getButtonSprite(), CustomButton.ButtonPositions.upperRowCenter, __instance, KeyCode.F,
+                true, Werewolf.duration, () => { werewolfRampageButton.Timer = werewolfRampageButton.MaxTimer; }
+            );
+
+            // Werewolf Kill
+            werewolfKillButton = new CustomButton(
+                () => {
+                    if (Helpers.checkMurderAttemptAndKill(Werewolf.werewolf, Werewolf.currentTarget) == MurderAttemptResult.SuppressKill) return;
+
+                    werewolfKillButton.Timer = werewolfKillButton.MaxTimer;
+                    Werewolf.currentTarget = null;
+                },
+                () => { return Werewolf.werewolf != null && Werewolf.werewolf == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return Werewolf.currentTarget && Werewolf.isRampageActive && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { werewolfKillButton.Timer = werewolfKillButton.MaxTimer; },
+                __instance.KillButton.graphic.sprite, CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q
+            );
+
+            // Detective Examine
+            detectiveExamineButton = new CustomButton(
+                () => {
+                    if (Helpers.checkAndDoVetKill(Detective.currentTarget)) return;
+
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.DetectiveExamine, SendOption.Reliable, -1);
+                    writer.Write(Detective.currentTarget.PlayerId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.detectiveExamine(Detective.currentTarget.PlayerId);
+                    detectiveExamineButton.Timer = Detective.cooldown;
+
+                    if (Detective.currentTarget != null) {
+                        DeadPlayer player = GameHistory.deadPlayers.Where(x => x.killerIfExisting.PlayerId == Detective.currentTarget.PlayerId).FirstOrDefault();
+                        if (player == null) {
+                            if (!PlayerControl.LocalPlayer.isFlashedByGrenadier()) Helpers.showFlash(Color.green);
+                        } else {
+                            float timeSinceDeath = ((float)(DateTime.UtcNow - player.timeOfDeath).TotalMilliseconds);
+                            if (timeSinceDeath < Detective.bloodTime * 1000) {
+                                if (!PlayerControl.LocalPlayer.isFlashedByGrenadier()) Helpers.showFlash(Color.red);
+                            } else {
+                                if (!PlayerControl.LocalPlayer.isFlashedByGrenadier()) Helpers.showFlash(Color.green);
+                            }
+                        }
+                    }
+
+                    Helpers.checkWatchFlash(Detective.currentTarget);
+                },
+                () => { return Detective.detective != null && Detective.detective == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return Detective.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { detectiveExamineButton.Timer = detectiveExamineButton.MaxTimer; },
+                Detective.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F
+            );
+
+            // Glitch Kill
+            glitchKillButton = new CustomButton(
+                () => {
+                    if (Helpers.checkMurderAttemptAndKill(Glitch.glitch, Glitch.currentTarget) == MurderAttemptResult.SuppressKill) return;
+
+                    glitchKillButton.Timer = glitchKillButton.MaxTimer;
+                    Glitch.currentTarget = null;
+                },
+                () => { return Glitch.glitch != null && Glitch.glitch == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return Glitch.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { glitchKillButton.Timer = glitchKillButton.MaxTimer; },
+                __instance.KillButton.graphic.sprite, CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q
+            );
+            
+            // Glitch Mimic
+            glitchMimicButton = new CustomButton(
+                () => {
+                    if (Glitch.sampledPlayer == null) {
+                        PlayerControl.LocalPlayer.NetTransform.Halt();
+                        foreach (var player in PlayerControl.AllPlayerControls) {
+                            if (player != PlayerControl.LocalPlayer && !player.Data.Disconnected) {
+                                if (!player.Data.IsDead) Glitch.mimicTargets.Add(player.PlayerId);
+                                else {
+                                    foreach (var body in UnityEngine.Object.FindObjectsOfType<DeadBody>()) {
+                                        if (body.ParentId == player.PlayerId) Glitch.mimicTargets.Add(player.PlayerId);
+                                    }
+                                }
+                            }
+                        }
+                        byte[] mimictargetIDs = Glitch.mimicTargets.ToArray();
+                        var pk = new PlayerMenu((x) => {
+                            Glitch.sampledPlayer = x;
+                        }, (y) => {
+                            return mimictargetIDs.Contains(y.PlayerId);
+                        });
+                        Coroutines.Start(pk.Open(0f, true));
+                        glitchMimicButton.HasEffect = false;
+                    } else {
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.GlitchMimic, SendOption.Reliable, -1);
+                        writer.Write(Glitch.sampledPlayer.PlayerId);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.glitchMimic(Glitch.sampledPlayer.PlayerId);
+                        Helpers.checkWatchFlash(Glitch.glitch);
+                        Glitch.sampledPlayer = null;
+                        glitchMimicButton.HasEffect = true;
+                        glitchMimicButton.EffectDuration = Glitch.morphDuration;
+                    }                    
+                },
+                () => { return Glitch.glitch != null && Glitch.glitch == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead;},
+                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => {
+                    glitchMimicButton.Timer = glitchMimicButton.MaxTimer;
+                    glitchMimicButton.isEffectActive = false;
+                    glitchMimicButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
+                    Glitch.sampledPlayer = null;
+                },
+                Glitch.getMimicButtonSprite(), new Vector3(0f, 1f, 0f), __instance, KeyCode.F,
+                true, Glitch.morphDuration, () => { glitchMimicButton.Timer = glitchMimicButton.MaxTimer; }, true
+            );
+
+            // Glitch Hack
+            glichHackButton = new CustomButton(
+                () => {
+                    if (Helpers.checkAndDoVetKill(Glitch.currentTarget)) return;
+
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.GlitchHack, SendOption.Reliable, -1);
+                    writer.Write(Glitch.currentTarget.PlayerId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.glitchHack(Glitch.currentTarget.PlayerId);
+
+                    Helpers.checkWatchFlash(Glitch.currentTarget);
+                },
+                () => { return Glitch.glitch != null && Glitch.glitch == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return Glitch.currentTarget && Glitch.hackedPlayer == null && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => {
+                    glichHackButton.Timer = glichHackButton.MaxTimer;
+                    glichHackButton.isEffectActive = false;
+                    glichHackButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
+                    Glitch.sampledPlayer = null;
+                },
+                Glitch.getHackButtonSprite(), new Vector3(0f, 0f, 0f), __instance, KeyCode.G,
+                true, Glitch.hackDuration, () => { glichHackButton.Timer = glichHackButton.MaxTimer; }, true
             );
 
             // Zoom Button

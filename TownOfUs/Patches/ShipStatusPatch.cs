@@ -36,12 +36,16 @@ namespace TownOfUs.Patches {
                 __result = Mathf.Lerp(__instance.MinLightRadius, __instance.MaxLightRadius * Lawyer.vision, unlerped);
                 return false;
             }
+            // If player is Sunglasses, apply Sunglasses modifier
+            else if (Sunglasses.sunglasses != null && Sunglasses.sunglasses.PlayerId == player.PlayerId) {
+                float unlerped = Mathf.InverseLerp(__instance.MinLightRadius, __instance.MaxLightRadius, GetNeutralLightRadius(__instance, false));
+                __result = Mathf.Lerp(__instance.MinLightRadius, __instance.MaxLightRadius - (Sunglasses.vision * 0.1f), unlerped);
+                return false;
+            }
             // Default light radius
             else {
                 __result = GetNeutralLightRadius(__instance, false);
             }
-            if (Sunglasses.sunglasses != null && Sunglasses.sunglasses.PlayerId == player.PlayerId)
-                __result *= 1f - (Sunglasses.vision * 0.1f);
             if (Torch.torch != null && Torch.torch.PlayerId == player.PlayerId)
                 __result = __instance.MaxLightRadius * GameOptionsManager.Instance.currentNormalGameOptions.CrewLightMod * 1;
             return false;

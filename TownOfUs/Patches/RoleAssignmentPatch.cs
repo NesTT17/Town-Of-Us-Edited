@@ -147,6 +147,8 @@ namespace TownOfUs.Patches {
 
             kneutralSettings.Add((byte)RoleId.Dracula, CustomOptionHolder.draculaSpawnRate.getSelection());
             kneutralSettings.Add((byte)RoleId.Juggernaut, CustomOptionHolder.juggernautSpawnRate.getSelection());
+            kneutralSettings.Add((byte)RoleId.Werewolf, CustomOptionHolder.werewolfSpawnRate.getSelection());
+            kneutralSettings.Add((byte)RoleId.Glitch, CustomOptionHolder.glitchSpawnRate.getSelection());
             
             crewSettings.Add((byte)RoleId.Snitch, CustomOptionHolder.snitchSpawnRate.getSelection());
             crewSettings.Add((byte)RoleId.Engineer, CustomOptionHolder.engineerSpawnRate.getSelection());
@@ -160,6 +162,9 @@ namespace TownOfUs.Patches {
             crewSettings.Add((byte)RoleId.Veteran, CustomOptionHolder.veteranSpawnRate.getSelection());
             crewSettings.Add((byte)RoleId.Seer, CustomOptionHolder.seerSpawnRate.getSelection());
             crewSettings.Add((byte)RoleId.Trapper, CustomOptionHolder.trapperSpawnRate.getSelection());
+            crewSettings.Add((byte)RoleId.Mystic, CustomOptionHolder.mysticSpawnRate.getSelection());
+            crewSettings.Add((byte)RoleId.Tracker, CustomOptionHolder.trackerSpawnRate.getSelection());
+            crewSettings.Add((byte)RoleId.Detective, CustomOptionHolder.detectiveSpawnRate.getSelection());
 
             return new RoleAssignmentData {
                 crewmates = crewmates,

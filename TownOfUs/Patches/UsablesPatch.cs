@@ -80,6 +80,14 @@ namespace TownOfUs.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(VentButton), nameof(VentButton.DoClick))]
+    class VentButtonDoClickPatch {
+        static  bool Prefix(VentButton __instance) {
+		    if (__instance.currentTarget != null && Glitch.hackedPlayer != PlayerControl.LocalPlayer) __instance.currentTarget.Use();
+            return false;
+        }
+    }
+
     [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.FixedUpdate))]
     class VentButtonVisibilityPatch {
         static void Postfix(PlayerControl __instance) {

@@ -30,6 +30,8 @@ namespace TownOfUs.Objects
         public bool mirror;
         public KeyCode? hotkey;
         public string buttonText;
+        public bool Locked = false;
+        public GameObject lockImg;
         private static readonly int Desat = Shader.PropertyToID("_Desat");
 
         public static class ButtonPositions {
@@ -68,6 +70,10 @@ namespace TownOfUs.Objects
             this.showButtonText = (actionButtonRenderer.sprite == Sprite || buttonText != "");
             button.OnClick = new Button.ButtonClickedEvent();
             button.OnClick.AddListener((UnityEngine.Events.UnityAction)onClickEvent);
+            lockImg = new GameObject();
+            lockImg.AddComponent<SpriteRenderer>().sprite = getLockSprite();
+            lockImg.layer = 5;
+            lockImg.SetActive(false);
             setActive(false);
         }
 
@@ -76,7 +82,7 @@ namespace TownOfUs.Objects
 
         public void onClickEvent()
         {
-            if (this.Timer < 0f && HasButton() && CouldUse())
+            if (this.Timer < 0f && HasButton() && CouldUse() && !Locked)
             {
                 actionButtonRenderer.color = new Color(1f, 1f, 1f, 0.3f);
                 this.OnClick();
@@ -156,7 +162,7 @@ namespace TownOfUs.Objects
                 setActive(false);
                 return;
             }
-            setActive(hudManager.UseButton.isActiveAndEnabled || hudManager.PetButton.isActiveAndEnabled);
+            setActive(hudManager.UseButton.isActiveAndEnabled || hudManager.PetButton.isActiveAndEnabled || Locked);
 
             actionButtonRenderer.sprite = Sprite;
             if (showButtonText && buttonText != ""){
@@ -173,7 +179,7 @@ namespace TownOfUs.Objects
                 }
                 actionButton.transform.localPosition = pos + PositionOffset;
             }
-            if (CouldUse()) {
+            if (CouldUse() && !Locked) {
                 actionButtonRenderer.color = actionButtonLabelText.color = Palette.EnabledColor;
                 actionButtonMat.SetFloat(Desat, 0f);
             } else {
@@ -199,5 +205,23 @@ namespace TownOfUs.Objects
             // Trigger OnClickEvent if the hotkey is being pressed down
             if (hotkey.HasValue && Input.GetKeyDown(hotkey.Value)) onClickEvent();
         }
+
+        public void Hack() {
+            if (HasButton()) {
+                lockImg.transform.position = new Vector3(actionButton.transform.position.x, actionButton.transform.position.y, -50f);
+                lockImg.SetActive(true);
+                Locked = true;
+            }
+        }
+
+        public void UnHack() {
+            lockImg.transform.position = new Vector3(actionButton.transform.position.x, actionButton.transform.position.y, -50f);
+            lockImg.SetActive(false);
+            Locked = false;
+        }
+
+        private static Sprite lockSprite;
+        public static Sprite getLockSprite()
+            => lockSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.LockSprite.png", 300f);
     }
 }

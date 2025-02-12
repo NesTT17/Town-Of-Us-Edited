@@ -53,6 +53,11 @@ namespace TownOfUs
             Phantom.clearAndReload();
             Grenadier.clearAndReload();
             Doomsayer.clearAndReload();
+            Mystic.clearAndReload();
+            Tracker.clearAndReload();
+            Werewolf.clearAndReload();
+            Detective.clearAndReload();
+            Glitch.clearAndReload();
             
             Lovers.clearAndReload();
             Blind.clearAndReload();
@@ -311,8 +316,9 @@ namespace TownOfUs
         public static bool shieldVisible(PlayerControl target) {
             bool hasVisibleShield = false;
             bool isMorphedMorphling = target == Morphling.morphling && Morphling.morphTarget != null && Morphling.morphTimer > 0f;
+            bool isMorphedGlitch = target == Glitch.glitch && Glitch.morphPlayer != null && Glitch.morphTimer > 0f;
 
-            if (shielded != null && ((target == shielded && !isMorphedMorphling) || (isMorphedMorphling && Morphling.morphTarget == shielded))) {
+            if (shielded != null && ((target == shielded && !isMorphedMorphling && !isMorphedGlitch) || (isMorphedMorphling && Morphling.morphTarget == shielded) || (isMorphedGlitch && Glitch.morphPlayer == shielded))) {
                 hasVisibleShield = showShielded == 0 || Helpers.shouldShowGhostInfo() // Everyone
                     || showShielded == 1 & PlayerControl.LocalPlayer == shielded // Shielded
                     || showShielded == 2 & PlayerControl.LocalPlayer == medic // Medic
@@ -547,10 +553,25 @@ namespace TownOfUs
         public static float cooldown = 30f;
         public static float duration = 10f;
         public static int remainingProtects = 3;
+        public static int showProtected = 0; // 0 - Everyone, 1 - Protected, 2 - GA, 3 - GA+Protected, 4 - Nobody
 
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ProtectButton.png", 100f);
+        
+        public static bool protectVisible(PlayerControl player) {
+            bool hasVisibleProtect = false;
+            bool isMorphedMorphling = player == Morphling.morphling && Morphling.morphTarget != null && Morphling.morphTimer > 0f;
+            bool isMorphedGlitch = target == Glitch.glitch && Glitch.morphPlayer != null && Glitch.morphTimer > 0f;
+
+            if (target != null && ((player == target && !isMorphedMorphling && !isMorphedGlitch) || (isMorphedMorphling && Morphling.morphTarget == target || (isMorphedGlitch && Glitch.morphPlayer == target)))) {
+                hasVisibleProtect = showProtected == 0 || Helpers.shouldShowGhostInfo() // Everyone
+                    || showProtected == 1 & PlayerControl.LocalPlayer == target // Protected
+                    || showProtected == 2 & PlayerControl.LocalPlayer == guardianAngel // GA
+                    || showProtected == 3 && (PlayerControl.LocalPlayer ==  target || PlayerControl.LocalPlayer == guardianAngel);
+            }
+            return hasVisibleProtect;
+        }
 
         public static void clearAndReload(bool clearTarget = true) {
             guardianAngel = null;
@@ -561,6 +582,7 @@ namespace TownOfUs
             protectActive = false;
             cooldown = CustomOptionHolder.guardianAngelProtectCooldown.getFloat();
             duration = CustomOptionHolder.guardianAngelProtectDuration.getFloat();
+            showProtected = CustomOptionHolder.guardianAngelShowProtected.getSelection();
             remainingProtects = Mathf.RoundToInt(CustomOptionHolder.guardianAngelNumberOfProtects.getFloat());
         }
     }
@@ -927,6 +949,8 @@ namespace TownOfUs
         public static Color flash = new Color32(153, 153, 153, byte.MaxValue);
         public static Il2CppSystem.Collections.Generic.List<PlayerControl> flashedPlayers = new Il2CppSystem.Collections.Generic.List<PlayerControl>();
 
+        public static float flashTimer = 0f;
+
         public static float cooldown = 30f;
         public static float duration = 10f;
         public static int radius = 2;
@@ -939,6 +963,7 @@ namespace TownOfUs
         public static void clearAndReload() {
             grenadier = null;
             flashedPlayers.Clear();
+            flashTimer = 0f;
             cooldown = CustomOptionHolder.grenadierCooldown.getFloat();
             duration = CustomOptionHolder.grenadierDuration.getFloat() + 0.5f;
             radius = CustomOptionHolder.grenadierFlashRadius.getSelection();
@@ -970,6 +995,168 @@ namespace TownOfUs
             triggerDoomsayerWin = false;
             cooldown = CustomOptionHolder.doomsayerCooldown.getFloat();
             guessesToWin = Mathf.RoundToInt(CustomOptionHolder.doomsayerGuessesToWin.getFloat());
+        }
+    }
+
+    public static class Mystic {
+        public static PlayerControl mystic;
+        public static List<Arrow> localArrows = new List<Arrow>();
+        public static Color color = new Color(0.3f, 0.6f, 0.9f, 1f);
+
+        public static float duration = 1f;
+
+        public static void clearAndReload() {
+            mystic = null;
+            if (localArrows != null) {
+                foreach (Arrow arrow in localArrows)
+                    if (arrow?.arrow != null)
+                    UnityEngine.Object.Destroy(arrow.arrow);
+            }
+            localArrows = new List<Arrow>();
+            duration = CustomOptionHolder.mysticArrowDuration.getFloat();
+        }
+    }
+
+    public static class Tracker {
+        public static PlayerControl tracker;
+        public static PlayerControl currentTarget;
+        public static List<PlayerControl> trackedPlayers = new List<PlayerControl>();
+        public static Color color = new Color(0f, 0.6f, 0f, 1f);
+
+        public static int tracksInRound = 0;
+
+        public static float cooldown = 30f;
+        public static int maxTracksPerRound = 3;
+        public static bool resetAfterMeeting = false;
+
+        public static void resetTracked() {
+            trackedPlayers = new List<PlayerControl>();
+            tracksInRound = 0;
+        }
+        
+        private static Sprite buttonSprite;
+        public static Sprite getButtonSprite()
+            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.TrackButton.png", 100f);
+
+        public static void clearAndReload() {
+            tracker = null;
+            currentTarget = null;
+            resetTracked();
+            cooldown = CustomOptionHolder.trackerCooldown.getFloat();
+            maxTracksPerRound = Mathf.RoundToInt(CustomOptionHolder.trackerMaxTracksPerRound.getFloat());
+            resetAfterMeeting = CustomOptionHolder.trackerResetAfterMeeting.getBool();
+        }
+    }
+
+    public static class Werewolf {
+        public static PlayerControl werewolf;
+        public static PlayerControl currentTarget;
+        public static Color color = new Color(0.66f, 0.4f, 0.16f, 1f);
+
+        public static bool isRampageActive = false;
+
+        public static float cooldown = 30f;
+        public static float duration = 10f;
+        public static float killCooldown = 3f;
+        public static bool canVent = false;
+        
+        private static Sprite buttonSprite;
+        public static Sprite getButtonSprite()
+            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.RampageButton.png", 100f);
+        
+        public static void clearAndReload() {
+            werewolf = null;
+            currentTarget = null;
+            isRampageActive = false;
+            cooldown = CustomOptionHolder.werewolfRampageCooldown.getFloat();
+            duration = CustomOptionHolder.werewolfRampageDuration.getFloat();
+            killCooldown = CustomOptionHolder.werewolfKillCooldown.getFloat();
+            canVent = CustomOptionHolder.werewolfCanVent.getBool();
+        }
+    }
+
+    public static class Detective {
+        public static PlayerControl detective;
+        public static PlayerControl examined;
+        public static PlayerControl currentTarget;
+        public static Color color = new Color(0.3f, 0.3f, 1f, 1f);
+
+        public static float initialCooldown = 30f;
+        public static float cooldown = 10f;
+        public static float bloodTime = 30f;
+        public static bool getInfoOnReport = false;
+        public static float reportRoleDuration = 15f;
+        public static float reportFactionDuration = 30f;
+        public static bool getExamineInfo = false;
+        
+        private static Sprite buttonSprite;
+        public static Sprite getButtonSprite()
+            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ExamineButton.png", 100f);
+        
+        public static void clearAndReload() {
+            detective = null;
+            examined = null;
+            currentTarget = null;
+            initialCooldown = CustomOptionHolder.detectiveInitialCooldown.getFloat();
+            cooldown = CustomOptionHolder.detectiveCooldown.getFloat();
+            bloodTime = CustomOptionHolder.detectiveBloodTime.getFloat();
+            getInfoOnReport = CustomOptionHolder.detectiveGetInfoOnReport.getBool();
+            reportRoleDuration = CustomOptionHolder.detectiveReportRoleDuration.getFloat();
+            reportFactionDuration = CustomOptionHolder.detectiveReportFactionDuration.getFloat();
+            getExamineInfo = CustomOptionHolder.detectiveGetExamineInfo.getBool();
+        }
+    }
+
+    public static class Glitch {
+        public static PlayerControl glitch;
+        public static PlayerControl morphPlayer;
+        public static PlayerControl sampledPlayer;
+        public static PlayerControl hackedPlayer;
+        public static PlayerControl currentTarget;
+        public static List<byte> mimicTargets = new List<byte>();
+        public static Dictionary<PlayerControl, DateTime> hackedPlayers = new Dictionary<PlayerControl, DateTime>();
+        public static Color color = Color.green;
+
+        public static float morphTimer = 0f;
+
+        public static float morphCooldown = 30f;
+        public static float morphDuration = 10f;
+        public static float hackCooldown = 30f;
+        public static float hackDuration = 10f;
+        public static float killCooldown = 30f;
+        public static bool canVent = false;
+        public static bool hasImpostorVision = false;
+        
+        private static Sprite mimicButtonSprite;
+        public static Sprite getMimicButtonSprite()
+            => mimicButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.MimicButton.png", 100f);
+            
+        private static Sprite hackButtonSprite;
+        public static Sprite getHackButtonSprite()
+            => hackButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.HackButton.png", 100f);
+        
+        public static void resetMorph() {
+            morphPlayer = null;
+            morphTimer = 0f;
+            if (glitch == null) return;
+            glitch.setDefaultLook();
+        }
+        
+        public static void clearAndReload() {
+            glitch = null;
+            resetMorph();
+            sampledPlayer = null;
+            hackedPlayer = null;
+            currentTarget = null;
+            mimicTargets = new List<byte>();
+            hackedPlayers = new Dictionary<PlayerControl, DateTime>();
+            morphCooldown = CustomOptionHolder.glitchMimicCooldown.getFloat();
+            morphDuration = CustomOptionHolder.glitchMimicDuration.getFloat();
+            hackCooldown = CustomOptionHolder.glitchHackCooldown.getFloat();
+            hackDuration = CustomOptionHolder.glitchHackDuration.getFloat();
+            killCooldown = CustomOptionHolder.glitchKillCooldown.getFloat();
+            canVent = CustomOptionHolder.glitchCanVent.getBool();
+            hasImpostorVision = CustomOptionHolder.glitchHasImpostorVision.getBool();
         }
     }
 

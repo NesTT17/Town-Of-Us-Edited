@@ -16,6 +16,8 @@ namespace TownOfUs.Patches {
         JuggernautWin = 16,
         MercenaryWin = 17,
         DoomsayerWin = 18,
+        WerewolfWin = 19,
+        GlitchWin = 20,
     }
 
     enum WinCondition {
@@ -30,6 +32,8 @@ namespace TownOfUs.Patches {
         JuggernautWin,
         MercenaryWin,
         DoomsayerWin,
+        WerewolfWin,
+        GlitchWin,
         AdditionalLawyerBonusWin,
         AdditionalAlivePursuerWin,
         AdditionalGuardianAngelBonusWin,
@@ -52,6 +56,10 @@ namespace TownOfUs.Patches {
         internal class PlayerRoleInfo {
             private string mDeathReason = "";
             public  string PlayerName { get; set; }
+            public bool IsGATarget {get; set;}
+            public bool IsFATarget {get; set;}
+            public bool IsExeTarget {get; set;}
+            public bool IsLawyerTarget {get; set;}
 
             public string DeathReason
             {
@@ -88,7 +96,12 @@ namespace TownOfUs.Patches {
         public static void UpdatePlayerSummary(PlayerControl player)
         {
             AdditionalTempData.PlayerRoleInfo playerControlRole = AdditionalTempData.playerRoles.Find(x => x.PlayerName.Equals(player.Data.PlayerName));
-            if(playerControlRole == null) return;
+            if (playerControlRole == null) return;
+
+            playerControlRole.IsGATarget = GuardianAngel.guardianAngel != null && GuardianAngel.target != null && player.PlayerId == GuardianAngel.target.PlayerId;
+            playerControlRole.IsFATarget = FallenAngel.fallenAngel != null && FallenAngel.target != null && player.PlayerId == FallenAngel.target.PlayerId;
+            playerControlRole.IsExeTarget = Executioner.executioner != null && Executioner.target != null && player.PlayerId == Executioner.target.PlayerId;
+            playerControlRole.IsLawyerTarget = Lawyer.lawyer != null && Lawyer.target != null && player.PlayerId == Lawyer.target.PlayerId;
             
             List<RoleInfo> roles = PlayerGameInfo.GetRoles(player);
             (int tasksCompleted, int tasksTotal) = TasksHandler.taskInfo(player.Data);
@@ -131,6 +144,8 @@ namespace TownOfUs.Patches {
             if (Juggernaut.juggernaut != null) notWinners.Add(Juggernaut.juggernaut);
             if (Mercenary.mercenary != null) notWinners.Add(Mercenary.mercenary);
             if (Doomsayer.doomsayer != null) notWinners.Add(Doomsayer.doomsayer);
+            if (Werewolf.werewolf != null) notWinners.Add(Werewolf.werewolf);
+            if (Glitch.glitch != null) notWinners.Add(Glitch.glitch);
 
             List<CachedPlayerData> winnersToRemove = new List<CachedPlayerData>();
             foreach (CachedPlayerData winner in EndGameResult.CachedWinners.GetFastEnumerator()) {
@@ -147,6 +162,8 @@ namespace TownOfUs.Patches {
             bool juggernautWin = Juggernaut.juggernaut != null && gameOverReason == (GameOverReason)CustomGameOverReason.JuggernautWin;
             bool mercenaryWin = Mercenary.mercenary != null && gameOverReason == (GameOverReason)CustomGameOverReason.MercenaryWin;
             bool doomsayerWin = Doomsayer.doomsayer != null && gameOverReason == (GameOverReason)CustomGameOverReason.DoomsayerWin;
+            bool werewolfWin = Werewolf.werewolf != null && gameOverReason == (GameOverReason)CustomGameOverReason.WerewolfWin;
+            bool glitchWin = Glitch.glitch != null && gameOverReason == (GameOverReason)CustomGameOverReason.GlitchWin;
 
             // Jester win
             if (jesterWin) {
@@ -250,6 +267,22 @@ namespace TownOfUs.Patches {
                 CachedPlayerData wpd = new CachedPlayerData(Doomsayer.doomsayer.Data);
                 EndGameResult.CachedWinners.Add(wpd);
                 AdditionalTempData.winCondition = WinCondition.DoomsayerWin;
+            }
+            // Werewolf win
+            else if (werewolfWin) {
+                AdditionalTempData.winCondition = WinCondition.WerewolfWin;
+                EndGameResult.CachedWinners = new Il2CppSystem.Collections.Generic.List<CachedPlayerData>();
+                CachedPlayerData wpd = new CachedPlayerData(Werewolf.werewolf.Data);
+                wpd.IsImpostor = false;
+                EndGameResult.CachedWinners.Add(wpd);
+            }
+            // Glitch win
+            else if (werewolfWin) {
+                AdditionalTempData.winCondition = WinCondition.GlitchWin;
+                EndGameResult.CachedWinners = new Il2CppSystem.Collections.Generic.List<CachedPlayerData>();
+                CachedPlayerData wpd = new CachedPlayerData(Glitch.glitch.Data);
+                wpd.IsImpostor = false;
+                EndGameResult.CachedWinners.Add(wpd);
             }
 
             // Possible Additional winner: Lawyer
@@ -456,6 +489,14 @@ namespace TownOfUs.Patches {
                 textRenderer.text = "Doomsayer Wins";
                 textRenderer.color = Doomsayer.color;
                 __instance.BackgroundBar.material.SetColor("_Color", Doomsayer.color);
+            } else if (AdditionalTempData.winCondition == WinCondition.WerewolfWin) {
+                textRenderer.text = "Werewolf Wins";
+                textRenderer.color = Werewolf.color;
+                __instance.BackgroundBar.material.SetColor("_Color", Werewolf.color);
+            } else if (AdditionalTempData.winCondition == WinCondition.GlitchWin) {
+                textRenderer.text = "Glitch Wins";
+                textRenderer.color = Glitch.color;
+                __instance.BackgroundBar.material.SetColor("_Color", Glitch.color);
             }
 
             foreach (WinCondition cond in AdditionalTempData.additionalWinConditions) {
@@ -482,6 +523,10 @@ namespace TownOfUs.Patches {
         
             roleSummaryText.AppendLine("<size=90%>Players and roles at the end of the game:</size>");
             foreach (AdditionalTempData.PlayerRoleInfo data in AdditionalTempData.playerRoles) {
+                string gaTarget = data.IsGATarget ? $"{Helpers.cs(GuardianAngel.color, " ★")}" : "";
+                string faTarget = data.IsFATarget ? $"{Helpers.cs(FallenAngel.color, " ★")}" : "";
+                string exeTarget = data.IsExeTarget ? $"{Helpers.cs(Executioner.color, " X")}" : "";
+                string lawyerTarget = data.IsLawyerTarget ? $"{Helpers.cs(Lawyer.color, " §")}" : "";
                 string roles = data.Roles.Count > 0 ? string.Join(" -> ", data.Roles.Select(x => Helpers.cs(x.color, x.name))) : "";
                 string modifiers = data.Modifiers.Count > 0 ? string.Join(" ", data.Modifiers.Select(x => Helpers.cs(x.color, $"({x.name}) "))) : "";
                 string deathReason = data.DeathReason.IsNullOrWhiteSpace() ? "" : data.DeathReason;
@@ -490,7 +535,7 @@ namespace TownOfUs.Patches {
                 string taskInfo = data.TasksTotal > 0 ? (data.TasksCompleted == data.TasksTotal ? $" - Tasks: {Helpers.cs(Color.green, $"{data.TasksCompleted}/{data.TasksTotal}")}" : $" - Tasks: {Helpers.cs(Color.red, $"{data.TasksCompleted}/{data.TasksTotal}")}") : "";
                 string killInfo = data.Kills != null ? $" - <color=#FF0000FF>Kills: {data.Kills}</color>" : "";
                     
-                roleSummaryText.AppendLine($"<size=80%>{data.PlayerName}{deathReason} | {modifiers}{roles}{guesserInfo}{taskInfo}{killInfo}</size>");
+                roleSummaryText.AppendLine($"<size=80%>{data.PlayerName}{gaTarget}{faTarget}{exeTarget}{lawyerTarget}{deathReason} | {modifiers}{roles}{guesserInfo}{taskInfo}{killInfo}</size>");
             }
 
             TMPro.TMP_Text roleSummaryTextMesh = roleSummary.GetComponent<TMPro.TMP_Text>();
@@ -525,6 +570,8 @@ namespace TownOfUs.Patches {
             if (CheckAndEndGameForJesterWin(__instance)) return false;
             if (CheckAndEndGameForSabotageWin(__instance)) return false;
             if (CheckAndEndGameForTaskWin(__instance)) return false;
+            if (CheckAndEndGameForGlitchWin(__instance, statistics)) return false;
+            if (CheckAndEndGameForWerewolfWin(__instance, statistics)) return false;
             if (CheckAndEndGameForJuggernautWin(__instance, statistics)) return false;
             if (CheckAndEndGameForFallenAngelWin(__instance, statistics)) return false;
             if (CheckAndEndGameForDraculaWin(__instance, statistics)) return false;
@@ -608,8 +655,24 @@ namespace TownOfUs.Patches {
             return false;
         }
 
+        private static bool CheckAndEndGameForGlitchWin(ShipStatus __instance, PlayerStatistics statistics) {
+            if (statistics.GlitchAlive >= statistics.TotalAlive - statistics.GlitchAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamVampireAlive == 0 && statistics.FallenAngelAlive == 0 && statistics.JuggernautAlive == 0 && statistics.WerewolfAlive == 0 && !(statistics.GlitchHasAliveLover && statistics.TeamLoversAlive == 2)) {
+                GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.GlitchWin, false);
+                return true;
+            }
+            return false;
+        }
+
+        private static bool CheckAndEndGameForWerewolfWin(ShipStatus __instance, PlayerStatistics statistics) {
+            if (statistics.WerewolfAlive >= statistics.TotalAlive - statistics.WerewolfAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamVampireAlive == 0 && statistics.FallenAngelAlive == 0 && statistics.JuggernautAlive == 0 && statistics.GlitchAlive == 0 && !(statistics.WerewolfHasAliveLover && statistics.TeamLoversAlive == 2)) {
+                GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.WerewolfWin, false);
+                return true;
+            }
+            return false;
+        }
+
         private static bool CheckAndEndGameForJuggernautWin(ShipStatus __instance, PlayerStatistics statistics) {
-            if (statistics.JuggernautAlive >= statistics.TotalAlive - statistics.JuggernautAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamVampireAlive == 0 && statistics.FallenAngelAlive == 0 && !(statistics.JuggernautHasAliveLover && statistics.TeamLoversAlive == 2)) {
+            if (statistics.JuggernautAlive >= statistics.TotalAlive - statistics.JuggernautAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamVampireAlive == 0 && statistics.FallenAngelAlive == 0 && statistics.WerewolfAlive == 0 && statistics.GlitchAlive == 0 && !(statistics.JuggernautHasAliveLover && statistics.TeamLoversAlive == 2)) {
                 GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.JuggernautWin, false);
                 return true;
             }
@@ -617,7 +680,7 @@ namespace TownOfUs.Patches {
         }
 
         private static bool CheckAndEndGameForFallenAngelWin(ShipStatus __instance, PlayerStatistics statistics) {
-            if (statistics.FallenAngelAlive >= statistics.TotalAlive - statistics.FallenAngelAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamVampireAlive == 0 && statistics.JuggernautAlive == 0 && !(statistics.FallenAngelHasAliveLover && statistics.TeamLoversAlive == 2)) {
+            if (statistics.FallenAngelAlive >= statistics.TotalAlive - statistics.FallenAngelAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamVampireAlive == 0 && statistics.JuggernautAlive == 0 && statistics.WerewolfAlive == 0 && statistics.GlitchAlive == 0 && !(statistics.FallenAngelHasAliveLover && statistics.TeamLoversAlive == 2)) {
                 GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.FallenAngelWin, false);
                 return true;
             }
@@ -625,7 +688,7 @@ namespace TownOfUs.Patches {
         }
 
         private static bool CheckAndEndGameForDraculaWin(ShipStatus __instance, PlayerStatistics statistics) {
-            if (statistics.TeamVampireAlive >= statistics.TotalAlive - statistics.TeamVampireAlive && statistics.TeamImpostorsAlive == 0 && statistics.FallenAngelAlive == 0 && statistics.JuggernautAlive == 0 && !(statistics.TeamVampireHasAliveLover && statistics.TeamLoversAlive == 2)) {
+            if (statistics.TeamVampireAlive >= statistics.TotalAlive - statistics.TeamVampireAlive && statistics.TeamImpostorsAlive == 0 && statistics.FallenAngelAlive == 0 && statistics.JuggernautAlive == 0 && statistics.WerewolfAlive == 0 && statistics.GlitchAlive == 0 && !(statistics.TeamVampireHasAliveLover && statistics.TeamLoversAlive == 2)) {
                 GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.TeamVampireWin, false);
                 return true;
             }
@@ -641,7 +704,7 @@ namespace TownOfUs.Patches {
         }
 
         private static bool CheckAndEndGameForImpostorWin(ShipStatus __instance, PlayerStatistics statistics) {
-            if (statistics.TeamImpostorsAlive >= statistics.TotalAlive - statistics.TeamImpostorsAlive && statistics.TeamVampireAlive == 0 && statistics.FallenAngelAlive == 0 && statistics.JuggernautAlive == 0 && !(statistics.TeamImpostorHasAliveLover && statistics.TeamLoversAlive == 2)) {
+            if (statistics.TeamImpostorsAlive >= statistics.TotalAlive - statistics.TeamImpostorsAlive && statistics.TeamVampireAlive == 0 && statistics.FallenAngelAlive == 0 && statistics.JuggernautAlive == 0 && statistics.WerewolfAlive == 0 && statistics.GlitchAlive == 0 && !(statistics.TeamImpostorHasAliveLover && statistics.TeamLoversAlive == 2)) {
                 GameOverReason endReason;
                 switch (GameData.LastDeathReason) {
                     case DeathReason.Exile:
@@ -661,7 +724,7 @@ namespace TownOfUs.Patches {
         }
 
         private static bool CheckAndEndGameForCrewmateWin(ShipStatus __instance, PlayerStatistics statistics) {
-            if (statistics.TeamImpostorsAlive == 0 && statistics.TeamVampireAlive == 0 && statistics.FallenAngelAlive == 0 && statistics.JuggernautAlive == 0) {
+            if (statistics.TeamImpostorsAlive == 0 && statistics.TeamVampireAlive == 0 && statistics.FallenAngelAlive == 0 && statistics.JuggernautAlive == 0 && statistics.WerewolfAlive == 0 && statistics.GlitchAlive == 0) {
                 GameManager.Instance.RpcEndGame(GameOverReason.HumansByVote, false);
                 return true;
             }
@@ -680,12 +743,16 @@ namespace TownOfUs.Patches {
         public int TeamVampireAlive {get;set;}
         public int FallenAngelAlive {get;set;}
         public int JuggernautAlive {get;set;}
+        public int WerewolfAlive {get;set;}
+        public int GlitchAlive {get;set;}
         public int TeamLoversAlive {get;set;}
         public int TotalAlive {get;set;}
         public bool TeamImpostorHasAliveLover {get;set;}
         public bool TeamVampireHasAliveLover {get;set;}
         public bool FallenAngelHasAliveLover {get;set;}
         public bool JuggernautHasAliveLover {get;set;}
+        public bool WerewolfHasAliveLover {get;set;}
+        public bool GlitchHasAliveLover {get;set;}
 
         public PlayerStatistics(ShipStatus __instance) {
             GetPlayerCounts();
@@ -700,12 +767,16 @@ namespace TownOfUs.Patches {
             int numVampireAlive = 0;
             int numFAAlive = 0;
             int numJuggAlive = 0;
+            int numWereAlive = 0;
+            int numGlitchAlive = 0;
             int numLoversAlive = 0;
             int numTotalAlive = 0;
             bool impLover = false;
             bool vampireLover = false;
             bool faLover = false;
             bool juggLover = false;
+            bool wereLover = false;
+            bool glitchLover = false;
 
             foreach (var playerInfo in GameData.Instance.AllPlayers.GetFastEnumerator())
             {
@@ -738,6 +809,14 @@ namespace TownOfUs.Patches {
                             numJuggAlive++;
                             if (lover) juggLover = true;
                         }
+                        if (Werewolf.werewolf != null && Werewolf.werewolf.PlayerId == playerInfo.PlayerId) {
+                            numWereAlive++;
+                            if (lover) wereLover = true;
+                        }
+                        if (Glitch.glitch != null && Glitch.glitch.PlayerId == playerInfo.PlayerId) {
+                            numGlitchAlive++;
+                            if (lover) glitchLover = true;
+                        }
                     }
                 }
             }
@@ -746,12 +825,16 @@ namespace TownOfUs.Patches {
             TeamVampireAlive = numVampireAlive;
             FallenAngelAlive = numFAAlive;
             JuggernautAlive = numJuggAlive;
+            WerewolfAlive = numWereAlive;
+            GlitchAlive = numGlitchAlive;
             TeamLoversAlive = numLoversAlive;
             TotalAlive = numTotalAlive;
             TeamImpostorHasAliveLover = impLover;
             TeamVampireHasAliveLover = vampireLover;
             FallenAngelHasAliveLover = faLover;
             JuggernautHasAliveLover = juggLover;
+            WerewolfHasAliveLover = wereLover;
+            GlitchHasAliveLover = glitchLover;
         }
     }
 }

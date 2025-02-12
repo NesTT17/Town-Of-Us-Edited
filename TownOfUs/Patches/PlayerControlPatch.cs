@@ -68,6 +68,11 @@ namespace TownOfUs.Patches {
                     color = Color.cyan;
                 }
 
+                if (Camouflager.camouflageTimer <= 0f && !Helpers.MushroomSabotageActive() && !Helpers.isActiveCamoComms() && GuardianAngel.protectVisible(target)) {
+                    hasVisibleShield = true;
+                    color = Color.yellow;
+                }
+
                 if (hasVisibleShield) {
                     target.cosmetics.currentBodySprite.BodySprite.material.SetFloat("_Outline", 1f);
                     target.cosmetics.currentBodySprite.BodySprite.material.SetColor("_OutlineColor", color);
@@ -200,8 +205,10 @@ namespace TownOfUs.Patches {
             
             float oldCamouflageTimer = Camouflager.camouflageTimer;
             float oldMorphTimer = Morphling.morphTimer;
+            float oldMimicTimer = Glitch.morphTimer;
             Camouflager.camouflageTimer = Mathf.Max(0f, Camouflager.camouflageTimer - Time.fixedDeltaTime);
             Morphling.morphTimer = Mathf.Max(0f, Morphling.morphTimer - Time.fixedDeltaTime);
+            Glitch.morphTimer = Mathf.Max(0f, Glitch.morphTimer - Time.fixedDeltaTime);
 
             if (mushRoomSaboIsActive) return;
             if (Helpers.isCamoComms()) return;
@@ -210,6 +217,10 @@ namespace TownOfUs.Patches {
                 if (Morphling.morphTimer > 0f && Morphling.morphling != null && Morphling.morphTarget != null) {
                     PlayerControl target = Morphling.morphTarget;
                     Morphling.morphling.setLook(target.Data.PlayerName, target.Data.DefaultOutfit.ColorId, target.Data.DefaultOutfit.HatId, target.Data.DefaultOutfit.VisorId, target.Data.DefaultOutfit.SkinId, target.Data.DefaultOutfit.PetId);
+                }
+                if (Glitch.morphTimer > 0f && Glitch.glitch != null && Glitch.morphPlayer != null) {
+                    PlayerControl target = Glitch.morphPlayer;
+                    Glitch.glitch.setLook(target.Data.PlayerName, target.Data.DefaultOutfit.ColorId, target.Data.DefaultOutfit.HatId, target.Data.DefaultOutfit.VisorId, target.Data.DefaultOutfit.SkinId, target.Data.DefaultOutfit.PetId);
                 }
             }
 
@@ -220,6 +231,10 @@ namespace TownOfUs.Patches {
                     PlayerControl target = Morphling.morphTarget;
                     Morphling.morphling.setLook(target.Data.PlayerName, target.Data.DefaultOutfit.ColorId, target.Data.DefaultOutfit.HatId, target.Data.DefaultOutfit.VisorId, target.Data.DefaultOutfit.SkinId, target.Data.DefaultOutfit.PetId);
                 }
+                if (Glitch.morphTimer > 0f && Glitch.glitch != null && Glitch.morphPlayer != null) {
+                    PlayerControl target = Glitch.morphPlayer;
+                    Glitch.glitch.setLook(target.Data.PlayerName, target.Data.DefaultOutfit.ColorId, target.Data.DefaultOutfit.HatId, target.Data.DefaultOutfit.VisorId, target.Data.DefaultOutfit.SkinId, target.Data.DefaultOutfit.PetId);
+                }
             }
 
             // If the MushRoomSabotage ends while Morph is still active set the Morphlings look to the target's look
@@ -227,6 +242,10 @@ namespace TownOfUs.Patches {
                 if (Morphling.morphTimer > 0f && Morphling.morphling != null && Morphling.morphTarget != null) {
                     PlayerControl target = Morphling.morphTarget;
                     Morphling.morphling.setLook(target.Data.PlayerName, target.Data.DefaultOutfit.ColorId, target.Data.DefaultOutfit.HatId, target.Data.DefaultOutfit.VisorId, target.Data.DefaultOutfit.SkinId, target.Data.DefaultOutfit.PetId);
+                }
+                if (Glitch.morphTimer > 0f && Glitch.glitch != null && Glitch.morphPlayer != null) {
+                    PlayerControl target = Glitch.morphPlayer;
+                    Glitch.glitch.setLook(target.Data.PlayerName, target.Data.DefaultOutfit.ColorId, target.Data.DefaultOutfit.HatId, target.Data.DefaultOutfit.VisorId, target.Data.DefaultOutfit.SkinId, target.Data.DefaultOutfit.PetId);
                 }
                 if (Camouflager.camouflageTimer > 0) {
                     foreach (PlayerControl player in PlayerControl.AllPlayerControls)
@@ -237,6 +256,8 @@ namespace TownOfUs.Patches {
             // Morphling reset (only if camouflage is inactive)
             if (Camouflager.camouflageTimer <= 0f && oldMorphTimer > 0f && Morphling.morphTimer <= 0f && Morphling.morphling != null)
                 Morphling.resetMorph();
+            if (Camouflager.camouflageTimer <= 0f && oldMimicTimer > 0f && Glitch.morphTimer <= 0f && Glitch.glitch != null)
+                Glitch.resetMorph();
             mushroomSaboWasActive = false;
         }
 
@@ -509,7 +530,7 @@ namespace TownOfUs.Patches {
         }
 
         static void blackmailerSetTarget() {
-            if (!Blackmailer.blackmailer || Blackmailer.blackmailer != PlayerControl.LocalPlayer) return;
+            if (Blackmailer.blackmailer == null || Blackmailer.blackmailer != PlayerControl.LocalPlayer) return;
             Blackmailer.currentTarget = setTarget(untargetablePlayers: new List<PlayerControl>() { Blackmailer.blackmailed } );
             setPlayerOutline(Blackmailer.currentTarget, Helpers.impAbilityTargetColor);
         }
@@ -525,9 +546,60 @@ namespace TownOfUs.Patches {
         }
 
         static void doomsayerSetTarget() {
-            if (!Doomsayer.doomsayer || Doomsayer.doomsayer != PlayerControl.LocalPlayer) return;
+            if (Doomsayer.doomsayer == null || Doomsayer.doomsayer != PlayerControl.LocalPlayer) return;
             Doomsayer.currentTarget = setTarget(untargetablePlayers: Doomsayer.observedPlayers);
             setPlayerOutline(Doomsayer.currentTarget, Doomsayer.color);
+        }
+
+        static void mysticUpdate() {
+            if (Mystic.mystic == null || Mystic.mystic != PlayerControl.LocalPlayer || Mystic.localArrows == null) return;
+            if (Mystic.mystic.Data.IsDead) {
+                foreach (Arrow arrow in Mystic.localArrows) UnityEngine.Object.Destroy(arrow.arrow);
+                Mystic.localArrows = new List<Arrow>();
+                return;
+            }
+
+            var validBodies = UnityEngine.Object.FindObjectsOfType<DeadBody>().Where(x => GameHistory.deadPlayers.Any(y => y.player.PlayerId == x.ParentId && y.timeOfDeath.AddSeconds(Mystic.duration) > System.DateTime.UtcNow));
+            bool arrowUpdate = Mystic.localArrows.Count != validBodies.Count();
+            int index = 0;
+
+            if (arrowUpdate) {
+                foreach (Arrow arrow in Mystic.localArrows) UnityEngine.Object.Destroy(arrow.arrow);
+                Mystic.localArrows = new List<Arrow>();
+            }
+
+            foreach (DeadBody db in validBodies) {
+                if (arrowUpdate) {
+                    Mystic.localArrows.Add(new Arrow(Palette.EnabledColor));
+                    Mystic.localArrows[index].arrow.SetActive(true);
+                }
+                if (Mystic.localArrows[index] != null) Mystic.localArrows[index].Update(db.transform.position);
+                index++;
+            }
+        }
+
+        static void trackerSetTarget() {
+            if (Tracker.tracker == null || Tracker.tracker != PlayerControl.LocalPlayer) return;
+            Tracker.currentTarget = setTarget(untargetablePlayers: Tracker.trackedPlayers);
+            setPlayerOutline(Tracker.currentTarget, Tracker.color);
+        }
+
+        static void werewolfSetTarget() {
+            if (Werewolf.werewolf == null || Werewolf.werewolf != PlayerControl.LocalPlayer) return;
+            Werewolf.currentTarget = setTarget();
+            setPlayerOutline(Werewolf.currentTarget, Werewolf.color);
+        }
+
+        static void detectiveSetTarget() {
+            if (Detective.detective == null || Detective.detective != PlayerControl.LocalPlayer) return;
+            Detective.currentTarget = setTarget();
+            setPlayerOutline(Detective.currentTarget, Detective.color);
+        }
+
+        static void glitchSetTarget() {
+            if (Glitch.glitch == null || Glitch.glitch != PlayerControl.LocalPlayer) return;
+            Glitch.currentTarget = setTarget();
+            setPlayerOutline(Glitch.currentTarget, Glitch.color);
         }
 
         public static void Postfix(PlayerControl __instance) {
@@ -598,6 +670,16 @@ namespace TownOfUs.Patches {
                 phantomUpdate();
                 // Doomsayer
                 doomsayerSetTarget();
+                // Mystic
+                mysticUpdate();
+                // Tracker
+                trackerSetTarget();
+                // Werewolf
+                werewolfSetTarget();
+                // Detective
+                detectiveSetTarget();
+                // Glitch
+                glitchSetTarget();
 
                 // -- MODIFIER--
                 // Bait
@@ -621,7 +703,9 @@ namespace TownOfUs.Patches {
         {
             // Medic Report
             bool isMedicReport = Medic.medic != null && Medic.medic == PlayerControl.LocalPlayer && __instance.PlayerId == Medic.medic.PlayerId && Medic.getInfoOnReport;
-            if (isMedicReport) {
+            // Detective Report
+            bool isDetectiveReport = Detective.detective != null && Detective.detective == PlayerControl.LocalPlayer && __instance.PlayerId == Detective.detective.PlayerId && Detective.getInfoOnReport;
+            if (isMedicReport || isDetectiveReport) {
                 DeadPlayer deadPlayer = deadPlayers?.Where(x => x.player?.PlayerId == target?.PlayerId)?.FirstOrDefault();
 
                 if (deadPlayer != null && deadPlayer.killerIfExisting != null) {
@@ -637,7 +721,19 @@ namespace TownOfUs.Patches {
                         } else {
                             msg = $"Body Report: The corpse is too old to gain information from! (Killed {Math.Round(timeSinceDeath / 1000)}s ago)";
                         }
-                    } 
+                    } else if (isDetectiveReport) {
+                        if (timeSinceDeath < Detective.reportRoleDuration * 1000) {
+                            msg = $"Body Report: The killer appears to be {RoleInfo.GetRolesString(deadPlayer.killerIfExisting, false, false, true)}! (Killed {Math.Round(timeSinceDeath / 1000)}s ago)";
+                        } else if (timeSinceDeath < Detective.reportFactionDuration * 1000) {
+                            var factionId = "";
+                            if (deadPlayer.killerIfExisting.Data.Role.IsImpostor) factionId = "Impostor";
+                            else if (deadPlayer.killerIfExisting.isAnyNeutral()) factionId = "Neutral";
+                            else factionId = "Crewmate";
+                            msg =  $"Body Report: The killer appears to be a {factionId}! (Killed {Math.Round(timeSinceDeath / 1000)}s ago)";
+                        } else {
+                            msg = $"Body Report: The corpse is too old to gain information from! (Killed {Math.Round(timeSinceDeath / 1000)}s ago)";
+                        }
+                    }
 
                     if (!string.IsNullOrWhiteSpace(msg))
                     {   
@@ -750,6 +846,9 @@ namespace TownOfUs.Patches {
             // Cleaner Button Sync
             if (Cleaner.cleaner != null && PlayerControl.LocalPlayer == Cleaner.cleaner && __instance == Cleaner.cleaner && HudManagerStartPatch.cleanerCleanButton != null)
                 HudManagerStartPatch.cleanerCleanButton.Timer = Cleaner.cleaner.killTimer;
+            
+            if (Mystic.mystic != null && (Mystic.mystic == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.isFlashedByGrenadier() || Helpers.shouldShowGhostInfo()) && target != Mystic.mystic)
+                Helpers.showFlash(Mystic.color, 1f, "Someone died");
 
             if (target != null) {
                 Transform playerInfoTransform = target.cosmetics.nameText.transform.parent.FindChild("Info");
@@ -789,6 +888,10 @@ namespace TownOfUs.Patches {
         public static void Prefix(PlayerControl source, bool canMove) {
             Color color = source.cosmetics.currentBodySprite.BodySprite.material.GetColor("_BodyColor");
             if (Morphling.morphling != null && source.Data.PlayerId == Morphling.morphling.PlayerId) {
+                var index = Palette.PlayerColors.IndexOf(color);
+                if (index != -1) colorId = index;
+            }
+            if (Glitch.glitch != null && source.Data.PlayerId == Glitch.glitch.PlayerId) {
                 var index = Palette.PlayerColors.IndexOf(color);
                 if (index != -1) colorId = index;
             }
@@ -873,7 +976,10 @@ namespace TownOfUs.Patches {
     
     [HarmonyPatch(typeof(GameData), nameof(GameData.HandleDisconnect), new[] {typeof(PlayerControl), typeof(DisconnectReasons) })]
     public static class GameDataHandleDisconnectPatch {
-        public static void Prefix(GameData __instance, PlayerControl player, DisconnectReasons reason) {            
+        public static void Prefix(GameData __instance, PlayerControl player, DisconnectReasons reason) {  
+            if (MeetingHud.Instance) {
+                MeetingHudPatch.swapperCheckAndReturnSwap(MeetingHud.Instance, player.PlayerId);
+            }          
             // TODO: Find checker if Game Started then return
             if (AdditionalTempData.playerRoles.Count == 0) return;
             

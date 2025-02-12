@@ -142,6 +142,7 @@ namespace TownOfUs
         public static CustomOption guardianAngelProtectCooldown;
         public static CustomOption guardianAngelProtectDuration;
         public static CustomOption guardianAngelNumberOfProtects;
+        public static CustomOption guardianAngelShowProtected;
         public static CustomOption survivorSafeguardCooldown;
         public static CustomOption survivorSafeguardDuration;
         public static CustomOption survivorNumberOfSafeguards;
@@ -229,6 +230,38 @@ namespace TownOfUs
         public static CustomOption doomsayerSpawnRate;
         public static CustomOption doomsayerCooldown;
         public static CustomOption doomsayerGuessesToWin;
+        
+        public static CustomOption mysticSpawnRate;
+        public static CustomOption mysticArrowDuration;
+
+        public static CustomOption trackerSpawnRate;
+        public static CustomOption trackerCooldown;
+        public static CustomOption trackerMaxTracksPerRound;
+        public static CustomOption trackerResetAfterMeeting;
+
+        public static CustomOption werewolfSpawnRate;
+        public static CustomOption werewolfRampageCooldown;
+        public static CustomOption werewolfRampageDuration;
+        public static CustomOption werewolfKillCooldown;
+        public static CustomOption werewolfCanVent;
+
+        public static CustomOption detectiveSpawnRate;
+        public static CustomOption detectiveInitialCooldown;
+        public static CustomOption detectiveCooldown;
+        public static CustomOption detectiveBloodTime;
+        public static CustomOption detectiveGetInfoOnReport;
+        public static CustomOption detectiveReportRoleDuration;
+        public static CustomOption detectiveReportFactionDuration;
+        public static CustomOption detectiveGetExamineInfo;
+
+        public static CustomOption glitchSpawnRate;
+        public static CustomOption glitchMimicCooldown;
+        public static CustomOption glitchMimicDuration;
+        public static CustomOption glitchHackCooldown;
+        public static CustomOption glitchHackDuration;
+        public static CustomOption glitchKillCooldown;
+        public static CustomOption glitchCanVent;
+        public static CustomOption glitchHasImpostorVision;
 
         // Guesser Gamemode
         public static CustomOption guesserGamemodeCrewNumber;
@@ -277,6 +310,15 @@ namespace TownOfUs
             dynamicMapEnableAirShip = CustomOption.Create(504, Types.General, "Airship", rates, dynamicMap, false);
             dynamicMapEnableFungle = CustomOption.Create(506, Types.General, "Fungle", rates, dynamicMap, false);
 
+            detectiveSpawnRate = CustomOption.Create(195, Types.Crewmate, cs(Detective.color, "Detective"), rates, null, true);
+            detectiveInitialCooldown = CustomOption.Create(196, Types.Crewmate, "Initial Examine Cooldown", 30f, 10f, 60f, 2.5f, detectiveSpawnRate);
+            detectiveCooldown = CustomOption.Create(197, Types.Crewmate, "Examine Cooldown", 10f, 1f, 20f, 0.5f, detectiveSpawnRate);
+            detectiveBloodTime = CustomOption.Create(198, Types.Crewmate, "How Long Players Stay Bloody For", 30f, 10f, 60f, 2.5f, detectiveSpawnRate);
+            detectiveGetInfoOnReport = CustomOption.Create(199, Types.Crewmate, "Show Detective Reports", false, detectiveSpawnRate);
+            detectiveReportRoleDuration = CustomOption.Create(200, Types.Crewmate, "Time Where Detective Will Have Role", 15f, 0f, 60f, 2.5f, detectiveGetInfoOnReport);
+            detectiveReportFactionDuration = CustomOption.Create(201, Types.Crewmate, "Time Where Detective Will Have Faction", 30f, 0f, 60f, 2.5f, detectiveGetInfoOnReport);
+            detectiveGetExamineInfo = CustomOption.Create(202, Types.Crewmate, "Show Examine Reports", false, detectiveSpawnRate);
+
             engineerSpawnRate = CustomOption.Create(15, Types.Crewmate, cs(Engineer.color, "Engineer"), rates, null, true);
             engineerDoorsCooldown = CustomOption.Create(16, Types.Crewmate, "Doors Open CD", 30f, 10f, 60f, 2.5f, engineerSpawnRate);
             engineerNumberOfFixes = CustomOption.Create(17, Types.Crewmate, "Number Of Sabotage Fixes", 1f, 1f, 3f, 1f, engineerSpawnRate);
@@ -295,6 +337,9 @@ namespace TownOfUs
             medicGetsInfo = CustomOption.Create(58, Types.Crewmate, "Gets Dead Body Info On Report", false, medicSpawnRate);
             medicReportNameDuration = CustomOption.Create(59, Types.Crewmate, "Time Where Medic Reports Will Have Name", 0f, 0f, 30f, 0.25f, medicGetsInfo);
             medicReportColorDuration = CustomOption.Create(60, Types.Crewmate, "Time Where Medic Reports Will Have Color Type", 0f, 0f, 60f, 0.25f, medicGetsInfo);
+
+            mysticSpawnRate = CustomOption.Create(180, Types.Crewmate, cs(Mystic.color, "Mystic"), rates, null, true);
+            mysticArrowDuration = CustomOption.Create(181, Types.Crewmate, "Arrow Duration", 0.5f, 0.125f, 1f, 0.125f, mysticSpawnRate);
 
             seerSpawnRate = CustomOption.Create(115, Types.Crewmate, cs(Seer.color, "Seer"), rates, null, true);
             seerCooldown = CustomOption.Create(116, Types.Crewmate, "Reveal Cooldown", 30f, 10f, 60f, 2.5f, seerSpawnRate);
@@ -319,6 +364,11 @@ namespace TownOfUs
             swapperSpawnRate = CustomOption.Create(45, Types.Crewmate, cs(Swapper.color, "Swapper"), rates, null, true);
             swapperCanCallEmergency = CustomOption.Create(46, Types.Crewmate, "Swapper Can Call Emergency Meeting", false, swapperSpawnRate);
             swapperCanOnlySwapOthers = CustomOption.Create(47, Types.Crewmate, "Swapper Can Only Swap Others", false, swapperSpawnRate);
+
+            trackerSpawnRate = CustomOption.Create(185, Types.Crewmate, cs(Tracker.color, "Tracker"), rates, null, true);
+            trackerCooldown = CustomOption.Create(186, Types.Crewmate, "Track Cooldown", 30f, 10f, 60f, 2.5f, trackerSpawnRate);
+            trackerMaxTracksPerRound = CustomOption.Create(187, Types.Crewmate, "Max Tracks", 3f, 1f, 5f, 1f, trackerSpawnRate);
+            trackerResetAfterMeeting = CustomOption.Create(189, Types.Crewmate, "Tracks Reset After Meeting", false, trackerSpawnRate);
 
             trapperSpawnRate = CustomOption.Create(150, Types.Crewmate, cs(Trapper.color, "Trapper"), rates, null, true);
             trapperMinAmountOfTimeInTrap = CustomOption.Create(151, Types.Crewmate, "Min Amount Of Time In Trap To Register", 1f, 0f, 15f, 0.5f, trapperSpawnRate);
@@ -359,8 +409,9 @@ namespace TownOfUs
             guardianAngelProtectCooldown = CustomOption.Create(91, Types.Neutral, "Protect Cooldown", 30f, 10f, 60f, 2.5f, guardianAngelSpawnRate);
             guardianAngelProtectDuration = CustomOption.Create(92, Types.Neutral, "Protect Duration", 10f, 1f, 20f, 0.5f, guardianAngelSpawnRate);
             guardianAngelNumberOfProtects = CustomOption.Create(93, Types.Neutral, "Number Of Protects", 5f, 1f, 15f, 1f, guardianAngelSpawnRate);
-            survivorSafeguardCooldown = CustomOption.Create(94, Types.Neutral, "Morphling Cooldown", 30f, 10f, 60f, 2.5f, guardianAngelSpawnRate);
-            survivorSafeguardDuration = CustomOption.Create(95, Types.Neutral, "Morph Duration", 10f, 1f, 20f, 0.5f, guardianAngelSpawnRate);
+            guardianAngelShowProtected = CustomOption.Create(97, Types.Neutral, "Show Protected Player", new string[] {"Everyone", "Protected", "GA", "Protected + GA", "Nobody"}, guardianAngelSpawnRate);
+            survivorSafeguardCooldown = CustomOption.Create(94, Types.Neutral, "Safeguard Cooldown", 30f, 10f, 60f, 2.5f, guardianAngelSpawnRate);
+            survivorSafeguardDuration = CustomOption.Create(95, Types.Neutral, "Safeguard Duration", 10f, 1f, 20f, 0.5f, guardianAngelSpawnRate);
             survivorNumberOfSafeguards = CustomOption.Create(96, Types.Neutral, "Number Of Safeguards", 5f, 1f, 15f, 1f, guardianAngelSpawnRate);
 
             jesterSpawnRate = CustomOption.Create(35, Types.Neutral, cs(Jester.color, "Jester"), rates, null, true);
@@ -394,11 +445,26 @@ namespace TownOfUs
             draculaCanCreateVampireFromImpostor = CustomOption.Create(66, Types.NeutralKiller, "Dracula Can Create Vampire From Impostor", false, draculaSpawnRate);
             vampireCanUseVents = CustomOption.Create(65, Types.NeutralKiller, "Vampire Can Vent", false, draculaSpawnRate);
 
+            glitchSpawnRate = CustomOption.Create(205, Types.NeutralKiller, cs(Glitch.color, "Glitch"), rates, null, true);
+            glitchMimicCooldown = CustomOption.Create(206, Types.NeutralKiller, "Mimic Cooldown", 30f, 10f, 60f, 2.5f, glitchSpawnRate);
+            glitchMimicDuration = CustomOption.Create(207, Types.NeutralKiller, "Mimic Duration", 10f, 1f, 20f, 0.5f, glitchSpawnRate);
+            glitchHackCooldown = CustomOption.Create(208, Types.NeutralKiller, "Hack Cooldown", 30f, 10f, 60f, 2.5f, glitchSpawnRate);
+            glitchHackDuration = CustomOption.Create(209, Types.NeutralKiller, "Hack Duration", 10f, 1f, 20f, 0.5f, glitchSpawnRate);
+            glitchKillCooldown = CustomOption.Create(210, Types.NeutralKiller, "Kill Cooldown", 30f, 10f, 60f, 2.5f, glitchSpawnRate);
+            glitchCanVent = CustomOption.Create(211, Types.NeutralKiller, "Glitch Can Use Vents", false, glitchSpawnRate);
+            glitchHasImpostorVision = CustomOption.Create(212, Types.NeutralKiller, "Glitch Has Impostor Vision", false, glitchSpawnRate);
+
             juggernautSpawnRate = CustomOption.Create(120, Types.NeutralKiller, cs(Juggernaut.color, "Juggernaut"), rates, null, true);
             juggernautCooldown = CustomOption.Create(121, Types.NeutralKiller, "Initial Kill Cooldown", 30f, 10f, 60f, 2.5f, juggernautSpawnRate);
             juggernautCooldownReduce = CustomOption.Create(122, Types.NeutralKiller, "Cooldown Reduce On Kill", 10f, 1f, 20f, 0.5f, juggernautSpawnRate);
             juggernautHasImpostorVision = CustomOption.Create(123, Types.NeutralKiller, "Juggernaut Has Impostor Vision", false, juggernautSpawnRate);
             juggernautCanVent = CustomOption.Create(124, Types.NeutralKiller, "Juggernaut Can Use Vents", false, juggernautSpawnRate);
+
+            werewolfSpawnRate = CustomOption.Create(190, Types.NeutralKiller, cs(Werewolf.color, "Werewolf"), rates, null, true);
+            werewolfRampageCooldown = CustomOption.Create(191, Types.NeutralKiller, "Rampage Cooldown", 30f, 10f, 60f, 2.5f, werewolfSpawnRate);
+            werewolfRampageDuration = CustomOption.Create(192, Types.NeutralKiller, "Rampage Duration", 10f, 1f, 20f, 0.5f, werewolfSpawnRate);
+            werewolfKillCooldown = CustomOption.Create(193, Types.NeutralKiller, "Kill Cooldown", 3f, 1f, 20f, 0.5f, werewolfSpawnRate);
+            werewolfCanVent = CustomOption.Create(194, Types.NeutralKiller, "Can Vent While Rampaged", false, werewolfSpawnRate);
 
             blackmailerSpawnRate = CustomOption.Create(140, Types.Impostor, cs(Blackmailer.color, "Blackmailer"), rates, null, true);
             blackmailerCooldown = CustomOption.Create(141, Types.Impostor, "Blackmail Cooldown", 30f, 2.5f, 60f, 2.5f, blackmailerSpawnRate);

@@ -703,6 +703,29 @@ namespace TownOfUs.Patches {
                         FastDestroyableSingleton<UnityTelemetry>.Instance.SendWho();
                     }
                 }
+
+                // Add examined Info into Detective chat
+                if (Detective.detective != null && !Detective.detective.Data.IsDead && Detective.detective == PlayerControl.LocalPlayer && Detective.examined != null && !Detective.examined.Data.IsDead) {
+                    string msg = "Examine Report Info:\n";
+                    foreach (RoleInfo roleInfo in RoleInfo.allRoleInfos.Where(x => x.observeResults == RoleInfo.getRoleInfoForPlayer(Detective.examined, false).FirstOrDefault().observeResults).OrderBy(x => Guid.NewGuid())) {
+                        msg += $"{roleInfo.name}, ";
+                    }
+
+                    if (AmongUsClient.Instance.AmClient && FastDestroyableSingleton<HudManager>.Instance)
+                    {
+                        FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(PlayerControl.LocalPlayer, msg, false);
+                        // Ghost Info
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareGhostInfo, Hazel.SendOption.Reliable, -1);
+                        writer.Write(PlayerControl.LocalPlayer.PlayerId);
+                        writer.Write((byte)RPCProcedure.GhostInfoTypes.ChatInfo);
+                        writer.Write(msg);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    }
+                    if (msg.IndexOf("who", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        FastDestroyableSingleton<UnityTelemetry>.Instance.SendWho();
+                    }
+                }
             }
         }
 

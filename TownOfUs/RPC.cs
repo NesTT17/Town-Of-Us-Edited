@@ -13,6 +13,7 @@ using TownOfUs.CustomGameModes;
 using UnityEngine;
 using AmongUs.Data;
 using System.Collections.Generic;
+using Reactor.Utilities;
 
 namespace TownOfUs
 {
@@ -55,6 +56,11 @@ namespace TownOfUs
         Phantom,
         Grenadier,
         Doomsayer,
+        Mystic,
+        Tracker,
+        Werewolf,
+        Detective,
+        Glitch,
         // Modifier ---
         Lover,
         Blind,
@@ -138,6 +144,13 @@ namespace TownOfUs
         PhantomInvis,
         GrenadierFlash,
         DoomsayerObserve,
+        TrackerUseTrack,
+        TrackerResetTrack,
+        WerewolfRampage,
+        DetectiveExamine,
+        DetectiveResetExamine,
+        GlitchMimic,
+        GlitchHack,
         
         // Gamemode
         SetGuesserGm,
@@ -326,6 +339,26 @@ namespace TownOfUs
                         Doomsayer.doomsayer = player;
                         PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.doomsayer);
                         break;
+                    case RoleId.Mystic:
+                        Mystic.mystic = player;
+                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.mystic);
+                        break;
+                    case RoleId.Tracker:
+                        Tracker.tracker = player;
+                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.tracker);
+                        break;
+                    case RoleId.Werewolf:
+                        Werewolf.werewolf = player;
+                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.werewolf);
+                        break;
+                    case RoleId.Detective:
+                        Detective.detective = player;
+                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.detective);
+                        break;
+                    case RoleId.Glitch:
+                        Glitch.glitch = player;
+                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.glitch);
+                        break;
                     }
                     if (AmongUsClient.Instance.AmHost && Helpers.roleCanUseVents(player) && !player.Data.Role.IsImpostor) {
                         player.RpcSetRole(RoleTypes.Engineer);
@@ -503,6 +536,9 @@ namespace TownOfUs
             if (player == Veteran.veteran) Veteran.clearAndReload();
             if (player == Seer.seer) Seer.clearAndReload();
             if (player == Trapper.trapper) Trapper.clearAndReload();
+            if (player == Mystic.mystic) Mystic.clearAndReload();
+            if (player == Tracker.tracker) Tracker.clearAndReload();
+            if (player == Detective.detective) Detective.clearAndReload();
 
             // Neutral Roles
             if (player == Jester.jester) Jester.clearAndReload();
@@ -527,6 +563,8 @@ namespace TownOfUs
             if (player == Vampire.vampire) Vampire.clearAndReload();
             if (player == FallenAngel.fallenAngel) FallenAngel.clearAndReload();
             if (player == Juggernaut.juggernaut) Juggernaut.clearAndReload();
+            if (player == Werewolf.werewolf) Werewolf.clearAndReload();
+            if (player == Glitch.glitch) Glitch.clearAndReload();
 
             // Impostor Roles
             if (player == Morphling.morphling) Morphling.clearAndReload();
@@ -587,13 +625,13 @@ namespace TownOfUs
         public static void engineerUsedRepair() {
             Engineer.remainingFixes--;
             if (Helpers.shouldShowGhostInfo()) {
-                Helpers.showFlash(Engineer.color, 0.5f, "Engineer Fix"); ;
+                Helpers.showFlash(Engineer.color, 0.5f, "Engineer Fix");
             }
         }
 
         public static void engineerUsedDoors() {
             if (Helpers.shouldShowGhostInfo()) {
-                Helpers.showFlash(Engineer.color, 0.5f, "Engineer Open Doors"); ;
+                Helpers.showFlash(Engineer.color, 0.5f, "Engineer Open Doors");
             }
             foreach (var door in ShipStatus.Instance.AllDoors) {
                 if (!(door.Room is SystemTypes.Lounge or SystemTypes.Decontamination)) {
@@ -761,9 +799,9 @@ namespace TownOfUs
             if (Medic.shielded == null || Medic.medic == null) return;
 
             bool getsNotification = Medic.getsNotification == 0 // Everyone
-                || Medic.getsNotification == 1 & PlayerControl.LocalPlayer == Medic.shielded // Shielded
-                || Medic.getsNotification == 2 & PlayerControl.LocalPlayer == Medic.medic // Medic
-                || Medic.getsNotification == 3 && (PlayerControl.LocalPlayer ==  Medic.shielded || PlayerControl.LocalPlayer == Medic.medic);
+                || Medic.getsNotification == 1 & PlayerControl.LocalPlayer == Medic.shielded && !PlayerControl.LocalPlayer.isFlashedByGrenadier() // Shielded
+                || Medic.getsNotification == 2 & PlayerControl.LocalPlayer == Medic.medic && !PlayerControl.LocalPlayer.isFlashedByGrenadier() // Medic
+                || Medic.getsNotification == 3 && (PlayerControl.LocalPlayer ==  Medic.shielded || PlayerControl.LocalPlayer == Medic.medic) && !PlayerControl.LocalPlayer.isFlashedByGrenadier();
             if (getsNotification || Helpers.shouldShowGhostInfo()) Helpers.showFlash(Medic.color, 1f, "Failed Murder Attempt on Shielded Player");
         }
 
@@ -982,7 +1020,7 @@ namespace TownOfUs
 
         public static void investigatorWatchFlash(byte targetId) {
             PlayerControl target = Helpers.playerById(targetId);
-            if (PlayerControl.LocalPlayer == Investigator.investigator || Helpers.shouldShowGhostInfo()) {
+            if (PlayerControl.LocalPlayer == Investigator.investigator && !PlayerControl.LocalPlayer.isFlashedByGrenadier() || Helpers.shouldShowGhostInfo()) {
                 if (Investigator.seeFlashColor) {
                     Helpers.showFlash(Palette.PlayerColors[target.Data.DefaultOutfit.ColorId], 1f, "Watching player used ability");
                 }
@@ -1133,11 +1171,56 @@ namespace TownOfUs
                         Helpers.grenadierFlash(Grenadier.flash, Grenadier.duration, 0.5f);
                 }
             }
+            Grenadier.flashTimer = Grenadier.duration;
         }
 
         public static void doomsayerObserve(byte targetId) {
             PlayerControl target = Helpers.playerById(targetId);
             Doomsayer.observedPlayers.Add(target);
+        }
+
+        public static void trackerUseTrack(byte playerId) {
+            PlayerControl target = Helpers.playerById(playerId);
+            Tracker.trackedPlayers.Add(target);
+            Tracker.tracksInRound++;
+        }
+
+        public static void trackerResetTrack() {
+            Tracker.resetTracked();
+        }
+
+        public static void werewolfRampage() {
+            Werewolf.isRampageActive = true;
+            FastDestroyableSingleton<HudManager>.Instance.StartCoroutine(Effects.Lerp(Werewolf.duration, new Action<float>((p) => {
+                if (p == 1f) Werewolf.isRampageActive = false;
+            })));
+        }
+
+        public static void detectiveExamine(byte playerId) {
+            PlayerControl target = Helpers.playerById(playerId);
+            Detective.examined = target;
+        }
+
+        public static void detectiveResetExamine() {
+            Detective.examined = null;
+        }
+
+        public static void glitchMimic(byte playerId) {  
+            PlayerControl target = Helpers.playerById(playerId);
+            if (Glitch.glitch == null || target == null) return;
+
+            Glitch.morphTimer = Glitch.morphDuration;
+            Glitch.morphPlayer = target;
+            if (Camouflager.camouflageTimer <= 0f)
+                Glitch.glitch.setLook(target.Data.PlayerName, target.Data.DefaultOutfit.ColorId, target.Data.DefaultOutfit.HatId, target.Data.DefaultOutfit.VisorId, target.Data.DefaultOutfit.SkinId, target.Data.DefaultOutfit.PetId);
+        }
+
+        public static void glitchHack(byte playerId) {
+            PlayerControl target = Helpers.playerById(playerId);
+            if (Glitch.glitch == null || target == null) return;
+
+            Glitch.hackedPlayer = target;
+            Coroutines.Start(Helpers.Hack(target));
         }
     }
 
@@ -1330,6 +1413,27 @@ namespace TownOfUs
                     break;
                 case (byte)CustomRPC.DoomsayerObserve:
                     RPCProcedure.doomsayerObserve(reader.ReadByte());
+                    break;
+                case (byte)CustomRPC.TrackerUseTrack:
+                    RPCProcedure.trackerUseTrack(reader.ReadByte());
+                    break;
+                case (byte)CustomRPC.TrackerResetTrack:
+                    RPCProcedure.trackerResetTrack();
+                    break;
+                case (byte)CustomRPC.WerewolfRampage:
+                    RPCProcedure.werewolfRampage();
+                    break;
+                case (byte)CustomRPC.DetectiveExamine:
+                    RPCProcedure.detectiveExamine(reader.ReadByte());
+                    break;
+                case (byte)CustomRPC.DetectiveResetExamine:
+                    RPCProcedure.detectiveResetExamine();
+                    break;
+                case (byte)CustomRPC.GlitchMimic:
+                    RPCProcedure.glitchMimic(reader.ReadByte());
+                    break;
+                case (byte)CustomRPC.GlitchHack:
+                    RPCProcedure.glitchHack(reader.ReadByte());
                     break;
 
                 // Game mode

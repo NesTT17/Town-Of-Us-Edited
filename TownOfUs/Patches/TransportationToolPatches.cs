@@ -28,6 +28,10 @@ namespace TownOfUs.Patches {
                             hand.SetPlayerColor(Morphling.morphTarget.CurrentOutfit, PlayerMaterial.MaskType.None, 1f);
                             // Also set hat color, cause the line destroys it...
                             player.RawSetHat(Morphling.morphTarget.Data.DefaultOutfit.HatId, Morphling.morphTarget.Data.DefaultOutfit.ColorId);
+                        } else if (player == Glitch.glitch && Glitch.morphTimer > 0) {
+                            hand.SetPlayerColor(Glitch.morphPlayer.CurrentOutfit, PlayerMaterial.MaskType.None, 1f);
+                            // Also set hat color, cause the line destroys it...
+                            player.RawSetHat(Glitch.morphPlayer.Data.DefaultOutfit.HatId, Glitch.morphPlayer.Data.DefaultOutfit.ColorId);
                         } else {
                             hand.SetPlayerColor(player.CurrentOutfit, PlayerMaterial.MaskType.None, 1f);
                         }
@@ -46,6 +50,9 @@ namespace TownOfUs.Patches {
             __instance.StartCoroutine(Effects.Lerp(5.0f, new System.Action<float>((p) => {
                 if (Camouflager.camouflageTimer <= 0 && !Helpers.MushroomSabotageActive() && !Helpers.isActiveCamoComms() && player == Morphling.morphling && Morphling.morphTimer > 0.1f) {
                     player.RawSetHat(Morphling.morphTarget.Data.DefaultOutfit.HatId, Morphling.morphTarget.Data.DefaultOutfit.ColorId);
+                }
+                if (Camouflager.camouflageTimer <= 0 && !Helpers.MushroomSabotageActive() && !Helpers.isActiveCamoComms() && player == Glitch.glitch && Glitch.morphTimer > 0.1f) {
+                    player.RawSetHat(Glitch.morphPlayer.Data.DefaultOutfit.HatId, Glitch.morphPlayer.Data.DefaultOutfit.ColorId);
                 }
             })));
         }

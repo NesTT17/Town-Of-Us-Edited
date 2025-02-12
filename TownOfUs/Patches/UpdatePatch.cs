@@ -17,6 +17,8 @@ namespace TownOfUs.Patches {
             var amImpostor = myData.Role.IsImpostor;
             var morphTimerNotUp = Morphling.morphTimer > 0f;
             var morphTargetNotNull = Morphling.morphTarget != null;
+            var mimicTimerNotUp = Glitch.morphTimer > 0f;
+            var mimicTargetNotNull = Glitch.morphPlayer != null;
 
             var dict = TagColorDict;
             dict.Clear();
@@ -30,6 +32,7 @@ namespace TownOfUs.Patches {
                 {
                     var playerName = text;
                     if (morphTimerNotUp && morphTargetNotNull && Morphling.morphling == player) playerName = Morphling.morphTarget.Data.PlayerName;
+                    if (mimicTimerNotUp && mimicTargetNotNull && Glitch.glitch == player) playerName = Glitch.morphPlayer.Data.PlayerName;
                     var nameText = player.cosmetics.nameText;
                 
                     nameText.text = Helpers.hidePlayerName(localPlayer, player) ? "" : playerName;
@@ -214,6 +217,7 @@ namespace TownOfUs.Patches {
             var dt = Time.deltaTime;
             Swooper.invisibleTimer -= dt;
             Phantom.ghostTimer -= dt;
+            Grenadier.flashTimer -= dt;
         }
 
         static void updateImpostorKillButton(HudManager __instance) {
@@ -241,7 +245,6 @@ namespace TownOfUs.Patches {
             if (GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek) return;
             if (PlayerControl.LocalPlayer.Data.IsDead || MeetingHud.Instance) __instance.ImpostorVentButton.Hide();
             else if (PlayerControl.LocalPlayer.roleCanUseVents() && !__instance.ImpostorVentButton.isActiveAndEnabled) __instance.ImpostorVentButton.Show();
-            if (PlayerControl.LocalPlayer.roleCanUseVents() && __instance.ImpostorVentButton.currentTarget != null && ConsoleJoystick.player.GetButtonDown(RewiredConsts.Action.UseVent)) __instance.ImpostorVentButton.DoClick();
         }
 
         static void updateUseButton(HudManager __instance) {

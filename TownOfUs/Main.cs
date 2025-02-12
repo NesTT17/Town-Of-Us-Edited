@@ -32,7 +32,7 @@ namespace TownOfUs
     public class TownOfUsPlugin : BasePlugin
     {
         public const string Id = "me.nestt.townofus";
-        public const string VersionString = "1.0.1";
+        public const string VersionString = "1.0.2";
 
         public static Version Version = Version.Parse(VersionString);
         internal static BepInEx.Logging.ManualLogSource Logger;
@@ -81,6 +81,13 @@ namespace TownOfUs
 
         public override void Load() {
             Logger = Log;
+
+            if (IL2CPPChainloader.Instance.Plugins.Count > 2) {
+                Logger.LogFatal($"Incompatible mods detected, unload Town Of Us");
+                Harmony.UnpatchID("me.nestt.townofus");
+                return;
+            }
+
             Instance = this;
             bundledAssets = new();
 
@@ -100,6 +107,8 @@ namespace TownOfUs
             CustomOptionHolder.Load();
             MainMenuPatch.addSceneChangeCallbacks();
             AddToKillDistanceSetting.addKillDistance();
+
+            AddComponent<ModUpdater>();
 
             Logger.LogInfo("Loading TOU completed!");
         }

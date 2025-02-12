@@ -86,6 +86,20 @@ namespace TownOfUs.Patches {
                 Trapper.trappedPlayers = new System.Collections.Generic.List<PlayerControl>();
                 if (Trapper.removeTraps) Trapper.traps.ClearTraps();
             }
+
+            // Tracker Remove tracks
+            if (Tracker.tracker != null && Tracker.resetAfterMeeting) {
+                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.TrackerResetTrack, SendOption.Reliable, -1);
+                AmongUsClient.Instance.FinishRpcImmediately(writer);
+                RPCProcedure.trackerResetTrack();
+            }
+
+            // Detective reset examined
+            if (Detective.detective != null) {
+                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.DetectiveResetExamine, SendOption.Reliable, -1);
+                AmongUsClient.Instance.FinishRpcImmediately(writer);
+                RPCProcedure.detectiveResetExamine();
+            }
         }
     }
 
