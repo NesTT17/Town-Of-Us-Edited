@@ -2,13 +2,25 @@
 
 ![LOGO](./Images/TOU-logo.png)
 
-[![Release Version](https://img.shields.io/github/v/release/NesTT17/Town-Of-Us-Edited?style=plastic)](https://github.com/NesTT17/Town-Of-Us-Edited/releases)
-[![Release Date](https://img.shields.io/github/release-date/NesTT17/Town-Of-Us-Edited?style=plastic)](https://github.com/NesTT17/Town-Of-Us-Edited/releases)
-[![Total Downloads](https://img.shields.io/github/downloads/NesTT17/Town-Of-Us-Edited/total?style=plastic)](https://github.com/NesTT17/Town-Of-Us-Edited/releases)
-[![Download@Latest](https://img.shields.io/github/downloads/nestt17/town-of-us-edited/latest/total?style=plastic)](https://github.com/NesTT17/Town-Of-Us-Edited/releases/latest)
-[![Open Issues](https://img.shields.io/github/issues-raw/NesTT17/Town-Of-Us-Edited?style=plastic)](https://github.com/NesTT17/Town-Of-Us-Edited/issues)
-[![Closed Issues](https://img.shields.io/github/issues-closed-raw/NesTT17/Town-Of-Us-Edited?style=plastic)](https://github.com/NesTT17/Town-Of-Us-Edited/issues?q=is%3Aissue+is%3Aclosed)
-[![Followers](https://img.shields.io/github/followers/nestt17?style=social)](https://github.com/NesTT17/)
+<p align="center">
+  <img src="https://badgen.net/static/AmongUs/2024.11.26/red"> 
+</p>
+
+<p align="center">
+  <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases"><img src="https://img.shields.io/github/v/release/NesTT17/Town-Of-Us-Edited?style=plastic"></a>
+  <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases"><img src="https://img.shields.io/github/release-date/NesTT17/Town-Of-Us-Edited?style=plastic"></a>
+  <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases"><img src="https://img.shields.io/github/downloads/NesTT17/Town-Of-Us-Edited/total?style=plastic"></a>
+  <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases/latest"><img src="https://img.shields.io/github/downloads/nestt17/town-of-us-edited/latest/total?style=plastic"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/NesTT17/Town-Of-Us-Edited/issues"><img src="https://img.shields.io/github/issues-raw/NesTT17/Town-Of-Us-Edited?style=plastic"></a>
+  <a href="https://github.com/NesTT17/Town-Of-Us-Edited/issues?q=is%3Aissue+is%3Aclosed"><img src="https://img.shields.io/github/issues-closed-raw/NesTT17/Town-Of-Us-Edited?style=plastic"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/NesTT17"><img src="https://img.shields.io/github/followers/nestt17?style=social"></a>
+</p>
 
 | **Crewmate Roles**            | **Neutral Roles**                 | **Neutral Killing Roles**                | **Impostor Roles**                | **Modifiers**                 |
 |:-----------------------------:|:---------------------------------:|:----------------------------------------:|:---------------------------------:|:-----------------------------:|
