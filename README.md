@@ -45,5 +45,6 @@
 # Releases
 | Among Us - Version| Mod Version | Link |
 |----------|-------------|-----------------|
+| v2024.11.26 | v1.1.0 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.1.0) |
 | v2024.11.26 | v1.0.2 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.0.2) |
 | v2024.11.26 | v1.0.1 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.0.1) |
