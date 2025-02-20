@@ -79,6 +79,30 @@ namespace TownOfUs.Patches {
             var localPlayer = PlayerControl.LocalPlayer;
             var localRole = RoleInfo.getRoleInfoForPlayer(localPlayer, false).FirstOrDefault();
             setPlayerNameColor(localPlayer, localRole.color);
+
+            if (Dracula.dracula != null && Dracula.dracula == localPlayer) {
+                setPlayerNameColor(Dracula.dracula, Dracula.color);
+                if (Vampire.vampire != null) {
+                    setPlayerNameColor(Vampire.vampire, Vampire.color);
+                }
+                if (Dracula.fakeVampire != null) {
+                    setPlayerNameColor(Dracula.fakeVampire, Vampire.color);
+                }
+            }
+
+            if (Vampire.vampire != null && Vampire.vampire == localPlayer) {
+                setPlayerNameColor(Vampire.vampire, Vampire.color);
+                if (Dracula.dracula != null) {
+                    setPlayerNameColor(Dracula.dracula, Dracula.color);
+                }
+            }
+
+            if (Vampire.vampire != null && Vampire.wasTeamRed && localPlayer.Data.Role.IsImpostor) {
+                setPlayerNameColor(Vampire.vampire, Palette.ImpostorRed);
+            }
+            if (Dracula.dracula != null && Dracula.wasTeamRed && localPlayer.Data.Role.IsImpostor) {
+                setPlayerNameColor(Dracula.dracula, Palette.ImpostorRed);
+            }
         }
 
         static void setNameTags() {

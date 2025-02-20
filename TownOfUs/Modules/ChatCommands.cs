@@ -2,6 +2,7 @@ using System;
 using HarmonyLib;
 using System.Linq;
 using Hazel;
+using UnityEngine;
 
 namespace TownOfUs.Modules {
     [HarmonyPatch]
@@ -28,7 +29,7 @@ namespace TownOfUs.Modules {
         public static class SetBubbleName { 
             public static void Postfix(ChatBubble __instance, [HarmonyArgument(0)] string playerName) {
                 PlayerControl sourcePlayer = PlayerControl.AllPlayerControls.ToArray().ToList().FirstOrDefault(x => x.Data != null && x.Data.PlayerName.Equals(playerName));
-                if (sourcePlayer != null && PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.Data?.Role?.IsImpostor == true && __instance != null) __instance.NameText.color = Palette.ImpostorRed;
+                if (sourcePlayer != null && PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.Data?.Role?.IsImpostor == true && (Vampire.vampire != null && Vampire.wasTeamRed && sourcePlayer.PlayerId == Vampire.vampire.PlayerId || Dracula.dracula != null && Dracula.wasTeamRed && sourcePlayer.PlayerId == Dracula.dracula.PlayerId) && __instance != null) __instance.NameText.color = Palette.ImpostorRed;
             }
         }
 
@@ -39,6 +40,37 @@ namespace TownOfUs.Modules {
                     return true;
                 PlayerControl localPlayer = PlayerControl.LocalPlayer;
                 return localPlayer == null || (MeetingHud.Instance != null || LobbyBehaviour.Instance != null || (localPlayer.Data.IsDead || localPlayer.isLover() && Lovers.enableChat) || (int)sourcePlayer.PlayerId == (int)PlayerControl.LocalPlayer.PlayerId);
+            }
+        }
+
+        [HarmonyPatch(typeof(ChatController), nameof(ChatController.Update))]
+        public static class ChatControllerUpdatePatch {
+            public static void Postfix(ChatController __instance) {
+                if (!__instance.freeChatField.textArea.hasFocus) return;
+                __instance.freeChatField.textArea.AllowPaste = true;
+                __instance.freeChatField.textArea.AllowSymbols = true;
+                __instance.freeChatField.textArea.AllowEmail = true;
+                __instance.freeChatField.textArea.allowAllCharacters = true;
+            }
+        }
+
+        [HarmonyPatch(typeof(TextBoxTMP), nameof(TextBoxTMP.Start))]
+        public static class TextBoxTMPStartPatch {
+            public static void Postfix(TextBoxTMP __instance) {
+                __instance.allowAllCharacters = true;
+                __instance.AllowEmail = true; 
+                __instance.AllowPaste = true;
+                __instance.AllowSymbols = true;
+            }
+        }
+
+        [HarmonyPatch(typeof(TextBoxTMP), nameof(TextBoxTMP.Update))]
+        public static class TextBoxTMPUpdatePatch {
+            public static void Postfix(TextBoxTMP __instance) {
+                if (!__instance.hasFocus) return;
+                if((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) && Input.GetKeyDown(KeyCode.C)) {
+                    ClipboardHelper.PutClipboardString(__instance.text);
+                }
             }
         }
     }

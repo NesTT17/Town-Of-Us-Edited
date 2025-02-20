@@ -63,6 +63,14 @@ namespace TownOfUs.Patches {
 
             static bool Prefix(MeetingHud __instance) {
                 if (__instance.playerStates.All((PlayerVoteArea ps) => ps.AmDead || ps.DidVote)) {
+                    if (target == null && TOUMapOptions.blockSkippingInEmergencyMeetings == 1) {
+                        foreach (PlayerVoteArea playerVoteArea in __instance.playerStates)
+                            if (playerVoteArea.VotedFor == byte.MaxValue - 1) playerVoteArea.VotedFor = playerVoteArea.TargetPlayerId; // TargetPlayerId
+                    } else if (TOUMapOptions.blockSkippingInEmergencyMeetings == 2) {
+                        foreach (PlayerVoteArea playerVoteArea in __instance.playerStates)
+                            if (playerVoteArea.VotedFor == byte.MaxValue - 1) playerVoteArea.VotedFor = playerVoteArea.TargetPlayerId; // TargetPlayerId
+                    }
+
 			        Dictionary<byte, int> self = CalculateVotes(__instance);
                     bool tie;
 			        KeyValuePair<byte, int> max = self.MaxPair(out tie);
@@ -733,6 +741,16 @@ namespace TownOfUs.Patches {
         class MeetingHudUpdatePatch {
             public static Sprite Overlay => Blackmailer.getBlackmailOverlaySprite();
             static void Postfix(MeetingHud __instance) {
+                if (target == null && TOUMapOptions.blockSkippingInEmergencyMeetings == 1) {
+                    __instance.SkipVoteButton.gameObject.SetActive(false);
+                } else if (TOUMapOptions.blockSkippingInEmergencyMeetings == 2) {
+                    __instance.SkipVoteButton.gameObject.SetActive(false);
+                }
+
+                // Remove first kill shield
+                if (__instance.state >= MeetingHud.VoteStates.Discussion)
+                    TOUMapOptions.firstKillPlayer = null;
+
                 // Show Blackmailed overlay
                 if (Blackmailer.blackmailed != null) {
                     var playerState = __instance.playerStates.FirstOrDefault(x => x.TargetPlayerId == Blackmailer.blackmailed.PlayerId);

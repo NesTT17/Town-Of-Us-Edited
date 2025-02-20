@@ -60,6 +60,8 @@ namespace TownOfUs
         public static CustomButton glitchKillButton;
         public static CustomButton glitchMimicButton;
         public static CustomButton glichHackButton;
+        public static CustomButton venererButton;
+        public static CustomButton disperserDisperseButton;
         
         public static void setCustomButtonCooldowns() {
             if (!initialized) {
@@ -122,6 +124,9 @@ namespace TownOfUs
             glitchMimicButton.EffectDuration = Glitch.morphDuration;
             glichHackButton.MaxTimer = Glitch.hackCooldown;
             glichHackButton.EffectDuration = Glitch.hackDuration;
+            venererButton.MaxTimer = Venerer.cooldown;
+            venererButton.EffectDuration = Venerer.duration;
+            disperserDisperseButton.MaxTimer = 0f;
             // Already set the timer to the max, as the button is enabled during the game and not available at the start
             zoomOutButton.MaxTimer = 0f;
         }
@@ -313,6 +318,9 @@ namespace TownOfUs
                             originalTargetId = Sheriff.currentTarget.PlayerId;
                         }
 
+                        // Armored sheriff shot doesnt kill if backfired
+                        if (targetId == Sheriff.sheriff.PlayerId && Helpers.checkArmored(Sheriff.sheriff, true, true))
+                            return;
                         // Reset sheriff deathreason
                         if (targetId == Sheriff.sheriff.PlayerId) {
                             MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareSheriffSelfShot, Hazel.SendOption.Reliable, -1);
@@ -1234,6 +1242,46 @@ namespace TownOfUs
                 },
                 Glitch.getHackButtonSprite(), new Vector3(0f, 0f, 0f), __instance, KeyCode.G,
                 true, Glitch.hackDuration, () => { glichHackButton.Timer = glichHackButton.MaxTimer; }, true
+            );
+
+            // Venerer Ability
+            venererButton = new CustomButton(
+                () => {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.VenererCamo, SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.venererCamo();
+
+                    Helpers.checkWatchFlash(Venerer.venerer);
+                },
+                () => { return Venerer.venerer != null && Venerer.venerer == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => {
+                    if (Venerer.numberOfKills == 1) venererButton.Sprite = Venerer.getcamoButton();
+                    if (Venerer.numberOfKills == 2) venererButton.Sprite = Venerer.getspeedButton();
+                    if (Venerer.numberOfKills >= 3) venererButton.Sprite = Venerer.getfreezeButton();
+                    return Venerer.numberOfKills > 0 && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                },
+                () => {
+                    venererButton.Timer = venererButton.MaxTimer;
+                    venererButton.isEffectActive = false;
+                    venererButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
+                },
+                Venerer.getnoAbilitiesButton(), CustomButton.ButtonPositions.upperRowLeft, __instance, KeyCode.F,
+                true, Venerer.duration, () => { venererButton.Timer = venererButton.MaxTimer; }
+            );
+
+            // Disperser disperse
+            disperserDisperseButton = new CustomButton(
+                () => {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.Disperse, SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.disperse();
+
+                    Helpers.checkWatchFlash(Disperser.disperser);
+                },
+                () => { return Disperser.disperser != null && Disperser.disperser == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return !Disperser.isButtonUsed && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => {},
+                Disperser.getButtonSprite(), new Vector3(0, 1f, 0), __instance, null, true
             );
 
             // Zoom Button

@@ -125,6 +125,8 @@ namespace TownOfUs.Patches {
             impSettings.Add((byte)RoleId.Cleaner, CustomOptionHolder.cleanerSpawnRate.getSelection());
             impSettings.Add((byte)RoleId.Phantom, CustomOptionHolder.phantomSpawnRate.getSelection());
             impSettings.Add((byte)RoleId.Grenadier, CustomOptionHolder.grenadierSpawnRate.getSelection());
+            impSettings.Add((byte)RoleId.Venerer, CustomOptionHolder.venererSpawnRate.getSelection());
+            impSettings.Add((byte)RoleId.BountyHunter, CustomOptionHolder.bountyHunterSpawnRate.getSelection());
             
             neutralSettings.Add((byte)RoleId.Jester, CustomOptionHolder.jesterSpawnRate.getSelection());
             neutralSettings.Add((byte)RoleId.Scavenger, CustomOptionHolder.scavengerSpawnRate.getSelection());
@@ -377,7 +379,7 @@ namespace TownOfUs.Patches {
             if (Executioner.executioner != null) {
                 var possibleTargets = new List<PlayerControl>();
                 foreach (PlayerControl p in PlayerControl.AllPlayerControls)
-                    if (!p.Data.IsDead && !p.Data.Disconnected && p != Lovers.lover1 && p != Lovers.lover2 && !p.Data.Role.IsImpostor && !p.isAnyNeutral() && p != Swapper.swapper)
+                    if (!p.Data.IsDead && !p.Data.Disconnected && p != Lovers.lover1 && p != Lovers.lover2 && !p.Data.Role.IsImpostor && !p.isAnyNeutral() && p != Swapper.swapper && p != Sheriff.sheriff && p != Veteran.veteran && p != Mayor.mayor)
                         possibleTargets.Add(p);
                 
                 if (possibleTargets.Count == 0) {
@@ -433,7 +435,6 @@ namespace TownOfUs.Patches {
                 }
             }
         }
-        
 
         private static void assignModifiers() {
             var modifierMin = CustomOptionHolder.modifiersCountMin.getSelection();
@@ -459,6 +460,8 @@ namespace TownOfUs.Patches {
                 RoleId.Sunglasses,
                 RoleId.Torch,
                 RoleId.DoubleShot,
+                RoleId.Disperser,
+                RoleId.Armored,
             });
 
             if (rnd.Next(1, 101) <= CustomOptionHolder.modifierLover.getSelection() * 10) { // Assign lover
@@ -627,6 +630,14 @@ namespace TownOfUs.Patches {
                 modifiers.RemoveAll(x => x == RoleId.DoubleShot);
             }
 
+            if (modifiers.Contains(RoleId.Disperser)) {
+                var impPlayerDisperser = new List<PlayerControl>(impPlayer);
+                playerId = setModifierToRandomPlayer((byte)RoleId.Disperser, impPlayerDisperser);
+                crewPlayer.RemoveAll(x => x.PlayerId == playerId);
+                playerList.RemoveAll(x => x.PlayerId == playerId);
+                modifiers.RemoveAll(x => x == RoleId.Disperser);
+            }
+
             foreach (RoleId modifier in modifiers) {
                 if (playerList.Count == 0) break;
                 playerId = setModifierToRandomPlayer((byte)modifier, playerList);
@@ -659,6 +670,10 @@ namespace TownOfUs.Patches {
                     selection = CustomOptionHolder.modifierTorch.getSelection(); break;
                 case RoleId.DoubleShot:
                     selection = CustomOptionHolder.modifierDoubleShot.getSelection(); break;
+                case RoleId.Disperser:
+                    selection = CustomOptionHolder.modifierDisperser.getSelection(); break;
+                case RoleId.Armored:
+                    selection = CustomOptionHolder.modifierArmored.getSelection(); break;
             }
                  
             return selection;

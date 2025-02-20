@@ -86,6 +86,8 @@ namespace TownOfUs
         public static RoleInfo cleaner = new RoleInfo("Cleaner", Cleaner.color, "Kill everyone and leave no traces", "Clean up dead bodies", RoleId.Cleaner, FactionId.Impostor, ObserveResults.One);
         public static RoleInfo phantom = new RoleInfo("Phantom", Phantom.color, "Use your ghost form to kill crewmates", "Use your ghost form to kill crewmates", RoleId.Phantom, FactionId.Impostor, ObserveResults.Two);
         public static RoleInfo grenadier = new RoleInfo("Grenadier", Grenadier.color, "Blind the crewmates to get sneaky kills", "Blind the crewmates to get sneaky kills", RoleId.Grenadier, FactionId.Impostor, ObserveResults.Three);
+        public static RoleInfo venerer = new RoleInfo("Venerer", Venerer.color, "Kill players to unlock ability perks", "Kill players to unlock ability perks", RoleId.Venerer, FactionId.Impostor, ObserveResults.Four);
+        public static RoleInfo bountyHunter = new RoleInfo("Bounty Hunter", BountyHunter.color, "Hunt your bounty down", "Hunt your bounty down", RoleId.BountyHunter, FactionId.Impostor, ObserveResults.Five);
 
         // Modifiers
         public static RoleInfo lover = new RoleInfo("Lover", Lovers.color, $"You are in love", $"You are in love", RoleId.Lover, FactionId.Modifier, ObserveResults.None);
@@ -99,6 +101,8 @@ namespace TownOfUs
         public static RoleInfo sunglasses = new RoleInfo("Sunglasses", Palette.CrewmateBlue, "Your vision is reduced", "Your vision is reduced", RoleId.Sunglasses, FactionId.Modifier, ObserveResults.None);
         public static RoleInfo torch = new RoleInfo("Torch", Palette.CrewmateBlue, "You can see in lights sabotage", "You can see in lights sabotage", RoleId.Torch, FactionId.Modifier, ObserveResults.None);
         public static RoleInfo doubleShot = new RoleInfo("Double Shot", Palette.ImpostorRed, "You have extra life while assassinating", "You have extra life while assassinating", RoleId.DoubleShot, FactionId.Modifier, ObserveResults.None);
+        public static RoleInfo disperser = new RoleInfo("Disperser", Palette.ImpostorRed, "Separate the Crew", "Separate the Crew", RoleId.Disperser, FactionId.Modifier, ObserveResults.None);
+        public static RoleInfo armored = new RoleInfo("Armored", Color.yellow, "You are protected from one murder attempt", "You are protected from one murder attempt", RoleId.Armored, FactionId.Modifier, ObserveResults.None);
 
         public static RoleInfo impostor = new RoleInfo("Impostor", Palette.ImpostorRed, "Sabotage and kill everyone", "Sabotage and kill everyone", RoleId.Impostor, FactionId.Impostor, ObserveResults.RoleLess);
         public static RoleInfo crewmate = new RoleInfo("Crewmate", Palette.CrewmateBlue, "Find the Impostors", "Find the Impostors", RoleId.Crewmate, FactionId.Crewmate, ObserveResults.RoleLess);
@@ -142,6 +146,7 @@ namespace TownOfUs
 
             impostor,
             assassin,
+            bountyHunter,
             blackmailer,
             camouflager,
             cleaner,
@@ -152,6 +157,7 @@ namespace TownOfUs
             phantom,
             poisoner,
             swooper,
+            venerer,
             
             bait,
             blind,
@@ -159,12 +165,14 @@ namespace TownOfUs
             sunglasses,
             torch,
 
+            armored,
             buttonBarry,
             drunk,
             lover,
             sleuth,
             tiebreaker,
 
+            disperser,
             doubleShot,
         };
 
@@ -185,6 +193,8 @@ namespace TownOfUs
                 if (p == Sunglasses.sunglasses) infos.Add(sunglasses);
                 if (p == Torch.torch) infos.Add(torch);
                 if (p == DoubleShot.doubleShot) infos.Add(doubleShot);
+                if (p == Disperser.disperser) infos.Add(disperser);
+                if (p == Armored.armored) infos.Add(armored);
             }
             int count = infos.Count;  // Save count after modifiers are added so that the role count can be checked
 
@@ -232,6 +242,8 @@ namespace TownOfUs
             if (p == Werewolf.werewolf) infos.Add(werewolf);
             if (p == Detective.detective) infos.Add(detective);
             if (p == Glitch.glitch) infos.Add(glitch);
+            if (p == Venerer.venerer) infos.Add(venerer);
+            if (p == BountyHunter.bountyHunter) infos.Add(bountyHunter);
 
             // Default roles
             if (infos.Count == count) infos.Add(p.Data.Role.IsImpostor ? impostor : crewmate);
@@ -264,6 +276,8 @@ namespace TownOfUs
                         roleName = Helpers.cs(Veteran.color, "! ") + roleName;
                     if  (Glitch.hackedPlayer != null && !Glitch.hackedPlayer.Data.IsDead && Glitch.hackedPlayer == p)
                         roleName = Helpers.cs(Glitch.color, "(hacked) ") + roleName;
+                    if (BountyHunter.bounty == p && !MeetingHud.Instance)
+                        roleName = Helpers.cs(BountyHunter.color, "(bounty) ") + roleName;
                     // Death Reason on Ghosts
                     if (p.Data.IsDead) {
                         string deathReasonString = "";

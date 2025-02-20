@@ -61,6 +61,8 @@ namespace TownOfUs
         Werewolf,
         Detective,
         Glitch,
+        Venerer,
+        BountyHunter,
         // Modifier ---
         Lover,
         Blind,
@@ -73,6 +75,8 @@ namespace TownOfUs
         Sunglasses,
         Torch,
         DoubleShot,
+        Disperser,
+        Armored,
         // Vanilla Roles
         Crewmate, Impostor
     }
@@ -94,6 +98,7 @@ namespace TownOfUs
         ShareGamemode,
         StopStart,
         UseUncheckedVent,
+        SetFirstKill,
         ShareGhostInfo,
         InitGameSummary,
 
@@ -151,6 +156,9 @@ namespace TownOfUs
         DetectiveResetExamine,
         GlitchMimic,
         GlitchHack,
+        VenererCamo,
+        Disperse,
+        BreakArmor,
         
         // Gamemode
         SetGuesserGm,
@@ -359,6 +367,14 @@ namespace TownOfUs
                         Glitch.glitch = player;
                         PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.glitch);
                         break;
+                    case RoleId.Venerer:
+                        Venerer.venerer = player;
+                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.venerer);
+                        break;
+                    case RoleId.BountyHunter:
+                        BountyHunter.bountyHunter = player;
+                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.bountyHunter);
+                        break;
                     }
                     if (AmongUsClient.Instance.AmHost && Helpers.roleCanUseVents(player) && !player.Data.Role.IsImpostor) {
                         player.RpcSetRole(RoleTypes.Engineer);
@@ -416,6 +432,14 @@ namespace TownOfUs
                     DoubleShot.doubleShot = player;
                     PlayerGameInfo.AddModifier(player.PlayerId, RoleInfo.doubleShot);
                     break;
+                case RoleId.Disperser:
+                    Disperser.disperser = player;
+                    PlayerGameInfo.AddModifier(player.PlayerId, RoleInfo.disperser);
+                    break;
+                case RoleId.Armored:
+                    Armored.armored = player;
+                    PlayerGameInfo.AddModifier(player.PlayerId, RoleInfo.armored);
+                    break;
             }
         }
 
@@ -468,6 +492,12 @@ namespace TownOfUs
             player.MyPhysics.HandleRpc(isEnter != 0 ? (byte)19 : (byte)20, reader);
         }
 
+        public static void setFirstKill(byte playerId) {
+            PlayerControl target = Helpers.playerById(playerId);
+            if (target == null) return;
+            firstKillPlayer = target;
+        }
+
         public static void stopStart(byte playerId) {
             if (AmongUsClient.Instance.AmHost && CustomOptionHolder.anyPlayerCanStopStart.getBool()) {
                 GameStartManager.Instance.ResetStartState();
@@ -479,6 +509,7 @@ namespace TownOfUs
             ChatInfo,
             PoisonerTimer,
             DeathReasonAndKiller,
+            BountyTarget,
         }
 
         public static void receiveGhostInfo (byte senderId, MessageReader reader) {
@@ -496,6 +527,9 @@ namespace TownOfUs
                     break;
                 case GhostInfoTypes.DeathReasonAndKiller:
                     GameHistory.overrideDeathReasonAndKiller(Helpers.playerById(reader.ReadByte()), (DeadPlayer.CustomDeathReason)reader.ReadByte(), Helpers.playerById(reader.ReadByte()));
+                    break;
+                case GhostInfoTypes.BountyTarget:
+                    BountyHunter.bounty = Helpers.playerById(reader.ReadByte());
                     break;
             }
         }
@@ -543,10 +577,10 @@ namespace TownOfUs
             // Neutral Roles
             if (player == Jester.jester) Jester.clearAndReload();
             if (player == Scavenger.scavenger) Scavenger.clearAndReload();
-            if (player == Executioner.executioner) Executioner.clearAndReload();
-            if (player == Lawyer.lawyer) Lawyer.clearAndReload();
+            if (player == Executioner.executioner) Executioner.clearAndReload(false);
+            if (player == Lawyer.lawyer) Lawyer.clearAndReload(false);
             if (player == Pursuer.pursuer) Pursuer.clearAndReload();
-            if (player == GuardianAngel.guardianAngel) GuardianAngel.clearAndReload();
+            if (player == GuardianAngel.guardianAngel) GuardianAngel.clearAndReload(false);
             if (player == Survivor.survivor) Survivor.clearAndReload();
             if (player == Amnesiac.amnesiac) Amnesiac.clearAndReload();
             if (player == Mercenary.mercenary) Mercenary.clearAndReload();
@@ -561,7 +595,7 @@ namespace TownOfUs
                 }
             }
             if (player == Vampire.vampire) Vampire.clearAndReload();
-            if (player == FallenAngel.fallenAngel) FallenAngel.clearAndReload();
+            if (player == FallenAngel.fallenAngel) FallenAngel.clearAndReload(false);
             if (player == Juggernaut.juggernaut) Juggernaut.clearAndReload();
             if (player == Werewolf.werewolf) Werewolf.clearAndReload();
             if (player == Glitch.glitch) Glitch.clearAndReload();
@@ -577,6 +611,8 @@ namespace TownOfUs
             if (player == Cleaner.cleaner) Cleaner.clearAndReload();
             if (player == Phantom.phantom) Phantom.clearAndReload();
             if (player == Grenadier.grenadier) Grenadier.clearAndReload();
+            if (player == Venerer.venerer) Venerer.clearAndReload();
+            if (player == BountyHunter.bountyHunter) BountyHunter.clearAndReload();
             
             // Double Roles
             if (Guesser.isGuesser(player.PlayerId)) Guesser.clear(player.PlayerId);
@@ -593,6 +629,8 @@ namespace TownOfUs
                 if (player == Sunglasses.sunglasses) Sunglasses.clearAndReload();
                 if (player == Torch.torch) Torch.clearAndReload();
                 if (player == DoubleShot.doubleShot) DoubleShot.clearAndReload();
+                if (player == Disperser.disperser) Disperser.clearAndReload();
+                if (player == Armored.armored) Armored.clearAndReload();
             }
         }
 
@@ -602,7 +640,7 @@ namespace TownOfUs
 
             Morphling.morphTimer = Morphling.duration;
             Morphling.morphTarget = target;
-            if (Camouflager.camouflageTimer <= 0f)
+            if (Camouflager.camouflageTimer <= 0f && !Helpers.isActiveCamoComms() && !Helpers.MushroomSabotageActive())
                 Morphling.morphling.setLook(target.Data.PlayerName, target.Data.DefaultOutfit.ColorId, target.Data.DefaultOutfit.HatId, target.Data.DefaultOutfit.VisorId, target.Data.DefaultOutfit.SkinId, target.Data.DefaultOutfit.PetId);
         }
 
@@ -614,7 +652,7 @@ namespace TownOfUs
             if (setTimer == 1) Camouflager.camouflageTimer = Camouflager.duration;
             if (Helpers.MushroomSabotageActive()) return; // Dont overwrite the fungle "camo"
             foreach (PlayerControl player in PlayerControl.AllPlayerControls)
-                player.setLook("", 6, "", "", "", "");
+                player.setLook("", 15, "", "", "", "");
         }
 
         public static void engineerFixLights() {
@@ -672,6 +710,7 @@ namespace TownOfUs
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
                     RPCProcedure.guardianAngelPromotes();
                 }
+                PlayerGameInfo.AddRole(oldShifter.PlayerId, RoleInfo.crewmate);
                 return;
             }
 
@@ -815,7 +854,7 @@ namespace TownOfUs
                 Executioner.clearAndReload();
             }
 
-            if (Dracula.canCreateVampireFromImpostor && player.Data.Role.IsImpostor) {
+            if (!Dracula.canCreateVampireFromImpostor && player.Data.Role.IsImpostor) {
                 Dracula.fakeVampire = player;
             } else {
                 bool wasImpostor = player.Data.Role.IsImpostor;  // This can only be reached if impostors can be sidekicked.
@@ -1211,7 +1250,7 @@ namespace TownOfUs
 
             Glitch.morphTimer = Glitch.morphDuration;
             Glitch.morphPlayer = target;
-            if (Camouflager.camouflageTimer <= 0f)
+            if (Camouflager.camouflageTimer <= 0f && !Helpers.isActiveCamoComms() && !Helpers.MushroomSabotageActive())
                 Glitch.glitch.setLook(target.Data.PlayerName, target.Data.DefaultOutfit.ColorId, target.Data.DefaultOutfit.HatId, target.Data.DefaultOutfit.VisorId, target.Data.DefaultOutfit.SkinId, target.Data.DefaultOutfit.PetId);
         }
 
@@ -1221,6 +1260,34 @@ namespace TownOfUs
 
             Glitch.hackedPlayer = target;
             Coroutines.Start(Helpers.Hack(target));
+        }
+
+        public static void venererCamo() {
+            if (Venerer.venerer == null) return;
+            Venerer.morphTimer = Venerer.duration;
+
+            if (Camouflager.camouflageTimer <= 0f && !Helpers.isActiveCamoComms() && !Helpers.MushroomSabotageActive()) {
+                Venerer.venerer.setLook("", 15, "", "", "", "");
+                Venerer.venerer.cosmetics.colorBlindText.text = "";
+            }
+        }
+
+        public static void disperse() {
+            Helpers.showFlash(Palette.ImpostorRed, 1f, "Dipserse");
+
+            if (!PlayerControl.LocalPlayer.Data.IsDead)
+            {
+                Helpers.randomPlayersTP();
+                Disperser.isButtonUsed = true;
+            }
+        }
+
+        public static void breakArmor() {
+            if (Armored.armored == null || Armored.isBrokenArmor) return;
+            Armored.isBrokenArmor = true;
+            if (PlayerControl.LocalPlayer.Data.IsDead) {
+                Armored.armored.ShowFailedMurder();
+            }
         }
     }
 
@@ -1267,6 +1334,9 @@ namespace TownOfUs
                     break;
                 case (byte)CustomRPC.UseUncheckedVent:
                     RPCProcedure.useUncheckedVent(reader.ReadPackedInt32(), reader.ReadByte(), reader.ReadByte());
+                    break;
+                case (byte)CustomRPC.SetFirstKill:
+                    RPCProcedure.setFirstKill(reader.ReadByte());
                     break;
                 case (byte)CustomRPC.ShareGhostInfo:
                     RPCProcedure.receiveGhostInfo(reader.ReadByte(), reader);
@@ -1435,11 +1505,19 @@ namespace TownOfUs
                 case (byte)CustomRPC.GlitchHack:
                     RPCProcedure.glitchHack(reader.ReadByte());
                     break;
+                case (byte)CustomRPC.VenererCamo:
+                    RPCProcedure.venererCamo();
+                    break;
+                case (byte)CustomRPC.Disperse:
+                    RPCProcedure.disperse();
+                    break;
+                case (byte)CustomRPC.BreakArmor:
+                    RPCProcedure.breakArmor();
+                    break;
 
                 // Game mode
                 case (byte)CustomRPC.SetGuesserGm:
-                    byte guesserGm = reader.ReadByte();
-                    RPCProcedure.setGuesserGm(guesserGm);
+                    RPCProcedure.setGuesserGm(reader.ReadByte());
                     break;
             }
         }

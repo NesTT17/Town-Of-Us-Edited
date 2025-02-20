@@ -15,9 +15,13 @@ namespace TownOfUs
         public static bool camoComms = false;
         public static bool hidePlayerNames = false;
         public static bool allowParallelMedBayScans = false;
+        public static bool shieldFirstKill = false;
+        public static int blockSkippingInEmergencyMeetings = 0; // 0 - off, 1 - emergency, 2 - always
         
         // Updating values
         public static Dictionary<byte, PoolablePlayer> playerIcons = new Dictionary<byte, PoolablePlayer>();
+        public static string firstKillName;
+        public static PlayerControl firstKillPlayer;
 
         public static void clearAndReloadMapOptions() {
             playerIcons = new Dictionary<byte, PoolablePlayer>();
@@ -25,6 +29,9 @@ namespace TownOfUs
             hidePlayerNames = CustomOptionHolder.hidePlayerNames.getBool();
             allowParallelMedBayScans = CustomOptionHolder.allowParallelMedBayScans.getBool();
             camoComms = CustomOptionHolder.camoComms.getBool();
+            shieldFirstKill = CustomOptionHolder.shieldFirstKill.getBool();
+            firstKillPlayer = null;
+            blockSkippingInEmergencyMeetings = CustomOptionHolder.blockSkippingInEmergencyMeetings.getSelection();
         }
 
         public static void reloadPluginOptions() {

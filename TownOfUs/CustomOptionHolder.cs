@@ -31,6 +31,14 @@ namespace TownOfUs
         public static CustomOption camoComms;
         public static CustomOption hidePlayerNames;
         public static CustomOption allowParallelMedBayScans;
+        public static CustomOption shieldFirstKill;
+        public static CustomOption blockSkippingInEmergencyMeetings;
+        
+        public static CustomOption sheriffBlockGameEnd;
+        public static CustomOption veteranBlockGameEnd;
+        public static CustomOption mayorBlockGameEnd;
+        public static CustomOption swapperBlockGameEnd;
+        public static CustomOption niceGuesserBlockGameEnd;
         
         public static CustomOption dynamicMap;
         public static CustomOption dynamicMapEnableSkeld;
@@ -263,6 +271,23 @@ namespace TownOfUs
         public static CustomOption glitchCanVent;
         public static CustomOption glitchHasImpostorVision;
 
+        public static CustomOption venererSpawnRate;
+        public static CustomOption venererCooldown;
+        public static CustomOption venererDuration;
+        public static CustomOption venererSpeedMultiplier;
+        public static CustomOption venererFreezeMultiplier;
+        
+        public static CustomOption bountyHunterSpawnRate;
+        public static CustomOption bountyHunterBountyDuration;
+        public static CustomOption bountyHunterReducedCooldown;
+        public static CustomOption bountyHunterPunishmentTime;
+        public static CustomOption bountyHunterShowArrow;
+        public static CustomOption bountyHunterArrowUpdateIntervall;
+        
+        public static CustomOption modifierDisperser;
+        
+        public static CustomOption modifierArmored;
+
         // Guesser Gamemode
         public static CustomOption guesserGamemodeCrewNumber;
         public static CustomOption guesserGamemodeNNeutralNumber;
@@ -291,6 +316,14 @@ namespace TownOfUs
             camoComms = CustomOption.Create(2, Types.General, "Camouglaged Comms", false);
             hidePlayerNames = CustomOption.Create(3, Types.General, "Hide Player Names", false);
             allowParallelMedBayScans = CustomOption.Create(4, Types.General, "Allow Parallel MedBay Scans", false);
+            shieldFirstKill = CustomOption.Create(5, Types.General, "Shield Last Game First Kill", false);
+            blockSkippingInEmergencyMeetings = CustomOption.Create(6, Types.General, "Block Skipping In Emergency Meetings", new string[] { "Off", "Emergency", "Always"} );
+
+            sheriffBlockGameEnd = CustomOption.Create(800, Types.General, "Sheriff Blocks Game End", false, null, true, heading: "Extended End Game");
+            mayorBlockGameEnd = CustomOption.Create(802, Types.General, "Mayor Blocks Game End", false);
+            veteranBlockGameEnd = CustomOption.Create(801, Types.General, "Veteran Blocks Game End", false);
+            swapperBlockGameEnd = CustomOption.Create(803, Types.General, "Swapper Blocks Game End", false);
+            niceGuesserBlockGameEnd = CustomOption.Create(804, Types.General, "Vigilante Blocks Game End", false);
 
             // Guesser Gamemode (2000 - 2999)
             guesserGamemodeCrewNumber = CustomOption.Create(2001, Types.General, "Number of Crew Guessers", 15f, 0f, 15f, 1f, null, true, heading: "Amount of Guessers");
@@ -466,6 +499,13 @@ namespace TownOfUs
             werewolfKillCooldown = CustomOption.Create(193, Types.NeutralKiller, "Kill Cooldown", 3f, 1f, 20f, 0.5f, werewolfSpawnRate);
             werewolfCanVent = CustomOption.Create(194, Types.NeutralKiller, "Can Vent While Rampaged", false, werewolfSpawnRate);
 
+            bountyHunterSpawnRate = CustomOption.Create(220, Types.Impostor, cs(BountyHunter.color, "Bounty Hunter"), rates, null, true);
+            bountyHunterBountyDuration = CustomOption.Create(221, Types.Impostor, "Duration After Which Bounty Changes",  60f, 10f, 180f, 10f, bountyHunterSpawnRate);
+            bountyHunterReducedCooldown = CustomOption.Create(222, Types.Impostor, "Cooldown After Killing Bounty", 2.5f, 0f, 30f, 2.5f, bountyHunterSpawnRate);
+            bountyHunterPunishmentTime = CustomOption.Create(223, Types.Impostor, "Additional Cooldown After Killing Others", 20f, 0f, 60f, 2.5f, bountyHunterSpawnRate);
+            bountyHunterShowArrow = CustomOption.Create(224, Types.Impostor, "Show Arrow Pointing Towards The Bounty", true, bountyHunterSpawnRate);
+            bountyHunterArrowUpdateIntervall = CustomOption.Create(225, Types.Impostor, "Arrow Update Intervall", 15f, 2.5f, 60f, 2.5f, bountyHunterShowArrow);
+
             blackmailerSpawnRate = CustomOption.Create(140, Types.Impostor, cs(Blackmailer.color, "Blackmailer"), rates, null, true);
             blackmailerCooldown = CustomOption.Create(141, Types.Impostor, "Blackmail Cooldown", 30f, 2.5f, 60f, 2.5f, blackmailerSpawnRate);
 
@@ -506,6 +546,12 @@ namespace TownOfUs
             swooperCooldown = CustomOption.Create(126, Types.Impostor, "Swooper Cooldown", 30f, 10f, 60f, 2.5f, swooperSpawnRate);
             swooperDuration = CustomOption.Create(127, Types.Impostor, "Swoop Duration", 10f, 1f, 20f, 0.5f, swooperSpawnRate);
 
+            venererSpawnRate = CustomOption.Create(215, Types.Impostor, cs(Venerer.color, "Venerer"), rates, null, true);
+            venererCooldown = CustomOption.Create(216, Types.Impostor, "Ability Cooldown", 30f, 10f, 60f, 2.5f, venererSpawnRate);
+            venererDuration = CustomOption.Create(217, Types.Impostor, "Ability Duration", 10f, 1f, 20f, 0.5f, venererSpawnRate);
+            venererSpeedMultiplier = CustomOption.Create(218, Types.Impostor, "Sprint Multiplier", 1.125f, 1.125f, 2.5f, 0.125f, venererSpawnRate);
+            venererFreezeMultiplier = CustomOption.Create(219, Types.Impostor, "Freeze Multiplier", 0.5f, 0f, 0.875f, 0.125f, venererSpawnRate);
+
             modifierBait = CustomOption.Create(1001, Types.Modifier, cs(Palette.CrewmateBlue, "Bait"), rates, null, true);
             modifierBaitReportDelayMin = CustomOption.Create(1002, Types.Modifier, "Bait Report Delay Min", 0f, 0f, 10f, 1f, modifierBait);
             modifierBaitReportDelayMax = CustomOption.Create(1003, Types.Modifier, "Bait Report Delay Max", 0f, 0f, 10f, 1f, modifierBait);
@@ -518,6 +564,8 @@ namespace TownOfUs
             modifierSunglassesVision = CustomOption.Create(1007, Types.Modifier, "Sunglasses Vision", new string[] { "-10%", "-20%", "-30%", "-40%", "-50%" }, modifierSunglasses);
 
             modifierTorch= CustomOption.Create(1008, Types.Modifier, cs(Palette.CrewmateBlue, "Torch"), rates, null, true);
+
+            modifierArmored = CustomOption.Create(1131, Types.Modifier, cs(Color.yellow, "Armored"), rates, null, true);
 
             modifierButtonBarry = CustomOption.Create(1025, Types.Modifier, cs(Color.yellow, "Button Barry"), rates, null, true);
 
@@ -532,6 +580,8 @@ namespace TownOfUs
 
             modifierTieBreaker = CustomOption.Create(1020, Types.Modifier, cs(Color.yellow, "Tiebreaker"), rates, null, true);
             
+            modifierDisperser = CustomOption.Create(1035, Types.Modifier, cs(Palette.ImpostorRed, "Disperser"), rates, null, true);
+
             modifierDoubleShot = CustomOption.Create(1014, Types.Modifier, cs(Palette.ImpostorRed, "Double Shot"), rates, null, true);
 
             // Block Role Pairings

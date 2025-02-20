@@ -34,9 +34,9 @@
 | [Sheriff](#sheriff)            | [Pursuer](#pursuer)              |                                          | [Phantom](#phantom)               | [Lovers](#lovers)             |
 | [Shifter](#shifter)            | [Scavenger](#scavenger)          |                                          | [Poisoner](#poisoner)             | [Sleuth](#sleuth)             |
 | [Snitch](#snitch)              | [Survivor](#survivor)            |                                          | [Swooper](#swooper)               | [Tiebreaker](#tiebreaker)     |
-| [Spy](#spy)                    |                                  |                                          |                                   | [Double Shot](#double-shot)   |
-| [Swapper](#swapper)            |                                  |                                          |                                   |                               |
-| [Tracker](#tracker)            |                                  |                                          |                                   |                               |
+| [Spy](#spy)                    |                                  |                                          | [Venerer](#venerer)               | [Double Shot](#double-shot)   |
+| [Swapper](#swapper)            |                                  |                                          | [Bounty Hunter](#bounty-hunter)   | [Disperser](#disperser)       |
+| [Tracker](#tracker)            |                                  |                                          |                                   | [Armored](#armored)           |
 | [Trapper](#trapper)            |                                  |                                          |                                   |                               |
 | [Veteran](#veteran)            |                                  |                                          |                                   |                               |
 

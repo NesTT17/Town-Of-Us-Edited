@@ -1,8 +1,31 @@
+using AmongUs.GameOptions;
 using HarmonyLib;
 using InnerNet;
 using UnityEngine;
 
 namespace TownOfUs.Patches;
+
+[HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.FixedUpdate))]
+public static class PlayerPhysicsFixedUpdatePatch
+{
+    public static void Postfix(PlayerControl __instance) {
+        if (LobbyBehaviour.Instance || GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek)
+            return;
+        if (PlayerControl.LocalPlayer != __instance || GameData.Instance == null || !__instance.CanMove)
+            return;
+        
+        float speed = GameOptionsManager.Instance.CurrentGameOptions.GetFloat(FloatOptionNames.PlayerSpeedMod) * 2f;
+
+        if (Venerer.venerer == __instance && Venerer.numberOfKills >= 2 && Venerer.morphTimer > 0f) {
+            speed *= Venerer.speedMultiplier;
+        }
+        if (Venerer.venerer != __instance && Venerer.numberOfKills >= 3 && Venerer.morphTimer > 0f) {
+            speed *= Venerer.freezeMultiplier;
+        }
+
+        __instance.MyPhysics.Speed = speed;
+    }
+}
 
 [HarmonyPatch(typeof(PlayerPhysics), nameof(PlayerPhysics.Awake))]
 public static class PlayerPhysiscs_Awake_Patch
@@ -28,5 +51,24 @@ public static class PlayerPhysicsFixedUpdate
             shouldInvert &&
             GameData.Instance &&
             __instance.myPlayer.CanMove) __instance.body.velocity *= -1;
+    }
+}
+
+[HarmonyPatch(typeof(CustomNetworkTransform), nameof(CustomNetworkTransform.FixedUpdate))]
+public static class SpeedPatch {
+    public static void Postfix(CustomNetworkTransform __instance) {
+        if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Started || GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek)
+            return;
+        
+        venererUpdate(__instance);
+    }
+
+    static void venererUpdate(CustomNetworkTransform __instance) {
+        if (Venerer.venerer != null) {
+            if (Venerer.venerer == __instance.gameObject.GetComponent<PlayerControl>() && !__instance.AmOwner && Venerer.numberOfKills >= 2 && Venerer.morphTimer > 0f)
+                __instance.body.velocity *= Venerer.speedMultiplier;
+            if (Venerer.venerer != __instance.gameObject.GetComponent<PlayerControl>() && !__instance.AmOwner && Venerer.numberOfKills >= 3 && Venerer.morphTimer > 0f)
+                __instance.body.velocity *= Venerer.freezeMultiplier;
+        }
     }
 }

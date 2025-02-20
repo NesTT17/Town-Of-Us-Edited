@@ -60,6 +60,9 @@ namespace TownOfUs.Patches {
             foreach (PlayerControl target in PlayerControl.AllPlayerControls) {
                 if (target == null || target.cosmetics?.currentBodySprite?.BodySprite == null) continue;
 
+                bool isMorphedMorphling = target == Morphling.morphling && Morphling.morphTarget != null && Morphling.morphTimer > 0f;
+                bool isMorphedGlitch = target == Glitch.glitch && Glitch.morphPlayer != null && Glitch.morphTimer > 0f;
+                bool isMorphedVenerer = target == Venerer.venerer && Venerer.morphTimer > 0f;
                 bool hasVisibleShield = false;
                 Color color = Color.white;
 
@@ -73,12 +76,23 @@ namespace TownOfUs.Patches {
                     color = Color.yellow;
                 }
 
+                if (Camouflager.camouflageTimer <= 0f && !Helpers.MushroomSabotageActive() && !Helpers.isActiveCamoComms() && TOUMapOptions.firstKillPlayer != null && TOUMapOptions.shieldFirstKill && ((target == TOUMapOptions.firstKillPlayer && !isMorphedMorphling && !isMorphedGlitch && !isMorphedVenerer) || (isMorphedMorphling && Morphling.morphTarget == TOUMapOptions.firstKillPlayer) || (isMorphedGlitch && Glitch.morphPlayer == TOUMapOptions.firstKillPlayer))) {
+                    hasVisibleShield = true;
+                    color = Color.blue;
+                }
+
+                if (PlayerControl.LocalPlayer.Data.IsDead && Armored.armored != null && target == Armored.armored && !Armored.isBrokenArmor && !hasVisibleShield) {
+                    hasVisibleShield = true;
+                    color = Color.green;
+                }
+
                 if (hasVisibleShield) {
                     target.cosmetics.currentBodySprite.BodySprite.material.SetFloat("_Outline", 1f);
                     target.cosmetics.currentBodySprite.BodySprite.material.SetColor("_OutlineColor", color);
-                }
-                else {
+                    target.cosmetics.currentBodySprite.BodySprite.material.SetColor("_VisorColor", color);
+                } else {
                     target.cosmetics.currentBodySprite.BodySprite.material.SetFloat("_Outline", 0f);
+                    target.cosmetics.currentBodySprite.BodySprite.material.SetColor("_VisorColor", Palette.VisorColor);
                 }                
             }
         }
@@ -206,9 +220,11 @@ namespace TownOfUs.Patches {
             float oldCamouflageTimer = Camouflager.camouflageTimer;
             float oldMorphTimer = Morphling.morphTimer;
             float oldMimicTimer = Glitch.morphTimer;
+            float oldVenererTimer = Venerer.morphTimer;
             Camouflager.camouflageTimer = Mathf.Max(0f, Camouflager.camouflageTimer - Time.fixedDeltaTime);
             Morphling.morphTimer = Mathf.Max(0f, Morphling.morphTimer - Time.fixedDeltaTime);
             Glitch.morphTimer = Mathf.Max(0f, Glitch.morphTimer - Time.fixedDeltaTime);
+            Venerer.morphTimer = Mathf.Max(0f, Venerer.morphTimer - Time.fixedDeltaTime);
 
             if (mushRoomSaboIsActive) return;
             if (Helpers.isCamoComms()) return;
@@ -221,6 +237,9 @@ namespace TownOfUs.Patches {
                 if (Glitch.morphTimer > 0f && Glitch.glitch != null && Glitch.morphPlayer != null) {
                     PlayerControl target = Glitch.morphPlayer;
                     Glitch.glitch.setLook(target.Data.PlayerName, target.Data.DefaultOutfit.ColorId, target.Data.DefaultOutfit.HatId, target.Data.DefaultOutfit.VisorId, target.Data.DefaultOutfit.SkinId, target.Data.DefaultOutfit.PetId);
+                }
+                if (Venerer.morphTimer > 0f && Venerer.venerer != null) {
+                    Venerer.venerer.setLook("", 15, "", "", "", "");
                 }
             }
 
@@ -235,6 +254,9 @@ namespace TownOfUs.Patches {
                     PlayerControl target = Glitch.morphPlayer;
                     Glitch.glitch.setLook(target.Data.PlayerName, target.Data.DefaultOutfit.ColorId, target.Data.DefaultOutfit.HatId, target.Data.DefaultOutfit.VisorId, target.Data.DefaultOutfit.SkinId, target.Data.DefaultOutfit.PetId);
                 }
+                if (Venerer.morphTimer > 0f && Venerer.venerer != null) {
+                    Venerer.venerer.setLook("", 15, "", "", "", "");
+                }
             }
 
             // If the MushRoomSabotage ends while Morph is still active set the Morphlings look to the target's look
@@ -247,6 +269,9 @@ namespace TownOfUs.Patches {
                     PlayerControl target = Glitch.morphPlayer;
                     Glitch.glitch.setLook(target.Data.PlayerName, target.Data.DefaultOutfit.ColorId, target.Data.DefaultOutfit.HatId, target.Data.DefaultOutfit.VisorId, target.Data.DefaultOutfit.SkinId, target.Data.DefaultOutfit.PetId);
                 }
+                if (Venerer.morphTimer > 0f && Venerer.venerer != null) {
+                    Venerer.venerer.setLook("", 15, "", "", "", "");
+                }
                 if (Camouflager.camouflageTimer > 0) {
                     foreach (PlayerControl player in PlayerControl.AllPlayerControls)
                         player.setLook("", 6, "", "", "", "");
@@ -258,6 +283,8 @@ namespace TownOfUs.Patches {
                 Morphling.resetMorph();
             if (Camouflager.camouflageTimer <= 0f && oldMimicTimer > 0f && Glitch.morphTimer <= 0f && Glitch.glitch != null)
                 Glitch.resetMorph();
+            if (Camouflager.camouflageTimer <= 0f && oldVenererTimer > 0f && Venerer.morphTimer <= 0f && Venerer.venerer != null)
+                Venerer.resetMorph();
             mushroomSaboWasActive = false;
         }
 
@@ -602,6 +629,72 @@ namespace TownOfUs.Patches {
             setPlayerOutline(Glitch.currentTarget, Glitch.color);
         }
 
+        static void bountyHunterUpdate() {
+            if (BountyHunter.bountyHunter == null || PlayerControl.LocalPlayer != BountyHunter.bountyHunter) return;
+
+            if (BountyHunter.bountyHunter.Data.IsDead) {
+                if (BountyHunter.arrow != null || BountyHunter.arrow.arrow != null) UnityEngine.Object.Destroy(BountyHunter.arrow.arrow);
+                BountyHunter.arrow = null;
+                if (BountyHunter.cooldownText != null && BountyHunter.cooldownText.gameObject != null) UnityEngine.Object.Destroy(BountyHunter.cooldownText.gameObject);
+                BountyHunter.cooldownText = null;
+                BountyHunter.bounty = null;
+                foreach (PoolablePlayer p in TOUMapOptions.playerIcons.Values) {
+                    if (p != null && p.gameObject != null) p.gameObject.SetActive(false);
+                }
+                return;
+            }
+
+            BountyHunter.arrowUpdateTimer -= Time.fixedDeltaTime;
+            BountyHunter.bountyUpdateTimer -= Time.fixedDeltaTime;
+
+            if (BountyHunter.bounty == null || BountyHunter.bountyUpdateTimer <= 0f) {
+                // Set new bounty
+                BountyHunter.bounty = null;
+                BountyHunter.arrowUpdateTimer = 0f; // Force arrow to update
+                BountyHunter.bountyUpdateTimer = BountyHunter.bountyDuration;
+                var possibleTargets = new List<PlayerControl>();
+                foreach (PlayerControl p in PlayerControl.AllPlayerControls) {
+                    if (!p.Data.IsDead && !p.Data.Disconnected && p != p.Data.Role.IsImpostor && p != Spy.spy && (p != Vampire.vampire || !Vampire.wasTeamRed) && (p != Dracula.dracula || !Dracula.wasTeamRed) && (Lovers.getPartner(BountyHunter.bountyHunter) == null || p != Lovers.getPartner(BountyHunter.bountyHunter)) && (!TOUMapOptions.shieldFirstKill || TOUMapOptions.firstKillPlayer != p)) possibleTargets.Add(p);
+                }
+                BountyHunter.bounty = possibleTargets[TownOfUs.rnd.Next(0, possibleTargets.Count)];
+                if (BountyHunter.bounty == null) return;
+
+                // Ghost Info
+                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareGhostInfo, Hazel.SendOption.Reliable, -1);
+                writer.Write(PlayerControl.LocalPlayer.PlayerId);
+                writer.Write((byte)RPCProcedure.GhostInfoTypes.BountyTarget);
+                writer.Write(BountyHunter.bounty.PlayerId);
+                AmongUsClient.Instance.FinishRpcImmediately(writer);
+
+                // Show poolable player
+                if (FastDestroyableSingleton<HudManager>.Instance != null && FastDestroyableSingleton<HudManager>.Instance.UseButton != null) {
+                    foreach (PoolablePlayer pp in TOUMapOptions.playerIcons.Values) pp.gameObject.SetActive(false);
+                    if (TOUMapOptions.playerIcons.ContainsKey(BountyHunter.bounty.PlayerId) && TOUMapOptions.playerIcons[BountyHunter.bounty.PlayerId].gameObject != null)
+                        TOUMapOptions.playerIcons[BountyHunter.bounty.PlayerId].gameObject.SetActive(true);
+                }
+            }
+
+            // Hide in meeting
+            if (MeetingHud.Instance && TOUMapOptions.playerIcons.ContainsKey(BountyHunter.bounty.PlayerId) && TOUMapOptions.playerIcons[BountyHunter.bounty.PlayerId].gameObject != null)
+                TOUMapOptions.playerIcons[BountyHunter.bounty.PlayerId].gameObject.SetActive(false);
+
+            // Update Cooldown Text
+            if (BountyHunter.cooldownText != null) {
+                BountyHunter.cooldownText.text = Mathf.CeilToInt(Mathf.Clamp(BountyHunter.bountyUpdateTimer, 0, BountyHunter.bountyDuration)).ToString();
+                BountyHunter.cooldownText.gameObject.SetActive(!MeetingHud.Instance);  // Show if not in meeting
+            }
+
+            // Update Arrow
+            if (BountyHunter.showArrow && BountyHunter.bounty != null) {
+                if (BountyHunter.arrow == null) BountyHunter.arrow = new Arrow(Color.red);
+                if (BountyHunter.arrowUpdateTimer <= 0f) {
+                    BountyHunter.arrow.Update(BountyHunter.bounty.transform.position);
+                    BountyHunter.arrowUpdateTimer = BountyHunter.arrowUpdateIntervall;
+                }
+                BountyHunter.arrow.Update();
+            }
+        }
+
         public static void Postfix(PlayerControl __instance) {
             if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Started || GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek) return;
             
@@ -680,6 +773,8 @@ namespace TownOfUs.Patches {
                 detectiveSetTarget();
                 // Glitch
                 glitchSetTarget();
+                // BountyHunter
+                bountyHunterUpdate();
 
                 // -- MODIFIER--
                 // Bait
@@ -843,6 +938,16 @@ namespace TownOfUs.Patches {
                 GameHistory.overrideDeathReasonAndKiller(GuardianAngel.guardianAngel, DeadPlayer.CustomDeathReason.GuardianAngelSuicide, GuardianAngel.guardianAngel);  // TODO: only executed on host?!
             }
             
+            // Set bountyHunter cooldown
+            if (BountyHunter.bountyHunter != null && PlayerControl.LocalPlayer == BountyHunter.bountyHunter && __instance == BountyHunter.bountyHunter) {
+                if (target == BountyHunter.bounty) {
+                    BountyHunter.bountyHunter.SetKillTimer(BountyHunter.bountyKillCooldown);
+                    BountyHunter.bountyUpdateTimer = 0f; // Force bounty update
+                }
+                else
+                    BountyHunter.bountyHunter.SetKillTimer(GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown + BountyHunter.punishmentTime); 
+            }
+
             // Cleaner Button Sync
             if (Cleaner.cleaner != null && PlayerControl.LocalPlayer == Cleaner.cleaner && __instance == Cleaner.cleaner && HudManagerStartPatch.cleanerCleanButton != null)
                 HudManagerStartPatch.cleanerCleanButton.Timer = Cleaner.cleaner.killTimer;
@@ -865,6 +970,7 @@ namespace TownOfUs.Patches {
             if (GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown <= 0f) return false;
             float multiplier = 1f;
             float addition = 0f;
+            if (BountyHunter.bountyHunter != null && PlayerControl.LocalPlayer == BountyHunter.bountyHunter) addition = BountyHunter.punishmentTime;
 
             __instance.killTimer = Mathf.Clamp(time, 0f, GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown * multiplier + addition);
             FastDestroyableSingleton<HudManager>.Instance.KillButton.SetCoolDown(__instance.killTimer, GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown * multiplier + addition);
@@ -892,6 +998,10 @@ namespace TownOfUs.Patches {
                 if (index != -1) colorId = index;
             }
             if (Glitch.glitch != null && source.Data.PlayerId == Glitch.glitch.PlayerId) {
+                var index = Palette.PlayerColors.IndexOf(color);
+                if (index != -1) colorId = index;
+            }
+            if (Venerer.venerer != null && source.Data.PlayerId == Venerer.venerer.PlayerId) {
                 var index = Palette.PlayerColors.IndexOf(color);
                 if (index != -1) colorId = index;
             }

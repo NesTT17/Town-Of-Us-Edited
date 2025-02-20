@@ -41,6 +41,30 @@ namespace TownOfUs.Patches {
                 }
             }
 
+            // Force Bounty Hunter to load a new Bounty when the Intro is over
+            if (BountyHunter.bounty != null && PlayerControl.LocalPlayer == BountyHunter.bountyHunter) {
+                BountyHunter.bountyUpdateTimer = 0f;
+                if (FastDestroyableSingleton<HudManager>.Instance != null) {
+                    BountyHunter.cooldownText = UnityEngine.Object.Instantiate<TMPro.TextMeshPro>(FastDestroyableSingleton<HudManager>.Instance.KillButton.cooldownTimerText, FastDestroyableSingleton<HudManager>.Instance.transform);
+                    BountyHunter.cooldownText.alignment = TMPro.TextAlignmentOptions.Center;
+                    BountyHunter.cooldownText.transform.localPosition = bottomLeft + new Vector3(0f, -0.35f, -62f);
+                    BountyHunter.cooldownText.transform.localScale = Vector3.one * 0.4f;
+                    BountyHunter.cooldownText.gameObject.SetActive(true);
+                }
+            }
+
+            // First kill
+            if (AmongUsClient.Instance.AmHost && TOUMapOptions.shieldFirstKill && TOUMapOptions.firstKillName != "") {
+                PlayerControl target = PlayerControl.AllPlayerControls.ToArray().ToList().FirstOrDefault(x => x.Data.PlayerName.Equals(TOUMapOptions.firstKillName));
+                if (target != null) {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.SetFirstKill, Hazel.SendOption.Reliable, -1);
+                    writer.Write(target.PlayerId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.setFirstKill(target.PlayerId);
+                }
+            }
+            TOUMapOptions.firstKillName = "";
+
             // Close role summary
             HudManagerUpdate.CloseSummary();
         }

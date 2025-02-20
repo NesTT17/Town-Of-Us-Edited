@@ -58,6 +58,8 @@ namespace TownOfUs
             Werewolf.clearAndReload();
             Detective.clearAndReload();
             Glitch.clearAndReload();
+            Venerer.clearAndReload();
+            BountyHunter.clearAndReload();
             
             Lovers.clearAndReload();
             Blind.clearAndReload();
@@ -69,6 +71,8 @@ namespace TownOfUs
             Drunk.clearAndReload();
             Torch.clearAndReload();
             DoubleShot.clearAndReload();
+            Disperser.clearAndReload();
+            Armored.clearAndReload();
             
             // Gamemodes
             HandleGuesser.clearAndReload();
@@ -317,8 +321,9 @@ namespace TownOfUs
             bool hasVisibleShield = false;
             bool isMorphedMorphling = target == Morphling.morphling && Morphling.morphTarget != null && Morphling.morphTimer > 0f;
             bool isMorphedGlitch = target == Glitch.glitch && Glitch.morphPlayer != null && Glitch.morphTimer > 0f;
+            bool isMorphedVenerer = target == Venerer.venerer && Venerer.morphTimer > 0f;
 
-            if (shielded != null && ((target == shielded && !isMorphedMorphling && !isMorphedGlitch) || (isMorphedMorphling && Morphling.morphTarget == shielded) || (isMorphedGlitch && Glitch.morphPlayer == shielded))) {
+            if (shielded != null && ((target == shielded && !isMorphedMorphling && !isMorphedGlitch && !isMorphedVenerer) || (isMorphedMorphling && Morphling.morphTarget == shielded) || (isMorphedGlitch && Glitch.morphPlayer == shielded))) {
                 hasVisibleShield = showShielded == 0 || Helpers.shouldShowGhostInfo() // Everyone
                     || showShielded == 1 & PlayerControl.LocalPlayer == shielded // Shielded
                     || showShielded == 2 & PlayerControl.LocalPlayer == medic // Medic
@@ -563,8 +568,9 @@ namespace TownOfUs
             bool hasVisibleProtect = false;
             bool isMorphedMorphling = player == Morphling.morphling && Morphling.morphTarget != null && Morphling.morphTimer > 0f;
             bool isMorphedGlitch = target == Glitch.glitch && Glitch.morphPlayer != null && Glitch.morphTimer > 0f;
+            bool isMorphedVenerer = target == Venerer.venerer && Venerer.morphTimer > 0f;
 
-            if (target != null && ((player == target && !isMorphedMorphling && !isMorphedGlitch) || (isMorphedMorphling && Morphling.morphTarget == target || (isMorphedGlitch && Glitch.morphPlayer == target)))) {
+            if (target != null && ((player == target && !isMorphedMorphling && !isMorphedGlitch && !isMorphedVenerer) || (isMorphedMorphling && Morphling.morphTarget == target) || (isMorphedGlitch && Glitch.morphPlayer == target))) {
                 hasVisibleProtect = showProtected == 0 || Helpers.shouldShowGhostInfo() // Everyone
                     || showProtected == 1 & PlayerControl.LocalPlayer == target // Protected
                     || showProtected == 2 & PlayerControl.LocalPlayer == guardianAngel // GA
@@ -595,9 +601,9 @@ namespace TownOfUs
 
         public static float cooldown = 30f;
 
-        public static void clearAndReload() {
+        public static void clearAndReload(bool clearTarget = true) {
             fallenAngel = null;
-            target = null;
+            if (clearTarget) target = null;
             currentTarget = null;
             cooldown = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown;
         }
@@ -1160,6 +1166,88 @@ namespace TownOfUs
         }
     }
 
+    public static class Venerer {
+        public static PlayerControl venerer;
+        public static Color color = Palette.ImpostorRed;
+
+        public static int numberOfKills = 0;
+        public static float morphTimer = 0f;
+
+        public static float cooldown = 30f;
+        public static float duration = 10f;
+        public static float speedMultiplier = 1.25f;
+        public static float freezeMultiplier = 0.75f;
+
+        private static Sprite noAbilitiesButton;
+        public static Sprite getnoAbilitiesButton()
+            => noAbilitiesButton ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.NoAbilitiesButton.png", 100f);
+
+        private static Sprite camoButton;
+        public static Sprite getcamoButton()
+            => camoButton ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.CamouflageButton.png", 100f);
+
+        private static Sprite speedButton;
+        public static Sprite getspeedButton()
+            => speedButton ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.SpeedButton.png", 100f);
+
+        private static Sprite freezeButton;
+        public static Sprite getfreezeButton()
+            => freezeButton ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.FreezeButton.png", 100f);
+        
+        public static void resetMorph() {
+            morphTimer = 0f;
+            if (venerer == null) return;
+            venerer.setDefaultLook();
+        }
+
+        public static void clearAndReload() {
+            venerer = null;
+            resetMorph();
+            numberOfKills = 0;
+            cooldown = CustomOptionHolder.venererCooldown.getFloat();
+            duration = CustomOptionHolder.venererDuration.getFloat();
+            speedMultiplier = CustomOptionHolder.venererSpeedMultiplier.getFloat();
+            freezeMultiplier = CustomOptionHolder.venererFreezeMultiplier.getFloat();
+        }
+    }
+
+    public static class BountyHunter {
+        public static PlayerControl bountyHunter;
+        public static PlayerControl bounty;
+        public static TMPro.TextMeshPro cooldownText;
+        public static Arrow arrow;
+        public static Color color = Palette.ImpostorRed;
+        
+        public static float arrowUpdateTimer = 0f;
+        public static float bountyUpdateTimer = 0f;
+
+        public static float bountyDuration = 30f;
+        public static bool showArrow = true;
+        public static float bountyKillCooldown = 0f;
+        public static float punishmentTime = 15f;
+        public static float arrowUpdateIntervall = 10f;
+
+        public static void clearAndReload() {
+            arrow = new Arrow(Palette.EnabledColor);
+            bountyHunter = null;
+            bounty = null;
+            arrowUpdateTimer = 0f;
+            bountyUpdateTimer = 0f;
+            if (arrow != null && arrow.arrow != null) UnityEngine.Object.Destroy(arrow.arrow);
+            arrow = null;
+            if (cooldownText != null && cooldownText.gameObject != null) UnityEngine.Object.Destroy(cooldownText.gameObject);
+            cooldownText = null;
+            foreach (PoolablePlayer p in TOUMapOptions.playerIcons.Values) {
+                if (p != null && p.gameObject != null) p.gameObject.SetActive(false);
+            }
+            bountyDuration = CustomOptionHolder.bountyHunterBountyDuration.getFloat();
+            bountyKillCooldown = CustomOptionHolder.bountyHunterReducedCooldown.getFloat();
+            punishmentTime = CustomOptionHolder.bountyHunterPunishmentTime.getFloat();
+            showArrow = CustomOptionHolder.bountyHunterShowArrow.getBool();
+            arrowUpdateIntervall = CustomOptionHolder.bountyHunterArrowUpdateIntervall.getFloat();
+        }
+    }
+
     public static class Guesser {
         public static PlayerControl niceGuesser;
         public static PlayerControl evilGuesser;
@@ -1353,6 +1441,33 @@ namespace TownOfUs
 
         public static void clearAndReload() {
             doubleShot = null;
+            lifeUsed = false;
+        }
+    }
+
+    public static class Disperser {
+        public static PlayerControl disperser;
+
+        public static bool isButtonUsed = false;
+
+        private static Sprite buttonSprite;
+        public static Sprite getButtonSprite()
+            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.DisperseButton.png", 100f);
+
+        public static void clearAndReload() {
+            disperser = null;
+            isButtonUsed = false;
+        }
+    }
+
+    public static class Armored {
+        public static PlayerControl armored;
+        
+        public static bool isBrokenArmor = false;
+
+        public static void clearAndReload() {
+            armored = null;
+            isBrokenArmor = false;
         }
     }
 }

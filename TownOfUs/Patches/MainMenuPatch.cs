@@ -37,5 +37,9 @@ namespace TownOfUs.Patches
                 })));
             }));
         }
+
+        public static void Postfix(MainMenuManager __instance) {
+            Application.targetFrameRate = 165;
+        }
     }
 }

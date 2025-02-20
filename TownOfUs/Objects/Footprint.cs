@@ -18,7 +18,7 @@ namespace TownOfUs.Objects
         }
 
         private static Sprite _footprintSprite;
-        private static Sprite FootprintSprite => _footprintSprite ??= Helpers.loadSpriteFromResources("TheOtherRoles.Resources.Footprint.png", 600f);
+        private static Sprite FootprintSprite => _footprintSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.Footprint.png", 600f);
 
         private static bool AnonymousFootprints => Investigator.anonymousFootprints;
         private static float FootprintDuration => Investigator.footprintDuration;

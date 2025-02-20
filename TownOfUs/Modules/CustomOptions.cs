@@ -420,6 +420,7 @@ namespace TownOfUs {
                 relevantOptions.Clear();
                 relevantOptions.AddRange(options.Where(x => x.type == CustomOptionType.Crewmate && x.isHeader));
                 relevantOptions.AddRange(options.Where(x => x.type == CustomOptionType.Neutral && x.isHeader));
+                relevantOptions.AddRange(options.Where(x => x.type == CustomOptionType.NeutralKiller && x.isHeader));
                 relevantOptions.AddRange(options.Where(x => x.type == CustomOptionType.Impostor && x.isHeader));
                 relevantOptions.AddRange(options.Where(x => x.type == CustomOptionType.Modifier && x.isHeader));
             }
@@ -672,7 +673,7 @@ namespace TownOfUs {
                 var stringOption = optionBehaviour as StringOption;
                 stringOption.OnValueChanged = new Action<OptionBehaviour>((o) => { });
                 stringOption.TitleText.text = option.name;
-                if (option.isHeader && option.heading == "" && (option.type == CustomOptionType.Neutral || option.type == CustomOptionType.Crewmate || option.type == CustomOptionType.Impostor || option.type == CustomOptionType.Modifier)) {
+                if (option.isHeader && option.heading == "" && (option.type == CustomOptionType.Neutral || option.type == CustomOptionType.NeutralKiller || option.type == CustomOptionType.Crewmate || option.type == CustomOptionType.Impostor || option.type == CustomOptionType.Modifier)) {
                     stringOption.TitleText.text = "Spawn Chance";
                 }
                 if (stringOption.TitleText.text.Length > 25)

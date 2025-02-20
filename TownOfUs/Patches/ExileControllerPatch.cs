@@ -100,6 +100,10 @@ namespace TownOfUs.Patches {
                 AmongUsClient.Instance.FinishRpcImmediately(writer);
                 RPCProcedure.detectiveResetExamine();
             }
+
+            // Force Bounty Hunter Bounty Update
+            if (BountyHunter.bountyHunter != null && BountyHunter.bountyHunter == PlayerControl.LocalPlayer)
+                BountyHunter.bountyUpdateTimer = 0f;
         }
     }
 
