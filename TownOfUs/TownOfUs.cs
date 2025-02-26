@@ -60,6 +60,8 @@ namespace TownOfUs
             Glitch.clearAndReload();
             Venerer.clearAndReload();
             BountyHunter.clearAndReload();
+            Oracle.clearAndReload();
+            Bomber.clearAndReload();
             
             Lovers.clearAndReload();
             Blind.clearAndReload();
@@ -1245,6 +1247,65 @@ namespace TownOfUs
             punishmentTime = CustomOptionHolder.bountyHunterPunishmentTime.getFloat();
             showArrow = CustomOptionHolder.bountyHunterShowArrow.getBool();
             arrowUpdateIntervall = CustomOptionHolder.bountyHunterArrowUpdateIntervall.getFloat();
+        }
+    }
+
+    public static class Oracle {
+        public static PlayerControl oracle;
+        public static PlayerControl confessor;
+        public static PlayerControl currentTarget;
+        public static Color color = new Color(0.75f, 0f, 0.75f, 1f);
+
+        public static FactionId revealedFaction;
+
+        public static int accuracy = 10;
+        public static float cooldown = 30f;
+        public static bool neutShowsEvil = false;
+        public static bool kneutShowsEvil = false;
+
+        private static Sprite buttonSprite;
+        public static Sprite getButtonSprite()
+            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ConfessButton.png", 100f);
+
+        public static void clearAndReload() {
+            oracle = null;
+            confessor = null;
+            currentTarget = null;
+            revealedFaction = FactionId.Crewmate;
+            accuracy = CustomOptionHolder.oracleAccuracy.getSelection();
+            cooldown = CustomOptionHolder.oracleCooldown.getFloat();
+            neutShowsEvil = CustomOptionHolder.oracleNeutShowsEvil.getBool();
+            kneutShowsEvil = CustomOptionHolder.oracleKNeutShowsEvil.getBool();
+        }
+    }
+
+    public static class Bomber {
+        public static PlayerControl bomber;
+        public static Color color = Palette.ImpostorRed;
+        public static Material bombMaterial = TownOfUsPlugin.bundledAssets.Get<Material>("bomb");
+
+        public static Vector3 DetonatePoint;
+        public static Bomb Bomb = new Bomb();
+
+        public static float delay = 10f;
+        public static int maxKills = 3;
+        public static float radius = 1f;
+
+        
+        private static Sprite plantButtonSprite;
+        public static Sprite getPlantButtonSprite()
+            => plantButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.PlantButton.png", 100f);
+        
+        private static Sprite detonateButtonSprite;
+        public static Sprite getDetonateButtonSprite()
+            => detonateButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.DetonateButton.png", 100f);
+        
+        public static void clearAndReload() {
+            bomber = null;
+            Bomb = new Bomb();
+            delay = CustomOptionHolder.bomberDetonateDelay.getFloat();
+            maxKills = Mathf.RoundToInt(CustomOptionHolder.bomberMaxKillsInDetonation.getFloat());
+            radius = CustomOptionHolder.bomberDetonateRadius.getFloat();
         }
     }
 

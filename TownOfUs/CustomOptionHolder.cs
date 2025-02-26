@@ -288,6 +288,17 @@ namespace TownOfUs
         
         public static CustomOption modifierArmored;
 
+        public static CustomOption oracleSpawnRate;
+        public static CustomOption oracleAccuracy;
+        public static CustomOption oracleCooldown;
+        public static CustomOption oracleNeutShowsEvil;
+        public static CustomOption oracleKNeutShowsEvil;
+        
+        public static CustomOption bomberSpawnRate;
+        public static CustomOption bomberMaxKillsInDetonation;
+        public static CustomOption bomberDetonateDelay;
+        public static CustomOption bomberDetonateRadius;
+
         // Guesser Gamemode
         public static CustomOption guesserGamemodeCrewNumber;
         public static CustomOption guesserGamemodeNNeutralNumber;
@@ -373,6 +384,12 @@ namespace TownOfUs
 
             mysticSpawnRate = CustomOption.Create(180, Types.Crewmate, cs(Mystic.color, "Mystic"), rates, null, true);
             mysticArrowDuration = CustomOption.Create(181, Types.Crewmate, "Arrow Duration", 0.5f, 0.125f, 1f, 0.125f, mysticSpawnRate);
+
+            oracleSpawnRate = CustomOption.Create(230, Types.Crewmate, cs(Oracle.color, "Oracle"), rates, null, true);
+            oracleAccuracy = CustomOption.Create(231, Types.Crewmate, "Reveal Accuracy", rates, oracleSpawnRate);
+            oracleCooldown = CustomOption.Create(232, Types.Crewmate, "Confess Cooldown", 30f, 10f, 60f, 2.5f, oracleSpawnRate);
+            oracleNeutShowsEvil = CustomOption.Create(233, Types.Crewmate, "Neutrals Shows Evil", false, oracleSpawnRate);
+            oracleKNeutShowsEvil = CustomOption.Create(234, Types.Crewmate, "Killing Neutrals Shows Evil", false, oracleSpawnRate);
 
             seerSpawnRate = CustomOption.Create(115, Types.Crewmate, cs(Seer.color, "Seer"), rates, null, true);
             seerCooldown = CustomOption.Create(116, Types.Crewmate, "Reveal Cooldown", 30f, 10f, 60f, 2.5f, seerSpawnRate);
@@ -498,6 +515,11 @@ namespace TownOfUs
             werewolfRampageDuration = CustomOption.Create(192, Types.NeutralKiller, "Rampage Duration", 10f, 1f, 20f, 0.5f, werewolfSpawnRate);
             werewolfKillCooldown = CustomOption.Create(193, Types.NeutralKiller, "Kill Cooldown", 3f, 1f, 20f, 0.5f, werewolfSpawnRate);
             werewolfCanVent = CustomOption.Create(194, Types.NeutralKiller, "Can Vent While Rampaged", false, werewolfSpawnRate);
+
+            bomberSpawnRate = CustomOption.Create(235, Types.Impostor, cs(Bomber.color, "Bomber"), rates, null, true);
+            bomberDetonateDelay = CustomOption.Create(236, Types.Impostor, "Detonate Delay", 5f, 1f, 15f, 1f, bomberSpawnRate);
+            bomberMaxKillsInDetonation = CustomOption.Create(237, Types.Impostor, "Max Kills In Detonation", 5f, 1f, 15f, 1f, bomberSpawnRate);
+            bomberDetonateRadius = CustomOption.Create(238, Types.Impostor, "Detonate Radius", 0.25f, 0.125f, 1f, 0.125f, bomberSpawnRate);
 
             bountyHunterSpawnRate = CustomOption.Create(220, Types.Impostor, cs(BountyHunter.color, "Bounty Hunter"), rates, null, true);
             bountyHunterBountyDuration = CustomOption.Create(221, Types.Impostor, "Duration After Which Bounty Changes",  60f, 10f, 180f, 10f, bountyHunterSpawnRate);

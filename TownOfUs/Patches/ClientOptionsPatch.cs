@@ -21,6 +21,7 @@ namespace TownOfUs.Patches
             new("Ghosts Can Additionally See Modifier", () => TOUMapOptions.ghostsSeeModifier = TownOfUsPlugin.GhostsSeeModifier.Value = !TownOfUsPlugin.GhostsSeeModifier.Value, TownOfUsPlugin.GhostsSeeModifier.Value),
             new("Show Lighter / Darker", () => TOUMapOptions.showLighterDarker = TownOfUsPlugin.ShowLighterDarker.Value = !TownOfUsPlugin.ShowLighterDarker.Value, TownOfUsPlugin.ShowLighterDarker.Value),
             new("Show Chat Notifications", () => TOUMapOptions.showChatNotifications = TownOfUsPlugin.ShowChatNotifications.Value = !TownOfUsPlugin.ShowChatNotifications.Value, TownOfUsPlugin.ShowChatNotifications.Value),
+            new("Extended Colorblind Mode", () => TOUMapOptions.extendedColorblindMode = TownOfUsPlugin.ExtendedColorblindMode.Value = !TownOfUsPlugin.ExtendedColorblindMode.Value, TownOfUsPlugin.ExtendedColorblindMode.Value),
         };
         
         private static GameObject popUp;

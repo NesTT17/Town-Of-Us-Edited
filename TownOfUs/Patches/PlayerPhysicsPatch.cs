@@ -5,28 +5,6 @@ using UnityEngine;
 
 namespace TownOfUs.Patches;
 
-[HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.FixedUpdate))]
-public static class PlayerPhysicsFixedUpdatePatch
-{
-    public static void Postfix(PlayerControl __instance) {
-        if (LobbyBehaviour.Instance || GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek)
-            return;
-        if (PlayerControl.LocalPlayer != __instance || GameData.Instance == null || !__instance.CanMove)
-            return;
-        
-        float speed = GameOptionsManager.Instance.CurrentGameOptions.GetFloat(FloatOptionNames.PlayerSpeedMod) * 2f;
-
-        if (Venerer.venerer == __instance && Venerer.numberOfKills >= 2 && Venerer.morphTimer > 0f) {
-            speed *= Venerer.speedMultiplier;
-        }
-        if (Venerer.venerer != __instance && Venerer.numberOfKills >= 3 && Venerer.morphTimer > 0f) {
-            speed *= Venerer.freezeMultiplier;
-        }
-
-        __instance.MyPhysics.Speed = speed;
-    }
-}
-
 [HarmonyPatch(typeof(PlayerPhysics), nameof(PlayerPhysics.Awake))]
 public static class PlayerPhysiscs_Awake_Patch
 {

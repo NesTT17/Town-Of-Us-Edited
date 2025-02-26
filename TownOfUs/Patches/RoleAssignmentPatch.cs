@@ -127,6 +127,7 @@ namespace TownOfUs.Patches {
             impSettings.Add((byte)RoleId.Grenadier, CustomOptionHolder.grenadierSpawnRate.getSelection());
             impSettings.Add((byte)RoleId.Venerer, CustomOptionHolder.venererSpawnRate.getSelection());
             impSettings.Add((byte)RoleId.BountyHunter, CustomOptionHolder.bountyHunterSpawnRate.getSelection());
+            impSettings.Add((byte)RoleId.Bomber, CustomOptionHolder.bomberSpawnRate.getSelection());
             
             neutralSettings.Add((byte)RoleId.Jester, CustomOptionHolder.jesterSpawnRate.getSelection());
             neutralSettings.Add((byte)RoleId.Scavenger, CustomOptionHolder.scavengerSpawnRate.getSelection());
@@ -167,6 +168,7 @@ namespace TownOfUs.Patches {
             crewSettings.Add((byte)RoleId.Mystic, CustomOptionHolder.mysticSpawnRate.getSelection());
             crewSettings.Add((byte)RoleId.Tracker, CustomOptionHolder.trackerSpawnRate.getSelection());
             crewSettings.Add((byte)RoleId.Detective, CustomOptionHolder.detectiveSpawnRate.getSelection());
+            crewSettings.Add((byte)RoleId.Oracle, CustomOptionHolder.oracleSpawnRate.getSelection());
 
             return new RoleAssignmentData {
                 crewmates = crewmates,

@@ -63,6 +63,8 @@ namespace TownOfUs
         Glitch,
         Venerer,
         BountyHunter,
+        Oracle,
+        Bomber,
         // Modifier ---
         Lover,
         Blind,
@@ -159,6 +161,7 @@ namespace TownOfUs
         VenererCamo,
         Disperse,
         BreakArmor,
+        OracleConfess,
         
         // Gamemode
         SetGuesserGm,
@@ -375,6 +378,14 @@ namespace TownOfUs
                         BountyHunter.bountyHunter = player;
                         PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.bountyHunter);
                         break;
+                    case RoleId.Oracle:
+                        Oracle.oracle = player;
+                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.oracle);
+                        break;
+                    case RoleId.Bomber:
+                        Bomber.bomber = player;
+                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.bomber);
+                        break;
                     }
                     if (AmongUsClient.Instance.AmHost && Helpers.roleCanUseVents(player) && !player.Data.Role.IsImpostor) {
                         player.RpcSetRole(RoleTypes.Engineer);
@@ -573,6 +584,7 @@ namespace TownOfUs
             if (player == Mystic.mystic) Mystic.clearAndReload();
             if (player == Tracker.tracker) Tracker.clearAndReload();
             if (player == Detective.detective) Detective.clearAndReload();
+            if (player == Oracle.oracle) Oracle.clearAndReload();
 
             // Neutral Roles
             if (player == Jester.jester) Jester.clearAndReload();
@@ -613,6 +625,7 @@ namespace TownOfUs
             if (player == Grenadier.grenadier) Grenadier.clearAndReload();
             if (player == Venerer.venerer) Venerer.clearAndReload();
             if (player == BountyHunter.bountyHunter) BountyHunter.clearAndReload();
+            if (player == Bomber.bomber) Bomber.clearAndReload();
             
             // Double Roles
             if (Guesser.isGuesser(player.PlayerId)) Guesser.clear(player.PlayerId);
@@ -1289,6 +1302,37 @@ namespace TownOfUs
                 Armored.armored.ShowFailedMurder();
             }
         }
+
+        public static void oracleConfess(byte targetId) {
+            PlayerControl target = Helpers.playerById(targetId);
+            if (Oracle.oracle == null || target == null) return;
+            
+            Oracle.confessor = target;
+            if (Oracle.confessor == null) return;
+
+            bool showsCorrectFaction = true;
+            int faction = 1;
+            if (Oracle.accuracy == 0) showsCorrectFaction = false;
+            else {
+                var num = UnityEngine.Random.RandomRangeInt(1, 101);
+                showsCorrectFaction = num <= (Oracle.accuracy * 10);
+            }
+
+            if (showsCorrectFaction) {
+                if (!Oracle.confessor.isEvil()) faction = 0;
+                else if (Oracle.confessor.Data.Role.IsImpostor) faction = 2;
+            } else {
+                var num = UnityEngine.Random.RandomRangeInt(0, 2);
+                if (Oracle.confessor.Data.Role.IsImpostor) faction = num;
+                else if (!Oracle.confessor.isEvil()) faction = num + 1;
+                else if (num == 1) faction = 2;
+                else faction = 0;
+            }
+
+            if (faction == 0) Oracle.revealedFaction = FactionId.Crewmate;
+            else if (faction == 1) Oracle.revealedFaction = FactionId.Neutral;
+            else Oracle.revealedFaction = FactionId.Impostor;
+        }
     }
 
     [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.HandleRpc))]
@@ -1513,6 +1557,9 @@ namespace TownOfUs
                     break;
                 case (byte)CustomRPC.BreakArmor:
                     RPCProcedure.breakArmor();
+                    break;
+                case (byte)CustomRPC.OracleConfess:
+                    RPCProcedure.oracleConfess(reader.ReadByte());
                     break;
 
                 // Game mode

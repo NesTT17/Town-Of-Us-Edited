@@ -10,6 +10,7 @@ namespace TownOfUs
         public static bool ghostsSeeVotes = true;
         public static bool showLighterDarker = true;
         public static bool showChatNotifications = true;
+        public static bool extendedColorblindMode = false;
         public static CustomGamemodes gameMode = CustomGamemodes.Classic;
 
         public static bool camoComms = false;
@@ -41,6 +42,7 @@ namespace TownOfUs
             ghostsSeeVotes = TownOfUsPlugin.GhostsSeeVotes.Value;
             showLighterDarker = TownOfUsPlugin.ShowLighterDarker.Value;
             showChatNotifications = TownOfUsPlugin.ShowChatNotifications.Value;
+            extendedColorblindMode = TownOfUsPlugin.ExtendedColorblindMode.Value;
         }
     }
 }

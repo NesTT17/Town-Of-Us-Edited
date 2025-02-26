@@ -137,7 +137,15 @@ namespace TownOfUs.Patches {
 
                 p.cosmetics.nameText.transform.parent.SetLocalZ(-0.0001f);  // This moves both the name AND the colorblindtext behind objects (if the player is behind the object), like the rock on polus
 
-                if ((Lawyer.lawyerKnowsRole && PlayerControl.LocalPlayer == Lawyer.lawyer && p == Lawyer.target) || (Sleuth.sleuth != null && Sleuth.sleuth == PlayerControl.LocalPlayer && Sleuth.reported.Any(x => x.PlayerId == p.PlayerId)) || p == PlayerControl.LocalPlayer || PlayerControl.LocalPlayer.Data.IsDead) {
+                bool showSnitch = false;
+                if (Snitch.snitch != null) {
+                    var (playerCompleted, playerTotal) = TasksHandler.taskInfo(Snitch.snitch.Data);
+                    int numberOfTasks = playerTotal - playerCompleted;
+                    if (numberOfTasks <= Snitch.taskCountForReveal && (PlayerControl.LocalPlayer.Data.Role.IsImpostor || PlayerControl.LocalPlayer.isNeutral() && Snitch.includeNeutral || PlayerControl.LocalPlayer.isNeutralKiller() && Snitch.includeKillingNeutral))
+                        showSnitch = true;
+                }
+
+                if ((Lawyer.lawyerKnowsRole && PlayerControl.LocalPlayer == Lawyer.lawyer && p == Lawyer.target) || (Sleuth.sleuth != null && Sleuth.sleuth == PlayerControl.LocalPlayer && Sleuth.reported.Any(x => x.PlayerId == p.PlayerId)) || p == PlayerControl.LocalPlayer || PlayerControl.LocalPlayer.Data.IsDead || p == Snitch.snitch && showSnitch || Mayor.mayor != null && Mayor.mayor == p && Mayor.isRevealed && PlayerControl.LocalPlayer != Mayor.mayor) {
                     Transform playerInfoTransform = p.cosmetics.nameText.transform.parent.FindChild("Info");
                     TMPro.TextMeshPro playerInfo = playerInfoTransform != null ? playerInfoTransform.GetComponent<TMPro.TextMeshPro>() : null;
                     if (playerInfo == null) {
@@ -192,7 +200,7 @@ namespace TownOfUs.Patches {
                         playerInfoText = $"{roleText}";
                         meetingInfoText = playerInfoText;
                     }
-                    if ((Lawyer.lawyerKnowsRole && PlayerControl.LocalPlayer == Lawyer.lawyer && p == Lawyer.target) || (Sleuth.sleuth != null && Sleuth.sleuth == PlayerControl.LocalPlayer && Sleuth.reported.Any(x => x.PlayerId == p.PlayerId))) {
+                    if ((Lawyer.lawyerKnowsRole && PlayerControl.LocalPlayer == Lawyer.lawyer && p == Lawyer.target) || (Sleuth.sleuth != null && Sleuth.sleuth == PlayerControl.LocalPlayer && Sleuth.reported.Any(x => x.PlayerId == p.PlayerId)) || (p == Snitch.snitch && showSnitch) || (Mayor.mayor != null && Mayor.mayor == p && Mayor.isRevealed && PlayerControl.LocalPlayer != Mayor.mayor)) {
                         roleText = RoleInfo.GetRolesString(p, true, false, true);
                         playerInfoText = $"{roleText}";
                         meetingInfoText = playerInfoText;
@@ -695,6 +703,12 @@ namespace TownOfUs.Patches {
             }
         }
 
+        static void oracleSetTarget() {
+            if (Oracle.oracle == null || Oracle.oracle != PlayerControl.LocalPlayer) return;
+            Oracle.currentTarget = setTarget(untargetablePlayers: new List<PlayerControl>() { Oracle.confessor });
+            setPlayerOutline(Oracle.currentTarget, Oracle.color);
+        }
+
         public static void Postfix(PlayerControl __instance) {
             if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Started || GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek) return;
             
@@ -775,6 +789,8 @@ namespace TownOfUs.Patches {
                 glitchSetTarget();
                 // BountyHunter
                 bountyHunterUpdate();
+                // Oracle
+                oracleSetTarget();
 
                 // -- MODIFIER--
                 // Bait
@@ -948,12 +964,15 @@ namespace TownOfUs.Patches {
                     BountyHunter.bountyHunter.SetKillTimer(GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown + BountyHunter.punishmentTime); 
             }
 
+            if (Venerer.venerer != null && Venerer.venerer == __instance)
+                Venerer.numberOfKills++;
+
             // Cleaner Button Sync
             if (Cleaner.cleaner != null && PlayerControl.LocalPlayer == Cleaner.cleaner && __instance == Cleaner.cleaner && HudManagerStartPatch.cleanerCleanButton != null)
                 HudManagerStartPatch.cleanerCleanButton.Timer = Cleaner.cleaner.killTimer;
             
             if (Mystic.mystic != null && (Mystic.mystic == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.isFlashedByGrenadier() || Helpers.shouldShowGhostInfo()) && target != Mystic.mystic)
-                Helpers.showFlash(Mystic.color, 1f, "Someone died");
+                Helpers.showFlash(Mystic.color, 1f, "Mystic Info: Someone died");
 
             if (target != null) {
                 Transform playerInfoTransform = target.cosmetics.nameText.transform.parent.FindChild("Info");

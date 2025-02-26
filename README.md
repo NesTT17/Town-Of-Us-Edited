@@ -36,9 +36,10 @@
 | [Snitch](#snitch)              | [Survivor](#survivor)            |                                          | [Swooper](#swooper)               | [Tiebreaker](#tiebreaker)     |
 | [Spy](#spy)                    |                                  |                                          | [Venerer](#venerer)               | [Double Shot](#double-shot)   |
 | [Swapper](#swapper)            |                                  |                                          | [Bounty Hunter](#bounty-hunter)   | [Disperser](#disperser)       |
-| [Tracker](#tracker)            |                                  |                                          |                                   | [Armored](#armored)           |
+| [Tracker](#tracker)            |                                  |                                          | [Bomber](#bomber)                 | [Armored](#armored)           |
 | [Trapper](#trapper)            |                                  |                                          |                                   |                               |
 | [Veteran](#veteran)            |                                  |                                          |                                   |                               |
+| [Oracle](#oracle)              |                                  |                                          |                                   |                               |
 
 -----------------------
 

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AmongUs.GameOptions;
 using System;
+using AmongUs.Data;
 
 namespace TownOfUs.Patches {
     [HarmonyPatch(typeof(HudManager), nameof(HudManager.Update))]
@@ -106,14 +107,6 @@ namespace TownOfUs.Patches {
         }
 
         static void setNameTags() {
-            // Display lighter / darker color for all alive players
-            if (PlayerControl.LocalPlayer != null && MeetingHud.Instance != null && TOUMapOptions.showLighterDarker) {
-                foreach (PlayerVoteArea player in MeetingHud.Instance.playerStates) {
-                    var target = Helpers.playerById(player.TargetPlayerId);
-                    if (target != null)  player.NameText.text += $" ({(Helpers.isLighterColor(target) ? "L" : "D")})";
-                }
-            }
-
             // Reveal players for Snitch
             if (Snitch.snitch != null) {
                 var (playerCompleted, playerTotal) = TasksHandler.taskInfo(Snitch.snitch.Data);
@@ -122,15 +115,29 @@ namespace TownOfUs.Patches {
                     setPlayerNameColor(Snitch.snitch, Snitch.color);
                 } else if (PlayerControl.LocalPlayer == Snitch.snitch && numberOfTasks == 0) {
                     foreach (PlayerControl p in PlayerControl.AllPlayerControls) {
+                        string colorBlindText = "";
                         bool revealImp = p.Data.Role.IsImpostor;
                         bool revealNeut = p.isNeutral() && Snitch.includeNeutral;
                         bool revealKNeut = p.isNeutralKiller() && Snitch.includeKillingNeutral;
                         Color color = Color.white;
-                        if (revealImp) color = Palette.ImpostorRed;
-                        else if (revealNeut || revealKNeut) color = Color.gray;
+                        if (revealImp) {
+                            color = Palette.ImpostorRed;
+                            colorBlindText = " (Imp)";
+                        } else if (revealNeut || revealKNeut) {
+                            color = Color.gray;
+                            colorBlindText = " (Neutral)";
+                        }
 
                         if (!p.Data.IsDead && (revealImp || revealNeut || revealKNeut)) {
                             setPlayerNameColorForSnitch(p, color);
+                            if (TOUMapOptions.extendedColorblindMode) {
+                                p.cosmetics.nameText.text += colorBlindText;
+
+                                if (MeetingHud.Instance != null && Snitch.seeInMeeting)
+                                    foreach (PlayerVoteArea player in MeetingHud.Instance.playerStates)
+                                        if (player.NameText != null && p.PlayerId == player.TargetPlayerId)
+                                            player.NameText.text += colorBlindText;
+                            }
                         }
                     }
                 }
@@ -204,7 +211,16 @@ namespace TownOfUs.Patches {
                 foreach (PlayerControl player in Seer.revealedPlayers) {
                     if (player != null) {
                         Color color = (player.Data.Role.IsImpostor || player.isNeutral() && Seer.neutRed || player.isNeutralKiller() && Seer.kneutRed) ? Color.red : Color.green;
+                        string colorBlindText = (player.Data.Role.IsImpostor || player.isNeutral() && Seer.neutRed || player.isNeutralKiller() && Seer.kneutRed) ? " (Red)" : " (Green)";
                         setPlayerNameColor(player, color);
+                        if (TOUMapOptions.extendedColorblindMode) {
+                            player.cosmetics.nameText.text += colorBlindText;
+
+                            if (MeetingHud.Instance != null)
+                                foreach (PlayerVoteArea playerVoteArea in MeetingHud.Instance.playerStates)
+                                    if (playerVoteArea.TargetPlayerId == player.PlayerId)
+                                        playerVoteArea.NameText.text += colorBlindText;
+                        }
                     }
                 }
             }
@@ -215,9 +231,31 @@ namespace TownOfUs.Patches {
             
             // Show flashed players for Grenadier
             if (Grenadier.grenadier != null && (Grenadier.grenadier == PlayerControl.LocalPlayer || Helpers.shouldShowGhostInfo())) {
-                foreach (PlayerControl player in Grenadier.flashedPlayers)
-                    if (!player.Data.Role.IsImpostor && !player.Data.IsDead)
+                foreach (PlayerControl player in Grenadier.flashedPlayers) {
+                    if (!player.Data.Role.IsImpostor && !player.Data.IsDead) {
                         setPlayerNameColor(player, Color.black);
+                        if (TOUMapOptions.extendedColorblindMode) player.cosmetics.nameText.text += " (Flashed)";
+                    }
+                }
+            }
+
+            // Highlight confessor if oracle is dead
+            if (Oracle.confessor != null && (Oracle.oracle.Data.IsDead || Oracle.oracle.Data.Disconnected)) {
+                if (MeetingHud.Instance != null)
+                    foreach (PlayerVoteArea player in MeetingHud.Instance.playerStates)
+                        if (player.TargetPlayerId == Oracle.confessor.PlayerId) {
+                            if (Oracle.revealedFaction == FactionId.Crewmate) player.NameText.text = $"<color=#00FFFFFF>({Oracle.accuracy * 10}% Crew) </color>" + player.NameText.text;
+                            else if (Oracle.revealedFaction == FactionId.Impostor) player.NameText.text = $"<color=#FF0000FF>({Oracle.accuracy * 10}% Imp) </color>" + player.NameText.text;
+                            else player.NameText.text = $"<color=#808080FF>({Oracle.accuracy * 10}% Neut) </color>" + player.NameText.text;
+                        }
+            }
+
+            // Display lighter / darker color for all alive players
+            if (PlayerControl.LocalPlayer != null && MeetingHud.Instance != null && TOUMapOptions.showLighterDarker) {
+                foreach (PlayerVoteArea player in MeetingHud.Instance.playerStates) {
+                    var target = Helpers.playerById(player.TargetPlayerId);
+                    if (target != null)  player.NameText.text += $" ({(Helpers.isLighterColor(target) ? "L" : "D")})";
+                }
             }
         }
 

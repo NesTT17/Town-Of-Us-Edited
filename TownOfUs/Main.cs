@@ -23,6 +23,7 @@ using Il2CppSystem.Text;
 using Reactor.Networking.Attributes;
 using AmongUs.Data;
 using Reactor.Networking;
+using TownOfUs.Modules.CustomHats;
 
 namespace TownOfUs
 {
@@ -47,6 +48,7 @@ namespace TownOfUs
         public static ConfigEntry<bool> GhostsSeeVotes{ get; set; }
         public static ConfigEntry<bool> ShowLighterDarker { get; set; }
         public static ConfigEntry<bool> ShowChatNotifications { get; set; }
+        public static ConfigEntry<bool> ExtendedColorblindMode { get; set; }
 
         public static IRegionInfo[] defaultRegions;
 
@@ -97,6 +99,7 @@ namespace TownOfUs
             GhostsSeeVotes = Config.Bind("Custom", "Ghosts See Votes", true);
             ShowLighterDarker = Config.Bind("Custom", "Show Lighter / Darker", true);
             ShowChatNotifications = Config.Bind("Custom", "Show Chat Notifications", true);
+            ExtendedColorblindMode = Config.Bind("Custom", "Extended Colorblind Mode", false);
 
             ServerManager.DefaultRegions = new Il2CppReferenceArray<IRegionInfo>(new IRegionInfo[0]);
             UpdateRegions();
@@ -105,6 +108,7 @@ namespace TownOfUs
 
             CustomColors.Load();
             CustomOptionHolder.Load();
+            CustomHatManager.LoadHats();
             MainMenuPatch.addSceneChangeCallbacks();
             AddToKillDistanceSetting.addKillDistance();
 

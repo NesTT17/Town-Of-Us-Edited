@@ -60,8 +60,10 @@ namespace TownOfUs
         public static CustomButton glitchKillButton;
         public static CustomButton glitchMimicButton;
         public static CustomButton glichHackButton;
-        public static CustomButton venererButton;
+        public static CustomButton venererAbilityButton;
         public static CustomButton disperserDisperseButton;
+        public static CustomButton oracleConfessButton;
+        public static CustomButton bomberButton;
         
         public static void setCustomButtonCooldowns() {
             if (!initialized) {
@@ -124,9 +126,12 @@ namespace TownOfUs
             glitchMimicButton.EffectDuration = Glitch.morphDuration;
             glichHackButton.MaxTimer = Glitch.hackCooldown;
             glichHackButton.EffectDuration = Glitch.hackDuration;
-            venererButton.MaxTimer = Venerer.cooldown;
-            venererButton.EffectDuration = Venerer.duration;
+            venererAbilityButton.MaxTimer = Venerer.cooldown;
+            venererAbilityButton.EffectDuration = Venerer.duration;
             disperserDisperseButton.MaxTimer = 0f;
+            oracleConfessButton.MaxTimer = Oracle.cooldown;
+            bomberButton.MaxTimer = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown;
+            bomberButton.EffectDuration = Bomber.delay;
             // Already set the timer to the max, as the button is enabled during the game and not available at the start
             zoomOutButton.MaxTimer = 0f;
         }
@@ -982,6 +987,7 @@ namespace TownOfUs
             // Button Barry
             buttonBarryButton = new CustomButton(
                 () => {
+                    PlayerControl.LocalPlayer.RemainingEmergencies++;
                     Helpers.handlePoisonerKillOnBodyReport();
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.UncheckedCmdReportDeadBody, Hazel.SendOption.Reliable, -1);
                     writer.Write(byte.MaxValue);
@@ -1141,13 +1147,13 @@ namespace TownOfUs
                     if (Detective.currentTarget != null) {
                         DeadPlayer player = GameHistory.deadPlayers.Where(x => x.killerIfExisting.PlayerId == Detective.currentTarget.PlayerId).FirstOrDefault();
                         if (player == null) {
-                            if (!PlayerControl.LocalPlayer.isFlashedByGrenadier()) Helpers.showFlash(Color.green);
+                            if (!PlayerControl.LocalPlayer.isFlashedByGrenadier()) Helpers.showFlash(Color.green, message: "GREEN");
                         } else {
                             float timeSinceDeath = ((float)(DateTime.UtcNow - player.timeOfDeath).TotalMilliseconds);
                             if (timeSinceDeath < Detective.bloodTime * 1000) {
-                                if (!PlayerControl.LocalPlayer.isFlashedByGrenadier()) Helpers.showFlash(Color.red);
+                                if (!PlayerControl.LocalPlayer.isFlashedByGrenadier()) Helpers.showFlash(Color.red, message: "RED");
                             } else {
-                                if (!PlayerControl.LocalPlayer.isFlashedByGrenadier()) Helpers.showFlash(Color.green);
+                                if (!PlayerControl.LocalPlayer.isFlashedByGrenadier()) Helpers.showFlash(Color.green, message: "GREEN");
                             }
                         }
                     }
@@ -1245,7 +1251,7 @@ namespace TownOfUs
             );
 
             // Venerer Ability
-            venererButton = new CustomButton(
+            venererAbilityButton = new CustomButton(
                 () => {
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.VenererCamo, SendOption.Reliable, -1);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
@@ -1255,18 +1261,18 @@ namespace TownOfUs
                 },
                 () => { return Venerer.venerer != null && Venerer.venerer == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => {
-                    if (Venerer.numberOfKills == 1) venererButton.Sprite = Venerer.getcamoButton();
-                    if (Venerer.numberOfKills == 2) venererButton.Sprite = Venerer.getspeedButton();
-                    if (Venerer.numberOfKills >= 3) venererButton.Sprite = Venerer.getfreezeButton();
+                    if (Venerer.numberOfKills == 1) venererAbilityButton.Sprite = Venerer.getcamoButton();
+                    if (Venerer.numberOfKills == 2) venererAbilityButton.Sprite = Venerer.getspeedButton();
+                    if (Venerer.numberOfKills >= 3) venererAbilityButton.Sprite = Venerer.getfreezeButton();
                     return Venerer.numberOfKills > 0 && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
                 },
                 () => {
-                    venererButton.Timer = venererButton.MaxTimer;
-                    venererButton.isEffectActive = false;
-                    venererButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
+                    venererAbilityButton.Timer = venererAbilityButton.MaxTimer;
+                    venererAbilityButton.isEffectActive = false;
+                    venererAbilityButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
                 },
                 Venerer.getnoAbilitiesButton(), CustomButton.ButtonPositions.upperRowLeft, __instance, KeyCode.F,
-                true, Venerer.duration, () => { venererButton.Timer = venererButton.MaxTimer; }
+                true, Venerer.duration, () => { venererAbilityButton.Timer = venererAbilityButton.MaxTimer; }
             );
 
             // Disperser disperse
@@ -1282,6 +1288,61 @@ namespace TownOfUs
                 () => { return !Disperser.isButtonUsed && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
                 () => {},
                 Disperser.getButtonSprite(), new Vector3(0, 1f, 0), __instance, null, true
+            );
+
+            // Oracle Confess
+            oracleConfessButton = new CustomButton(
+                () => {
+                    if (Helpers.checkAndDoVetKill(Oracle.currentTarget)) return;
+
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.OracleConfess, SendOption.Reliable, -1);
+                    writer.Write(Oracle.currentTarget.PlayerId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.oracleConfess(Oracle.currentTarget.PlayerId);
+                    oracleConfessButton.Timer = oracleConfessButton.MaxTimer;
+
+                    Helpers.checkWatchFlash(Oracle.currentTarget);
+                },
+                () => { return Oracle.oracle != null && Oracle.oracle == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return Oracle.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { oracleConfessButton.Timer = oracleConfessButton.MaxTimer; },
+                Oracle.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F
+            );
+
+            // Bomber Bomb
+            bomberButton = new CustomButton(
+                () => {
+                    var pos = PlayerControl.LocalPlayer.transform.position;
+                    pos.z += 0.001f;
+                    Bomber.DetonatePoint = pos;
+                    Bomber.Bomb = BombExtensions.CreateBomb(pos);
+
+                    Helpers.checkWatchFlash(Bomber.bomber);
+                    bomberButton.Sprite = Bomber.getDetonateButtonSprite();
+                },
+                () => { return Bomber.bomber != null && Bomber.bomber == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => {
+                    Bomber.Bomb.ClearBomb();
+                    bomberButton.Sprite = Bomber.getPlantButtonSprite();
+                    bomberButton.Timer = bomberButton.MaxTimer;
+                    bomberButton.isEffectActive = false;
+                    bomberButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
+                },
+                Bomber.getPlantButtonSprite(), CustomButton.ButtonPositions.upperRowLeft, __instance, KeyCode.F,
+                true, Bomber.delay, () => {
+                    bomberButton.Sprite = Bomber.getPlantButtonSprite();
+
+                    var playersToDie = Helpers.GetClosestPlayers(Bomber.DetonatePoint, Bomber.radius, false);
+                    playersToDie = Helpers.Shuffle(playersToDie);
+                    while (playersToDie.Count > Bomber.maxKills) playersToDie.Remove(playersToDie[playersToDie.Count - 1]);
+                    foreach (PlayerControl player in playersToDie) {
+                        Helpers.checkMurderAttemptAndKill(Bomber.bomber, player, showAnimation: false, ignoreIfKillerIsDead: true);
+                    }
+
+                    bomberButton.Timer = bomberButton.MaxTimer;
+                    PlayerControl.LocalPlayer.killTimer = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown;
+                }
             );
 
             // Zoom Button

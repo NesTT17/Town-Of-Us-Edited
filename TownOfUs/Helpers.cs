@@ -68,6 +68,20 @@ namespace TownOfUs
             return null;
         }
 
+        public static Texture2D loadTextureFromDisk(string path) {
+            try {          
+                if (File.Exists(path))     {
+                    Texture2D texture = new Texture2D(2, 2, TextureFormat.ARGB32, true);
+                    var byteTexture = Il2CppSystem.IO.File.ReadAllBytes(path);
+                    ImageConversion.LoadImage(texture, byteTexture, false);
+                    return texture;
+                }
+            } catch {
+                System.Console.WriteLine("Error loading texture from disk: " + path);
+            }
+            return null;
+        }
+
         public static PlayerControl playerById(byte id)
         {
             foreach (PlayerControl player in PlayerControl.AllPlayerControls)
@@ -885,6 +899,51 @@ namespace TownOfUs
                 return true;
             }
             return false;
+        }
+
+        public static void Shuffle<T>(this List<T> list)
+        {
+            for (var i = list.Count - 1; i > 0; --i)
+            {
+                var j = UnityEngine.Random.Range(0, i + 1);
+                (list[i], list[j]) = (list[j], list[i]);
+            }
+        }
+
+        public static Il2CppSystem.Collections.Generic.List<PlayerControl> Shuffle(Il2CppSystem.Collections.Generic.List<PlayerControl> playersToDie)
+        {
+            var count = playersToDie.Count;
+            var last = count - 1;
+            for (var i = 0; i < last; ++i)
+            {
+                var r = UnityEngine.Random.Range(i, count);
+                var tmp = playersToDie[i];
+                playersToDie[i] = playersToDie[r];
+                playersToDie[r] = tmp;
+            }
+            return playersToDie;
+        }
+
+        public static Il2CppSystem.Collections.Generic.List<PlayerControl> GetClosestPlayers(Vector2 truePosition, float radius, bool includeDead)
+        {
+            Il2CppSystem.Collections.Generic.List<PlayerControl> playerControlList = new Il2CppSystem.Collections.Generic.List<PlayerControl>();
+            float lightRadius = radius * ShipStatus.Instance.MaxLightRadius;
+            Il2CppSystem.Collections.Generic.List<NetworkedPlayerInfo> allPlayers = GameData.Instance.AllPlayers;
+            for (int index = 0; index < allPlayers.Count; ++index)
+            {
+                NetworkedPlayerInfo playerInfo = allPlayers[index];
+                if (!playerInfo.Disconnected && (!playerInfo.Object.Data.IsDead || includeDead))
+                {
+                    Vector2 vector2 = new Vector2(playerInfo.Object.GetTruePosition().x - truePosition.x, playerInfo.Object.GetTruePosition().y - truePosition.y);
+                    float magnitude = ((Vector2)vector2).magnitude;
+                    if (magnitude <= lightRadius)
+                    {
+                        PlayerControl playerControl = playerInfo.Object;
+                        playerControlList.Add(playerControl);
+                    }
+                }
+            }
+            return playerControlList;
         }
     }
 

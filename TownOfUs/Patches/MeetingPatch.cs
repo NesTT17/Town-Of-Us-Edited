@@ -473,7 +473,7 @@ namespace TownOfUs.Patches {
 
                             dyingTarget = null;
                             DoubleShot.lifeUsed = true;
-                            Helpers.showFlash(Palette.ImpostorRed);
+                            Helpers.showFlash(Palette.ImpostorRed, message: "EXTRA LIFE IS USED");
                             return;
                         }
 
@@ -483,7 +483,7 @@ namespace TownOfUs.Patches {
                             __instance.playerStates.ToList().ForEach(x => { if (x.transform.FindChild("ShootButton") != null) UnityEngine.Object.Destroy(x.transform.FindChild("ShootButton").gameObject); });
 
                             dyingTarget = null;
-                            Helpers.showFlash(Palette.ImpostorRed);
+                            Helpers.showFlash(Palette.ImpostorRed, message: "WRONG GUESS");
                             return;
                         }
 
@@ -717,6 +717,47 @@ namespace TownOfUs.Patches {
                     string msg = "Examine Report Info:\n";
                     foreach (RoleInfo roleInfo in RoleInfo.allRoleInfos.Where(x => x.observeResults == RoleInfo.getRoleInfoForPlayer(Detective.examined, false).FirstOrDefault().observeResults).OrderBy(x => Guid.NewGuid())) {
                         msg += $"{roleInfo.name}, ";
+                    }
+
+                    if (AmongUsClient.Instance.AmClient && FastDestroyableSingleton<HudManager>.Instance)
+                    {
+                        FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(PlayerControl.LocalPlayer, msg, false);
+                        // Ghost Info
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareGhostInfo, Hazel.SendOption.Reliable, -1);
+                        writer.Write(PlayerControl.LocalPlayer.PlayerId);
+                        writer.Write((byte)RPCProcedure.GhostInfoTypes.ChatInfo);
+                        writer.Write(msg);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    }
+                    if (msg.IndexOf("who", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        FastDestroyableSingleton<UnityTelemetry>.Instance.SendWho();
+                    }
+                }
+
+                // Add confessor Info into Oracle chat
+                if (Oracle.oracle != null && !Oracle.oracle.Data.IsDead && Oracle.confessor != null && Oracle.oracle == PlayerControl.LocalPlayer) {
+                    string msg = "Confess Info:\n";
+                    
+                    if (Oracle.confessor.Data.IsDead || Oracle.confessor.Data.Disconnected) msg += "Your confessor failed to survive so you received no confession";
+                    var allPlayers = PlayerControl.AllPlayerControls.ToArray().Where(x => !x.Data.IsDead && !x.Data.Disconnected && x != PlayerControl.LocalPlayer && x != Oracle.confessor).ToList();
+                    if (allPlayers.Count < 2) msg += "Too few people alive to receive a confessional";
+                    var evilPlayers = PlayerControl.AllPlayerControls.ToArray().Where(x => !x.Data.IsDead && !x.Data.Disconnected && (x.Data.Role.IsImpostor || (x.isNeutral() && Oracle.neutShowsEvil) || (x.isNeutralKiller() && Oracle.kneutShowsEvil))).ToList();
+                    if (evilPlayers.Count == 0) msg += $"{Oracle.confessor.Data.DefaultOutfit.PlayerName} confesses to knowing that there are no more evil players!";
+                    allPlayers.Shuffle();
+                    evilPlayers.Shuffle();
+                    var secondPlayer = allPlayers[0];
+                    var firstTwoEvil = false;
+                    foreach (var evilPlayer in evilPlayers)
+                        if (evilPlayer == Oracle.confessor || evilPlayer == secondPlayer)
+                            firstTwoEvil = true;
+                    
+                    if (firstTwoEvil) {
+                        var thirdPlayer = allPlayers[1];
+                        msg += $"{Oracle.confessor.Data.DefaultOutfit.PlayerName} confesses to knowing that they, {secondPlayer.Data.DefaultOutfit.PlayerName} and/or {thirdPlayer.Data.DefaultOutfit.PlayerName} is evil!";
+                    } else {
+                        var thirdPlayer = evilPlayers[0];
+                        msg +=  $"{Oracle.confessor.Data.DefaultOutfit.PlayerName} confesses to knowing that they, {secondPlayer.Data.DefaultOutfit.PlayerName} and/or {thirdPlayer.Data.DefaultOutfit.PlayerName} is evil!";
                     }
 
                     if (AmongUsClient.Instance.AmClient && FastDestroyableSingleton<HudManager>.Instance)

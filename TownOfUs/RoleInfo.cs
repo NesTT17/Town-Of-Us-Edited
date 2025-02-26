@@ -53,6 +53,7 @@ namespace TownOfUs
         public static RoleInfo mystic = new RoleInfo("Mystic", Mystic.color, "Know when and where kills happen", "Know when and where kills happen", RoleId.Mystic, FactionId.Crewmate, ObserveResults.Seven);
         public static RoleInfo tracker = new RoleInfo("Tracker", Tracker.color, "Track suspicious players", "Track suspicious players", RoleId.Tracker, FactionId.Crewmate, ObserveResults.Four);
         public static RoleInfo detective = new RoleInfo("Detective", Detective.color, "Examine suspicious players to find evildoers", "Examine suspicious players to find evildoers", RoleId.Detective, FactionId.Crewmate, ObserveResults.Six);
+        public static RoleInfo oracle = new RoleInfo("Oracle", Oracle.color, "Get another player to confess on your passing", "Get another player to confess on your passing", RoleId.Oracle, FactionId.Crewmate, ObserveResults.Seven);
 
         // Neutral Roles
         public static RoleInfo jester = new RoleInfo("Jester", Jester.color, "Get voted out", "Get voted out", RoleId.Jester, FactionId.Neutral, ObserveResults.Seven);
@@ -88,6 +89,7 @@ namespace TownOfUs
         public static RoleInfo grenadier = new RoleInfo("Grenadier", Grenadier.color, "Blind the crewmates to get sneaky kills", "Blind the crewmates to get sneaky kills", RoleId.Grenadier, FactionId.Impostor, ObserveResults.Three);
         public static RoleInfo venerer = new RoleInfo("Venerer", Venerer.color, "Kill players to unlock ability perks", "Kill players to unlock ability perks", RoleId.Venerer, FactionId.Impostor, ObserveResults.Four);
         public static RoleInfo bountyHunter = new RoleInfo("Bounty Hunter", BountyHunter.color, "Hunt your bounty down", "Hunt your bounty down", RoleId.BountyHunter, FactionId.Impostor, ObserveResults.Five);
+        public static RoleInfo bomber = new RoleInfo("Bomber", Bomber.color, "Plant bombs to kill crewmates", "Plant bombs to kill crewmates", RoleId.Bomber, FactionId.Impostor, ObserveResults.Six);
 
         // Modifiers
         public static RoleInfo lover = new RoleInfo("Lover", Lovers.color, $"You are in love", $"You are in love", RoleId.Lover, FactionId.Modifier, ObserveResults.None);
@@ -115,6 +117,7 @@ namespace TownOfUs
             mayor,
             medic,
             mystic,
+            oracle,
             seer,
             sheriff,
             shifter,
@@ -146,6 +149,7 @@ namespace TownOfUs
 
             impostor,
             assassin,
+            bomber,
             bountyHunter,
             blackmailer,
             camouflager,
@@ -244,6 +248,8 @@ namespace TownOfUs
             if (p == Glitch.glitch) infos.Add(glitch);
             if (p == Venerer.venerer) infos.Add(venerer);
             if (p == BountyHunter.bountyHunter) infos.Add(bountyHunter);
+            if (p == Oracle.oracle) infos.Add(oracle);
+            if (p == Bomber.bomber) infos.Add(bomber);
 
             // Default roles
             if (infos.Count == count) infos.Add(p.Data.Role.IsImpostor ? impostor : crewmate);
