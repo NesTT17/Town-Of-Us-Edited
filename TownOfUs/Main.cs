@@ -33,7 +33,7 @@ namespace TownOfUs
     public class TownOfUsPlugin : BasePlugin
     {
         public const string Id = "me.nestt.townofus";
-        public const string VersionString = "1.1.0";
+        public const string VersionString = "1.1.2";
 
         public static Version Version = Version.Parse(VersionString);
         internal static BepInEx.Logging.ManualLogSource Logger;

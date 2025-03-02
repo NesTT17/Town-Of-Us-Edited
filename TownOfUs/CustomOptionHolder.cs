@@ -39,6 +39,7 @@ namespace TownOfUs
         public static CustomOption mayorBlockGameEnd;
         public static CustomOption swapperBlockGameEnd;
         public static CustomOption niceGuesserBlockGameEnd;
+        public static CustomOption vampireHunterBlockGameEnd;
         
         public static CustomOption dynamicMap;
         public static CustomOption dynamicMapEnableSkeld;
@@ -131,6 +132,7 @@ namespace TownOfUs
         public static CustomOption scavengerNumberToWin;
         public static CustomOption scavengerCanUseVents;
         public static CustomOption scavengerShowArrows;
+        public static CustomOption scavengerCanEatWithGuess;
         
         public static CustomOption executionerSpawnRate;
         public static CustomOption executionerVision;
@@ -298,6 +300,12 @@ namespace TownOfUs
         public static CustomOption bomberMaxKillsInDetonation;
         public static CustomOption bomberDetonateDelay;
         public static CustomOption bomberDetonateRadius;
+        
+        public static CustomOption vampireHunterSpawnRate;
+        public static CustomOption vampireHunterCooldown;
+        public static CustomOption vampireHunterMaxFailedStakes;
+        public static CustomOption vampireHunterCanStakeRoundOne;
+        public static CustomOption vampireHunterSelfKillAfterFinalStake;
 
         // Guesser Gamemode
         public static CustomOption guesserGamemodeCrewNumber;
@@ -335,6 +343,7 @@ namespace TownOfUs
             veteranBlockGameEnd = CustomOption.Create(801, Types.General, "Veteran Blocks Game End", false);
             swapperBlockGameEnd = CustomOption.Create(803, Types.General, "Swapper Blocks Game End", false);
             niceGuesserBlockGameEnd = CustomOption.Create(804, Types.General, "Vigilante Blocks Game End", false);
+            vampireHunterBlockGameEnd = CustomOption.Create(805, Types.General, "Vampire Hunter Blocks Game End", false);
 
             // Guesser Gamemode (2000 - 2999)
             guesserGamemodeCrewNumber = CustomOption.Create(2001, Types.General, "Number of Crew Guessers", 15f, 0f, 15f, 1f, null, true, heading: "Amount of Guessers");
@@ -430,6 +439,12 @@ namespace TownOfUs
             trapperNeutShowsEvil = CustomOption.Create(157, Types.Crewmate, "Neutrals Shows Evil", false, trapperSpawnRate);
             trapperKNeutShowsEvil = CustomOption.Create(158, Types.Crewmate, "Killing Neutrals Shows Evil", false, trapperSpawnRate);
 
+            vampireHunterSpawnRate = CustomOption.Create(240, Types.Crewmate, cs(VampireHunter.color, "Vampire Hunter"), rates, null, true);
+            vampireHunterCooldown = CustomOption.Create(241, Types.Crewmate, "Stake Cooldown", 30f, 10f, 60f, 2.5f, vampireHunterSpawnRate);
+            vampireHunterMaxFailedStakes = CustomOption.Create(242, Types.Crewmate, "Maximum Failed Stakes Per Game", 5f, 1f, 15f, 1f, vampireHunterSpawnRate);
+            vampireHunterCanStakeRoundOne = CustomOption.Create(243, Types.Crewmate, "Can Stake Round One", false, vampireHunterSpawnRate);
+            vampireHunterSelfKillAfterFinalStake = CustomOption.Create(244, Types.Crewmate, "Self Kill On Failure To Kill A Vamp With All Stakes", false, vampireHunterSpawnRate);
+
             veteranSpawnRate = CustomOption.Create(110, Types.Crewmate, cs(Veteran.color, "Veteran"), rates, null, true);
             veteranCooldown = CustomOption.Create(111, Types.Crewmate, "Alert Cooldown", 30f, 10f, 60f, 2.5f, veteranSpawnRate);
             veteranDuration = CustomOption.Create(112, Types.Crewmate, "Alert Duration", 5f, 1f, 20f, 0.5f, veteranSpawnRate);
@@ -486,6 +501,7 @@ namespace TownOfUs
             scavengerNumberToWin = CustomOption.Create(72, Types.Neutral, "Number Of Corpses Needed To Be Eaten", 4f, 1f, 10f, 1f, scavengerSpawnRate);
             scavengerCanUseVents = CustomOption.Create(73, Types.Neutral, "Scavenger Can Use Vents", true, scavengerSpawnRate);
             scavengerShowArrows = CustomOption.Create(74, Types.Neutral, "Show Arrows Pointing Towards The Corpses", true, scavengerSpawnRate);
+            scavengerCanEatWithGuess = CustomOption.Create(245, Types.Neutral, "Can Guess To Eat a Corpse (If Guesser)", true, scavengerSpawnRate);
 
             draculaSpawnRate = CustomOption.Create(61, Types.NeutralKiller, cs(Dracula.color, "Dracula"), rates, null, true);
             draculaKillCooldown = CustomOption.Create(62, Types.NeutralKiller, "Dracula/Vampire Bite Cooldown", 30f, 10f, 60f, 2.5f, draculaSpawnRate);
@@ -582,7 +598,7 @@ namespace TownOfUs
 
             modifierIndomitable = CustomOption.Create(1030, Types.Modifier, cs(Palette.CrewmateBlue, "Indomitable"), rates, null, true);
 
-            modifierSunglasses = CustomOption.Create(1006, Types.Modifier, cs(Palette.CrewmateBlue, "Sunglasses"), rates, null, true);
+            modifierSunglasses = CustomOption.Create(1006, Types.Modifier, cs(Palette.CrewmateBlue, "Sunglasses"), new string[] {"0%"}, null, true);
             modifierSunglassesVision = CustomOption.Create(1007, Types.Modifier, "Sunglasses Vision", new string[] { "-10%", "-20%", "-30%", "-40%", "-50%" }, modifierSunglasses);
 
             modifierTorch= CustomOption.Create(1008, Types.Modifier, cs(Palette.CrewmateBlue, "Torch"), rates, null, true);

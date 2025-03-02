@@ -1,4 +1,5 @@
 using HarmonyLib;
+using Hazel;
 using Reactor.Utilities;
 using System.Collections;
 using System.Collections.Generic;
@@ -30,7 +31,10 @@ namespace TownOfUs.Objects {
                 if (players.ContainsKey(entry.PlayerId)) {
                     players[entry.PlayerId] += Time.deltaTime;
                     if (players[entry.PlayerId] > Trapper.minTimeInTrap) {
-                        if (!Trapper.trappedPlayers.Contains(entry) && entry != Trapper.trapper) Trapper.trappedPlayers.Add(entry);
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(entry.NetId, (byte)CustomRPC.TriggerTrap, Hazel.SendOption.Reliable, -1);
+                        writer.Write(entry.PlayerId);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.triggerTrap(entry.PlayerId);
                     }
                 }
             }

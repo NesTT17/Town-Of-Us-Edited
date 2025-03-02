@@ -54,6 +54,8 @@ namespace TownOfUs
         public static RoleInfo tracker = new RoleInfo("Tracker", Tracker.color, "Track suspicious players", "Track suspicious players", RoleId.Tracker, FactionId.Crewmate, ObserveResults.Four);
         public static RoleInfo detective = new RoleInfo("Detective", Detective.color, "Examine suspicious players to find evildoers", "Examine suspicious players to find evildoers", RoleId.Detective, FactionId.Crewmate, ObserveResults.Six);
         public static RoleInfo oracle = new RoleInfo("Oracle", Oracle.color, "Get another player to confess on your passing", "Get another player to confess on your passing", RoleId.Oracle, FactionId.Crewmate, ObserveResults.Seven);
+        public static RoleInfo vampireHunter = new RoleInfo("Vampire Hunter", VampireHunter.color, "Stake the Vampires", "Stake the Vampires", RoleId.VampireHunter, FactionId.Crewmate, ObserveResults.One);
+        public static RoleInfo vhVeteran = new RoleInfo("Veteran", Veteran.color, "Protect yourself from other", "Protect yourself from others", RoleId.VHVeteran, FactionId.Crewmate, ObserveResults.Four);
 
         // Neutral Roles
         public static RoleInfo jester = new RoleInfo("Jester", Jester.color, "Get voted out", "Get voted out", RoleId.Jester, FactionId.Neutral, ObserveResults.Seven);
@@ -126,7 +128,9 @@ namespace TownOfUs
             swapper,
             tracker,
             trapper,
+            vampireHunter,
             veteran,
+            vhVeteran,
             vigilante,
             
             amnesiac,
@@ -229,6 +233,7 @@ namespace TownOfUs
             if (p == Amnesiac.amnesiac) infos.Add(amnesiac);
             if (p == Investigator.investigator) infos.Add(investigator);
             if (p == Veteran.veteran) infos.Add(veteran);
+            if (p == VampireHunter.veteran) infos.Add(vhVeteran);
             if (p == Seer.seer) infos.Add(seer);
             if (p == Juggernaut.juggernaut) infos.Add(juggernaut);
             if (p == Swooper.swooper) infos.Add(swooper);
@@ -250,6 +255,7 @@ namespace TownOfUs
             if (p == BountyHunter.bountyHunter) infos.Add(bountyHunter);
             if (p == Oracle.oracle) infos.Add(oracle);
             if (p == Bomber.bomber) infos.Add(bomber);
+            if (p == VampireHunter.vampireHunter) infos.Add(vampireHunter);
 
             // Default roles
             if (infos.Count == count) infos.Add(p.Data.Role.IsImpostor ? impostor : crewmate);
@@ -279,6 +285,8 @@ namespace TownOfUs
                     if (Poisoner.poisoner != null && !Poisoner.poisoner.Data.IsDead && Poisoner.poisoned == p && !p.Data.IsDead)
                         roleName = Helpers.cs(Poisoner.color, $"(poisoned {(int)HudManagerStartPatch.poisonerButton.Timer + 1}) ") + roleName;
                     if (Veteran.veteran != null && !Veteran.veteran.Data.IsDead && Veteran.veteran == p && Veteran.isAlertActive)
+                        roleName = Helpers.cs(Veteran.color, "! ") + roleName;
+                    if (VampireHunter.veteran != null && !VampireHunter.veteran.Data.IsDead && VampireHunter.veteran == p && VampireHunter.isAlertActive)
                         roleName = Helpers.cs(Veteran.color, "! ") + roleName;
                     if  (Glitch.hackedPlayer != null && !Glitch.hackedPlayer.Data.IsDead && Glitch.hackedPlayer == p)
                         roleName = Helpers.cs(Glitch.color, "(hacked) ") + roleName;

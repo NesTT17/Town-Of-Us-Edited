@@ -709,6 +709,12 @@ namespace TownOfUs.Patches {
             setPlayerOutline(Oracle.currentTarget, Oracle.color);
         }
 
+        static void vampireHunterSetTarget() {
+            if (VampireHunter.vampireHunter == null || VampireHunter.vampireHunter != PlayerControl.LocalPlayer) return;
+            VampireHunter.currentTarget = setTarget();
+            setPlayerOutline(VampireHunter.currentTarget, VampireHunter.color);
+        }
+
         public static void Postfix(PlayerControl __instance) {
             if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Started || GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek) return;
             
@@ -791,6 +797,8 @@ namespace TownOfUs.Patches {
                 bountyHunterUpdate();
                 // Oracle
                 oracleSetTarget();
+                // Vampire Hunter
+                vampireHunterSetTarget();
 
                 // -- MODIFIER--
                 // Bait

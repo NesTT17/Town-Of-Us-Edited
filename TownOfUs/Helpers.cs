@@ -414,6 +414,36 @@ namespace TownOfUs
                 return MurderAttemptResult.BlankKill;
             }
 
+            // Reverse vh kill
+            if (VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == target && (killer.PlayerId == Dracula.dracula.PlayerId || killer.PlayerId == Vampire.vampire.PlayerId)) {
+                if (Medic.shielded != null && Medic.shielded == target) {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.shieldedMurderAttempt();
+                }
+                if (Mercenary.shielded != null && Mercenary.shielded == target) {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryAddMurder, SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.mercenaryAddMurder();
+                }
+                return MurderAttemptResult.ReverseKill;
+            }
+
+            // Reverse vh veteran kill
+            if (VampireHunter.veteran != null && VampireHunter.veteran == target && VampireHunter.isAlertActive) {
+                if (Medic.shielded != null && Medic.shielded == target) {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.shieldedMurderAttempt();
+                }
+                if (Mercenary.shielded != null && Mercenary.shielded == target) {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryAddMurder, SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.mercenaryAddMurder();
+                }
+                return MurderAttemptResult.ReverseKill;
+            }
+
             if (TransportationToolPatches.isUsingTransportation(target) && !blockRewind && killer == Poisoner.poisoner) {
                 return MurderAttemptResult.DelayPoisonerKill;
             } else if (TransportationToolPatches.isUsingTransportation(target))
@@ -594,6 +624,14 @@ namespace TownOfUs
                 checkMurderAttemptAndKill(Veteran.veteran, PlayerControl.LocalPlayer);
             }
             return shouldVetKill;
+        }
+
+        public static bool checkAndDoVHVetKill(PlayerControl target) {
+            bool shouldVHVetKill = VampireHunter.veteran == target && VampireHunter.isAlertActive;
+            if (shouldVHVetKill) {
+                checkMurderAttemptAndKill(VampireHunter.veteran, PlayerControl.LocalPlayer);
+            }
+            return shouldVHVetKill;
         }
 
         public static IEnumerator BlackmailShhh() {
@@ -854,9 +892,11 @@ namespace TownOfUs
 
             if (CustomOptionHolder.sheriffBlockGameEnd.getBool() && Sheriff.sheriff != null && !Sheriff.sheriff.Data.IsDead) powerCrewAlive = true;
             if (CustomOptionHolder.veteranBlockGameEnd.getBool() && Veteran.veteran != null && !Veteran.veteran.Data.IsDead) powerCrewAlive = true;
+            if (CustomOptionHolder.veteranBlockGameEnd.getBool() && VampireHunter.veteran != null && !VampireHunter.veteran.Data.IsDead) powerCrewAlive = true;
             if (CustomOptionHolder.mayorBlockGameEnd.getBool() && Mayor.mayor != null && !Mayor.mayor.Data.IsDead) powerCrewAlive = true;
             if (CustomOptionHolder.swapperBlockGameEnd.getBool() && Swapper.swapper != null && !Swapper.swapper.Data.IsDead) powerCrewAlive = true;
             if (CustomOptionHolder.niceGuesserBlockGameEnd.getBool() && Guesser.niceGuesser != null && !Guesser.niceGuesser.Data.IsDead) powerCrewAlive = true;
+            if (CustomOptionHolder.vampireHunterBlockGameEnd.getBool() && VampireHunter.vampireHunter != null && !VampireHunter.vampireHunter.Data.IsDead) powerCrewAlive = true;
 
             return powerCrewAlive;
         }

@@ -4,7 +4,7 @@ using System;
 using Hazel;
 
 namespace TownOfUs.Patches {
-    [HarmonyPatch(typeof(ExileController), nameof(ExileController.Begin))]
+    [HarmonyPatch(typeof(ExileController), nameof(ExileController.BeginForGameplay))]
     [HarmonyPriority(Priority.First)]
     class ExileControllerBeginPatch {
         public static void Prefix(ExileController __instance, [HarmonyArgument(0)]ref NetworkedPlayerInfo exiled) {
@@ -83,8 +83,9 @@ namespace TownOfUs.Patches {
 
             // Trapper Remove traps
             if (Trapper.trapper != null) {
-                Trapper.trappedPlayers = new System.Collections.Generic.List<PlayerControl>();
-                if (Trapper.removeTraps) Trapper.traps.ClearTraps();
+                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.CleanTraps, SendOption.Reliable, -1);
+                AmongUsClient.Instance.FinishRpcImmediately(writer);
+                RPCProcedure.cleanTraps();
             }
 
             // Tracker Remove tracks
@@ -104,6 +105,16 @@ namespace TownOfUs.Patches {
             // Force Bounty Hunter Bounty Update
             if (BountyHunter.bountyHunter != null && BountyHunter.bountyHunter == PlayerControl.LocalPlayer)
                 BountyHunter.bountyUpdateTimer = 0f;
+            
+            // Vampire Hunter promotion trigger
+            if (VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == PlayerControl.LocalPlayer) {
+                int aliveVampires = PlayerControl.AllPlayerControls.ToArray().Where(x => x != null && !x.Data.Disconnected && !x.Data.IsDead && (x.PlayerId == Dracula.dracula.PlayerId || x.PlayerId == Vampire.vampire.PlayerId)).Count();
+                if (aliveVampires == 0) {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.VampireHunterPromotes, SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.vampireHunterPromotes();
+                }
+            }
         }
     }
 

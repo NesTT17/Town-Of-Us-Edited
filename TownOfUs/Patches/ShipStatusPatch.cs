@@ -37,11 +37,11 @@ namespace TownOfUs.Patches {
                 return false;
             }
             // If player is Sunglasses, apply Sunglasses modifier
-            else if (Sunglasses.sunglasses != null && Sunglasses.sunglasses.PlayerId == player.PlayerId) {
-                float unlerped = Mathf.InverseLerp(__instance.MinLightRadius, __instance.MaxLightRadius, GetNeutralLightRadius(__instance, false));
-                __result = Mathf.Lerp(__instance.MinLightRadius, __instance.MaxLightRadius - (Sunglasses.vision * 0.1f), unlerped);
-                return false;
-            }
+            // else if (Sunglasses.sunglasses != null && Sunglasses.sunglasses.PlayerId == player.PlayerId) {
+            //     float unlerped = Mathf.InverseLerp(__instance.MinLightRadius, __instance.MaxLightRadius, GetNeutralLightRadius(__instance, false));
+            //     __result = Mathf.Lerp(__instance.MinLightRadius, __instance.MaxLightRadius - (Sunglasses.vision * 0.1f), unlerped);
+            //     return false;
+            // }
             // Default light radius
             else {
                 __result = GetNeutralLightRadius(__instance, false);

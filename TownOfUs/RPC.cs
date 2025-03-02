@@ -65,6 +65,8 @@ namespace TownOfUs
         BountyHunter,
         Oracle,
         Bomber,
+        VampireHunter,
+        VHVeteran,
         // Modifier ---
         Lover,
         Blind,
@@ -123,6 +125,9 @@ namespace TownOfUs
         VampirePromotes,
         PoisonerSetPoisoned,
         CleanBody,
+        PlaceTrap,
+        TriggerTrap,
+        CleanTraps,
         ExecutionerSetTarget,
         ExecutionerPromotesToPursuer,
         LawyerSetTarget,
@@ -162,6 +167,8 @@ namespace TownOfUs
         Disperse,
         BreakArmor,
         OracleConfess,
+        VHVeteranAlert,
+        VampireHunterPromotes,
         
         // Gamemode
         SetGuesserGm,
@@ -300,7 +307,7 @@ namespace TownOfUs
                         break;
                     case RoleId.Veteran:
                         Veteran.veteran = player;
-                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.veteran);
+                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.vhVeteran);
                         break;
                     case RoleId.Seer:
                         Seer.seer = player;
@@ -385,6 +392,14 @@ namespace TownOfUs
                     case RoleId.Bomber:
                         Bomber.bomber = player;
                         PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.bomber);
+                        break;
+                    case RoleId.VampireHunter:
+                        VampireHunter.vampireHunter = player;
+                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.vampireHunter);
+                        break;
+                    case RoleId.VHVeteran:
+                        VampireHunter.veteran = player;
+                        PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.veteran);
                         break;
                     }
                     if (AmongUsClient.Instance.AmHost && Helpers.roleCanUseVents(player) && !player.Data.Role.IsImpostor) {
@@ -585,6 +600,8 @@ namespace TownOfUs
             if (player == Tracker.tracker) Tracker.clearAndReload();
             if (player == Detective.detective) Detective.clearAndReload();
             if (player == Oracle.oracle) Oracle.clearAndReload();
+            if (player == VampireHunter.vampireHunter) VampireHunter.clearAndReloadVampireHunter();
+            if (player == VampireHunter.veteran) VampireHunter.clearAndReloadVeteran();
 
             // Neutral Roles
             if (player == Jester.jester) Jester.clearAndReload();
@@ -755,6 +772,12 @@ namespace TownOfUs
                 Doomsayer.guessedToWin++;
                 if (Doomsayer.guessedToWin == Doomsayer.guessesToWin)
                     Doomsayer.triggerDoomsayerWin = true;
+            }
+
+            if (Scavenger.scavenger && Scavenger.scavenger.PlayerId == killerId && dyingTargetId != killerId && Scavenger.canEatWithGuess) {
+                Scavenger.eatenBodies++;
+                if (Scavenger.eatenBodies == Scavenger.scavengerNumberToWin)
+                    Scavenger.triggerScavengerWin = true;
             }
 
             dyingTarget.Exiled();
@@ -941,6 +964,25 @@ namespace TownOfUs
                     Scavenger.triggerScavengerWin = true;
                 }
             }
+        }
+
+        public static void placeTrap() {
+            var pos = PlayerControl.LocalPlayer.transform.position;
+            pos.z += 0.001f;
+            Trapper.traps.Add(TrapExtentions.CreateTrap(pos));
+            Trapper.maxTraps--;
+        }
+
+        public static void triggerTrap(byte targetId) {
+            PlayerControl target = Helpers.playerById(targetId);
+            if (target == null) return;
+            if (target.PlayerId != Trapper.trapper.PlayerId && !Trapper.trappedPlayers.Contains(target))
+                Trapper.trappedPlayers.Add(target);
+        }
+
+        public static void cleanTraps() {
+            if (Trapper.removeTraps) Trapper.traps.ClearTraps();
+            Trapper.trappedPlayers = new List<PlayerControl>();
         }
 
         public static void executionerSetTarget(byte playerId) {
@@ -1333,6 +1375,22 @@ namespace TownOfUs
             else if (faction == 1) Oracle.revealedFaction = FactionId.Neutral;
             else Oracle.revealedFaction = FactionId.Impostor;
         }
+
+        public static void vhVeteranAlert() {
+            VampireHunter.remainingAlerts--;
+            VampireHunter.isAlertActive = true;
+            FastDestroyableSingleton<HudManager>.Instance.StartCoroutine(Effects.Lerp(VampireHunter.duration, new Action<float>((p) => {
+                if (p == 1f) VampireHunter.isAlertActive = false;
+            })));
+        }
+
+        public static void vampireHunterPromotes() {
+            PlayerControl player = VampireHunter.vampireHunter;
+            VampireHunter.clearAndReloadVampireHunter();
+
+            VampireHunter.veteran = player;
+            PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.vhVeteran);
+        }
     }
 
     [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.HandleRpc))]
@@ -1443,6 +1501,15 @@ namespace TownOfUs
                     break;
                 case (byte)CustomRPC.CleanBody:
                     RPCProcedure.cleanBody(reader.ReadByte(), reader.ReadByte());
+                    break;
+                case (byte)CustomRPC.PlaceTrap:
+                    RPCProcedure.placeTrap(); 
+                    break;
+                case (byte)CustomRPC.TriggerTrap:
+                    RPCProcedure.triggerTrap(reader.ReadByte()); 
+                    break;
+                case (byte)CustomRPC.CleanTraps:
+                    RPCProcedure.cleanTraps();
                     break;
                 case (byte)CustomRPC.ExecutionerSetTarget:
                     RPCProcedure.executionerSetTarget(reader.ReadByte()); 
@@ -1560,6 +1627,12 @@ namespace TownOfUs
                     break;
                 case (byte)CustomRPC.OracleConfess:
                     RPCProcedure.oracleConfess(reader.ReadByte());
+                    break;
+                case (byte)CustomRPC.VHVeteranAlert:
+                    RPCProcedure.vhVeteranAlert();
+                    break;
+                case (byte)CustomRPC.VampireHunterPromotes:
+                    RPCProcedure.vampireHunterPromotes();
                     break;
 
                 // Game mode

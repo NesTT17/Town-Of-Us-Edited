@@ -64,6 +64,10 @@ namespace TownOfUs
         public static CustomButton disperserDisperseButton;
         public static CustomButton oracleConfessButton;
         public static CustomButton bomberButton;
+        public static CustomButton vampireHunterStakeButton;
+        public static TMPro.TMP_Text vampireHunterStakeButtonText;
+        public static CustomButton vhVeteranAlertButton;
+        public static TMPro.TMP_Text vhVeteranAlertButtonText;
         
         public static void setCustomButtonCooldowns() {
             if (!initialized) {
@@ -132,6 +136,9 @@ namespace TownOfUs
             oracleConfessButton.MaxTimer = Oracle.cooldown;
             bomberButton.MaxTimer = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown;
             bomberButton.EffectDuration = Bomber.delay;
+            vampireHunterStakeButton.MaxTimer = VampireHunter.stakeCooldown;
+            vhVeteranAlertButton.MaxTimer = VampireHunter.cooldown;
+            vhVeteranAlertButton.EffectDuration = VampireHunter.duration;
             // Already set the timer to the max, as the button is enabled during the game and not available at the start
             zoomOutButton.MaxTimer = 0f;
         }
@@ -184,6 +191,10 @@ namespace TownOfUs
                         morphlingButton.EffectDuration = Morphling.duration;
                     } else if (Morphling.currentTarget != null) {
                         if (Helpers.checkAndDoVetKill(Morphling.currentTarget)) {
+                            morphlingButton.HasEffect = false;
+                            return;
+                        }
+                        if (Helpers.checkAndDoVHVetKill(Morphling.currentTarget)) {
                             morphlingButton.HasEffect = false;
                             return;
                         }
@@ -355,6 +366,7 @@ namespace TownOfUs
             shifterShiftButton = new CustomButton(
                 () => {
                     if (Helpers.checkAndDoVetKill(Shifter.currentTarget)) return;
+                    if (Helpers.checkAndDoVHVetKill(Shifter.currentTarget)) return;
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.SetFutureShifted, Hazel.SendOption.Reliable, -1);
                     writer.Write(Shifter.currentTarget.PlayerId);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
@@ -371,6 +383,7 @@ namespace TownOfUs
             medicShieldButton = new CustomButton(
                 () => {
                     if (Helpers.checkAndDoVetKill(Medic.currentTarget)) return;
+                    if (Helpers.checkAndDoVHVetKill(Medic.currentTarget)) return;
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.MedicSetShielded, Hazel.SendOption.Reliable, -1);
                     writer.Write(Medic.currentTarget.PlayerId);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
@@ -387,10 +400,14 @@ namespace TownOfUs
             draculaButton = new CustomButton(
                 () => {
                     if (Dracula.canCreateVampire) {
-                        if (Mayor.mayor != null && Mayor.isRevealed && Dracula.currentTarget == Mayor.mayor) {
+                        if (VampireHunter.vampireHunter != null && Dracula.currentTarget == VampireHunter.vampireHunter) {
+                            Helpers.checkMurderAttemptAndKill(Dracula.currentTarget, Dracula.dracula);
+                            return;
+                        } else if (Mayor.mayor != null && Mayor.isRevealed && Dracula.currentTarget == Mayor.mayor) {
                             if (Helpers.checkMurderAttemptAndKill(Dracula.dracula, Dracula.currentTarget) == MurderAttemptResult.SuppressKill) return;
                         } else {
                             if (Helpers.checkAndDoVetKill(Dracula.currentTarget)) return;
+                            if (Helpers.checkAndDoVHVetKill(Dracula.currentTarget)) return;
                             MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.DraculaCreatesVampire, Hazel.SendOption.Reliable, -1);
                             writer.Write(Dracula.currentTarget.PlayerId);
                             AmongUsClient.Instance.FinishRpcImmediately(writer);
@@ -526,6 +543,7 @@ namespace TownOfUs
                 () => {
                     if (Pursuer.target != null) {
                         if (Helpers.checkAndDoVetKill(Pursuer.target)) return;
+                        if (Helpers.checkAndDoVHVetKill(Pursuer.target)) return;
                         MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.SetBlanked, Hazel.SendOption.Reliable, -1);
                         writer.Write(Pursuer.target.PlayerId);
                         writer.Write(Byte.MaxValue);
@@ -659,6 +677,7 @@ namespace TownOfUs
             investigatorWatchButton = new CustomButton(
                 () => {
                     if (Helpers.checkAndDoVetKill(Investigator.currentTarget)) return;
+                    if (Helpers.checkAndDoVHVetKill(Investigator.currentTarget)) return;
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.InvestigatorWatchPlayer, SendOption.Reliable, -1);
                     writer.Write(Investigator.currentTarget.PlayerId);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
@@ -781,6 +800,7 @@ namespace TownOfUs
             mercenaryShieldButton = new CustomButton(
                 () => {
                     if (Helpers.checkAndDoVetKill(Mercenary.currentTarget)) return;
+                    if (Helpers.checkAndDoVHVetKill(Mercenary.currentTarget)) return;
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.MercenaryShield, Hazel.SendOption.Reliable, -1);
                     writer.Write(Mercenary.currentTarget.PlayerId);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
@@ -798,6 +818,7 @@ namespace TownOfUs
             blackmailerButton = new CustomButton(
                 () => {
                     if (Helpers.checkAndDoVetKill(Blackmailer.currentTarget)) return;
+                    if (Helpers.checkAndDoVHVetKill(Blackmailer.currentTarget)) return;
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.BlackmailPlayer, SendOption.Reliable, -1);
                     writer.Write(Blackmailer.currentTarget.PlayerId);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
@@ -962,10 +983,9 @@ namespace TownOfUs
                 () => {
                     Helpers.checkWatchFlash(Trapper.trapper);
 
-                    var pos = PlayerControl.LocalPlayer.transform.position;
-                    pos.z += 0.001f;
-                    Trapper.traps.Add(TrapExtentions.CreateTrap(pos));
-                    Trapper.maxTraps--;
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.PlaceTrap, SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.placeTrap();
 
                     trapperButton.Timer = trapperButton.MaxTimer;
                 },
@@ -1054,6 +1074,7 @@ namespace TownOfUs
             doomsayerObserveButton = new CustomButton(
                 () => {
                     if (Helpers.checkAndDoVetKill(Doomsayer.currentTarget)) return;
+                    if (Helpers.checkAndDoVHVetKill(Doomsayer.currentTarget)) return;
 
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.DoomsayerObserve, SendOption.Reliable, -1);
                     writer.Write(Doomsayer.currentTarget.PlayerId);
@@ -1073,6 +1094,7 @@ namespace TownOfUs
             trackerTrackButton = new CustomButton(
                 () => {
                     if (Helpers.checkAndDoVetKill(Tracker.currentTarget)) return;
+                    if (Helpers.checkAndDoVHVetKill(Tracker.currentTarget)) return;
 
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.TrackerUseTrack, SendOption.Reliable, -1);
                     writer.Write(Tracker.currentTarget.PlayerId);
@@ -1137,6 +1159,7 @@ namespace TownOfUs
             detectiveExamineButton = new CustomButton(
                 () => {
                     if (Helpers.checkAndDoVetKill(Detective.currentTarget)) return;
+                    if (Helpers.checkAndDoVHVetKill(Detective.currentTarget)) return;
 
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.DetectiveExamine, SendOption.Reliable, -1);
                     writer.Write(Detective.currentTarget.PlayerId);
@@ -1230,6 +1253,7 @@ namespace TownOfUs
             glichHackButton = new CustomButton(
                 () => {
                     if (Helpers.checkAndDoVetKill(Glitch.currentTarget)) return;
+                    if (Helpers.checkAndDoVHVetKill(Glitch.currentTarget)) return;
 
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.GlitchHack, SendOption.Reliable, -1);
                     writer.Write(Glitch.currentTarget.PlayerId);
@@ -1294,6 +1318,7 @@ namespace TownOfUs
             oracleConfessButton = new CustomButton(
                 () => {
                     if (Helpers.checkAndDoVetKill(Oracle.currentTarget)) return;
+                    if (Helpers.checkAndDoVHVetKill(Oracle.currentTarget)) return;
 
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.OracleConfess, SendOption.Reliable, -1);
                     writer.Write(Oracle.currentTarget.PlayerId);
@@ -1344,6 +1369,74 @@ namespace TownOfUs
                     PlayerControl.LocalPlayer.killTimer = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown;
                 }
             );
+
+            // Vampire Hunter Stake
+            vampireHunterStakeButton = new CustomButton(
+                () => {
+                    if (Helpers.checkAndDoVetKill(VampireHunter.currentTarget)) return;
+                    if (Helpers.checkAndDoVHVetKill(VampireHunter.currentTarget)) return;
+
+                    if (VampireHunter.currentTarget != null) {
+                        if (VampireHunter.currentTarget == Dracula.dracula || VampireHunter.currentTarget == Vampire.vampire) {
+                            MurderAttemptResult murder = Helpers.checkMuderAttempt(VampireHunter.vampireHunter, VampireHunter.currentTarget);
+                            if (murder == MurderAttemptResult.SuppressKill) return;
+
+                            if (murder == MurderAttemptResult.BlankKill || murder == MurderAttemptResult.PerformKill) {
+                                if (murder == MurderAttemptResult.PerformKill) {
+                                    Helpers.MurderPlayer(VampireHunter.vampireHunter, VampireHunter.currentTarget, true);
+                                }
+                                vampireHunterStakeButton.Timer = vampireHunterStakeButton.MaxTimer;
+                            }
+                        } else {
+                            VampireHunter.usedStakes++;
+                            if (VampireHunter.usedStakes == VampireHunter.maxFailedStakes && VampireHunter.selfKillAfterFinalStake) {
+                                Helpers.MurderPlayer(VampireHunter.vampireHunter, VampireHunter.vampireHunter, true);
+                            }
+                        }
+                    }
+                },
+                () => { return VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => {
+                    if (vampireHunterStakeButtonText != null) vampireHunterStakeButtonText.text = $"{VampireHunter.maxFailedStakes - VampireHunter.usedStakes}";
+                    return VampireHunter.currentTarget && VampireHunter.canStake && VampireHunter.usedStakes < VampireHunter.maxFailedStakes && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                },
+                () => { vampireHunterStakeButton.Timer = vampireHunterStakeButton.MaxTimer; },
+                VampireHunter.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q
+            );
+            // Vampire Hunter Stake button counter
+            vampireHunterStakeButtonText = GameObject.Instantiate(vampireHunterStakeButton.actionButton.cooldownTimerText, vampireHunterStakeButton.actionButton.cooldownTimerText.transform.parent);
+            vampireHunterStakeButtonText.text = "";
+            vampireHunterStakeButtonText.enableWordWrapping = false;
+            vampireHunterStakeButtonText.transform.localScale = Vector3.one * 0.5f;
+            vampireHunterStakeButtonText.transform.localPosition += new Vector3(-0.05f, 0.7f, 0);
+
+            // VH Veteran alert
+            vhVeteranAlertButton = new CustomButton(
+                () => {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.VHVeteranAlert, SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.vhVeteranAlert();
+                    Helpers.checkWatchFlash(VampireHunter.veteran);
+                },
+                () => { return VampireHunter.veteran != null && VampireHunter.veteran == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => {
+                    if (vhVeteranAlertButtonText != null) vhVeteranAlertButtonText.text = $"{VampireHunter.remainingAlerts}";
+                    return VampireHunter.remainingAlerts > 0 && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                },
+                () => {
+                    vhVeteranAlertButton.Timer = vhVeteranAlertButton.MaxTimer;
+                    vhVeteranAlertButton.isEffectActive = false;
+                    vhVeteranAlertButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
+                },
+                Veteran.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F,
+                true, VampireHunter.duration, () => { vhVeteranAlertButton.Timer = vhVeteranAlertButton.MaxTimer; }
+            );
+            // VH Veteran alert button counter
+            vhVeteranAlertButtonText = GameObject.Instantiate(vhVeteranAlertButton.actionButton.cooldownTimerText, vhVeteranAlertButton.actionButton.cooldownTimerText.transform.parent);
+            vhVeteranAlertButtonText.text = "";
+            vhVeteranAlertButtonText.enableWordWrapping = false;
+            vhVeteranAlertButtonText.transform.localScale = Vector3.one * 0.5f;
+            vhVeteranAlertButtonText.transform.localPosition += new Vector3(-0.05f, 0.7f, 0);
 
             // Zoom Button
             zoomOutButton = new CustomButton(

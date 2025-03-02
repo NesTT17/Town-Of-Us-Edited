@@ -62,6 +62,7 @@ namespace TownOfUs
             BountyHunter.clearAndReload();
             Oracle.clearAndReload();
             Bomber.clearAndReload();
+            VampireHunter.clearAndReload();
             
             Lovers.clearAndReload();
             Blind.clearAndReload();
@@ -450,6 +451,7 @@ namespace TownOfUs
         public static int scavengerNumberToWin = 4;
         public static bool canUseVents = true;
         public static bool showArrows = true;
+        public static bool canEatWithGuess = true;
 
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
@@ -469,6 +471,7 @@ namespace TownOfUs
                         UnityEngine.Object.Destroy(arrow.arrow);
             }
             localArrows = new List<Arrow>();
+            canEatWithGuess = CustomOptionHolder.scavengerCanEatWithGuess.getBool();
         }
     }
 
@@ -1306,6 +1309,58 @@ namespace TownOfUs
             delay = CustomOptionHolder.bomberDetonateDelay.getFloat();
             maxKills = Mathf.RoundToInt(CustomOptionHolder.bomberMaxKillsInDetonation.getFloat());
             radius = CustomOptionHolder.bomberDetonateRadius.getFloat();
+        }
+    }
+
+    public static class VampireHunter {
+        // Vampire Hunter
+        public static PlayerControl vampireHunter;
+        public static PlayerControl currentTarget;
+        public static Color color = new Color(0.7f, 0.7f, 0.9f, 1f);
+
+        public static int usedStakes = 0;
+        public static bool canStake = true;
+
+        public static float stakeCooldown = 30f;
+        public static int maxFailedStakes = 3;
+        public static bool canStakeRoundOne = false;
+        public static bool selfKillAfterFinalStake = false;
+
+        private static Sprite buttonSprite;
+        public static Sprite getButtonSprite()
+            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.StakeButton.png", 100f);
+        
+        public static void clearAndReloadVampireHunter() {
+            vampireHunter = null;
+            currentTarget = null;
+            usedStakes = 0;
+            canStake = true;
+            stakeCooldown = CustomOptionHolder.vampireHunterCooldown.getFloat();
+            maxFailedStakes = Mathf.RoundToInt(CustomOptionHolder.vampireHunterMaxFailedStakes.getFloat());
+            canStakeRoundOne = CustomOptionHolder.vampireHunterCanStakeRoundOne.getBool();
+            selfKillAfterFinalStake = CustomOptionHolder.vampireHunterSelfKillAfterFinalStake.getBool();
+        }
+
+        // Veteran
+        public static PlayerControl veteran;
+        
+        public static bool isAlertActive = false;
+
+        public static float cooldown = 30f;
+        public static float duration = 5f;
+        public static int remainingAlerts = 5;
+        
+        public static void clearAndReloadVeteran() {
+            veteran = null;
+            isAlertActive = false;
+            cooldown = CustomOptionHolder.veteranCooldown.getFloat();
+            duration = CustomOptionHolder.veteranDuration.getFloat();
+            remainingAlerts = Mathf.RoundToInt(CustomOptionHolder.veteranNumberOfAlerts.getFloat());
+        }
+
+        public static void clearAndReload() {
+            clearAndReloadVeteran();
+            clearAndReloadVampireHunter();
         }
     }
 

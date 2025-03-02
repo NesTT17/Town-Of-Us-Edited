@@ -148,7 +148,6 @@ namespace TownOfUs.Patches {
             neutralSettings.Add((byte)RoleId.Mercenary, CustomOptionHolder.mercenarySpawnRate.getSelection());
             neutralSettings.Add((byte)RoleId.Doomsayer, CustomOptionHolder.doomsayerSpawnRate.getSelection());
 
-            kneutralSettings.Add((byte)RoleId.Dracula, CustomOptionHolder.draculaSpawnRate.getSelection());
             kneutralSettings.Add((byte)RoleId.Juggernaut, CustomOptionHolder.juggernautSpawnRate.getSelection());
             kneutralSettings.Add((byte)RoleId.Werewolf, CustomOptionHolder.werewolfSpawnRate.getSelection());
             kneutralSettings.Add((byte)RoleId.Glitch, CustomOptionHolder.glitchSpawnRate.getSelection());
@@ -198,6 +197,12 @@ namespace TownOfUs.Patches {
                     else data.crewSettings.Add((byte)RoleId.Vigilante, CustomOptionHolder.guesserSpawnRate.getSelection());
                 }
             }
+
+            // Assign Vampires
+            if ((CustomOptionHolder.vampireHunterSpawnRate.getSelection() > 0 &&
+                CustomOptionHolder.draculaSpawnRate.getSelection() == 10) ||
+                CustomOptionHolder.vampireHunterSpawnRate.getSelection() == 0)
+                    data.kneutralSettings.Add((byte)RoleId.Dracula, CustomOptionHolder.draculaSpawnRate.getSelection());
             
             crewValues = data.crewSettings.Values.ToList().Sum();
             impValues = data.impSettings.Values.ToList().Sum();
@@ -263,9 +268,11 @@ namespace TownOfUs.Patches {
             // Roles that prob have a dependent role
             bool guesserFlag = CustomOptionHolder.guesserSpawnBothRate.getSelection() > 0 
                 && CustomOptionHolder.guesserSpawnRate.getSelection() > 0;
+            bool vampireFlag = CustomOptionHolder.vampireHunterSpawnRate.getSelection() > 0 
+                && CustomOptionHolder.draculaSpawnRate.getSelection() > 0;
                 
             if (isGuesserGamemode) guesserFlag = false;
-            if (!guesserFlag) return; // assignDependentRoles is not needed
+            if (!guesserFlag && !vampireFlag) return; // assignDependentRoles is not needed
 
             int crew = data.crewmates.Count < data.maxCrewmateRoles ? data.crewmates.Count : data.maxCrewmateRoles; // Max number of crew loops
             int imp = data.impostors.Count < data.maxImpostorRoles ? data.impostors.Count : data.maxImpostorRoles; // Max number of imp loops
@@ -274,10 +281,12 @@ namespace TownOfUs.Patches {
 
             // set to false if needed, otherwise we can skip the loop
             bool isGuesser = !guesserFlag;
+            bool isVampire = !vampireFlag;
 
             // --- Simulate Crew & Imp ticket system ---
-            while (crew > 0 && (!isEvilGuesser && !isGuesser)) {
+            while (crew > 0 && (!isVampire || (!isEvilGuesser && !isGuesser))) {
                 if (!isEvilGuesser && !isGuesser && rnd.Next(crewValues) < CustomOptionHolder.guesserSpawnRate.getSelection()) isGuesser = true;
+                if (!isVampire && rnd.Next(crewValues) < CustomOptionHolder.draculaSpawnRate.getSelection()) isVampire = true;
                 crew--;
                 crewValues -= crewSteps;
             }
@@ -299,6 +308,11 @@ namespace TownOfUs.Patches {
                     data.impostors.ToList().RemoveAll(x => x.PlayerId == evilGuesser);
                     data.maxImpostorRoles--;
                 }
+            }
+            if (isVampire && Dracula.dracula == null && data.crewmates.Count > 0 && data.kmaxNeutralRoles > 0 && vampireFlag) { // Set Dracula cause he won the lottery
+                byte vampire = setRoleToRandomPlayer((byte)RoleId.Dracula, data.crewmates);
+                data.crewmates.ToList().RemoveAll(x => x.PlayerId == vampire);
+                data.kmaxNeutralRoles--;
             }
 
             // --- Assign Dependent Roles if main role exists ---
@@ -322,6 +336,17 @@ namespace TownOfUs.Patches {
                         data.crewSettings.Add((byte)RoleId.Vigilante, CustomOptionHolder.guesserSpawnBothRate.getSelection());
                 }
             }
+
+            if (Dracula.dracula != null) { // Vampire Hunter
+                if (CustomOptionHolder.vampireHunterSpawnRate.getSelection() == 10 && data.crewmates.Count > 0 && data.maxCrewmateRoles > 0) { // Force Vampire Hunter
+                    byte vampireHunter = setRoleToRandomPlayer((byte)RoleId.VampireHunter, data.crewmates);
+                    data.crewmates.ToList().RemoveAll(x => x.PlayerId == vampireHunter);
+                    data.maxCrewmateRoles--;
+                } else if (CustomOptionHolder.vampireHunterSpawnRate.getSelection() < 10) // Dont force, add Vampire Hunter to the ticket system
+                    data.crewSettings.Add((byte)RoleId.VampireHunter, CustomOptionHolder.vampireHunterSpawnRate.getSelection());
+            }
+
+            if (!data.kneutralSettings.ContainsKey((byte)RoleId.Dracula)) data.kneutralSettings.Add((byte)RoleId.Dracula, 0);
         }
 
         private static void assignChanceRoles(RoleAssignmentData data) {
@@ -381,7 +406,7 @@ namespace TownOfUs.Patches {
             if (Executioner.executioner != null) {
                 var possibleTargets = new List<PlayerControl>();
                 foreach (PlayerControl p in PlayerControl.AllPlayerControls)
-                    if (!p.Data.IsDead && !p.Data.Disconnected && p != Lovers.lover1 && p != Lovers.lover2 && !p.Data.Role.IsImpostor && !p.isAnyNeutral() && p != Swapper.swapper && p != Sheriff.sheriff && p != Veteran.veteran && p != Mayor.mayor)
+                    if (!p.Data.IsDead && !p.Data.Disconnected && p != Lovers.lover1 && p != Lovers.lover2 && !p.Data.Role.IsImpostor && !p.isAnyNeutral() && p != Swapper.swapper && p != Sheriff.sheriff && p != VampireHunter.vampireHunter && p != Veteran.veteran && p != Mayor.mayor)
                         possibleTargets.Add(p);
                 
                 if (possibleTargets.Count == 0) {
@@ -627,7 +652,7 @@ namespace TownOfUs.Patches {
                 var impPlayerDoubleShot = new List<PlayerControl>(impPlayer);
                 impPlayerDoubleShot.RemoveAll(x => !HandleGuesser.isGuesser(x.PlayerId));
                 playerId = setModifierToRandomPlayer((byte)RoleId.DoubleShot, impPlayerDoubleShot);
-                crewPlayer.RemoveAll(x => x.PlayerId == playerId);
+                impPlayer.RemoveAll(x => x.PlayerId == playerId);
                 playerList.RemoveAll(x => x.PlayerId == playerId);
                 modifiers.RemoveAll(x => x == RoleId.DoubleShot);
             }
@@ -635,9 +660,17 @@ namespace TownOfUs.Patches {
             if (modifiers.Contains(RoleId.Disperser)) {
                 var impPlayerDisperser = new List<PlayerControl>(impPlayer);
                 playerId = setModifierToRandomPlayer((byte)RoleId.Disperser, impPlayerDisperser);
-                crewPlayer.RemoveAll(x => x.PlayerId == playerId);
+                impPlayer.RemoveAll(x => x.PlayerId == playerId);
                 playerList.RemoveAll(x => x.PlayerId == playerId);
                 modifiers.RemoveAll(x => x == RoleId.Disperser);
+            }
+
+            if (modifiers.Contains(RoleId.ButtonBarry)) {
+                var playerButtonBarry = new List<PlayerControl>(playerList);
+                playerButtonBarry.RemoveAll(x => x == Glitch.glitch);
+                playerId = setModifierToRandomPlayer((byte)RoleId.ButtonBarry, playerButtonBarry);
+                playerList.RemoveAll(x => x.PlayerId == playerId);
+                modifiers.RemoveAll(x => x == RoleId.ButtonBarry);
             }
 
             foreach (RoleId modifier in modifiers) {
@@ -673,7 +706,7 @@ namespace TownOfUs.Patches {
                 case RoleId.DoubleShot:
                     selection = CustomOptionHolder.modifierDoubleShot.getSelection(); break;
                 case RoleId.Disperser:
-                    selection = CustomOptionHolder.modifierDisperser.getSelection(); break;
+                    if (!Helpers.isAirship()) selection = CustomOptionHolder.modifierDisperser.getSelection(); break;
                 case RoleId.Armored:
                     selection = CustomOptionHolder.modifierArmored.getSelection(); break;
             }
