@@ -374,7 +374,7 @@ If their target loses, they lose.
 | Protect Cooldown | The cooldown of the Guardian Angel's Protect button | Time | 30s |
 | Protect Duration | How long The Guardian Angel's Protect lasts | Time | 10s |
 | Number Of Protects | The amount of times the Protect ability can be used | Number | 5 |
-| Show Protected Player | Who should be able to see who is Protected | Everyone / Protected / SelfGA / Protected + GA / Nobody | Everyone |
+| Show Protected Player | Who should be able to see who is Protected | Everyone / Protected / Self / GA / Protected + GA / Nobody | Everyone |
 
 -----------------------
 
