@@ -65,6 +65,10 @@ namespace TownOfUs.Patches {
             }
             TOUMapOptions.firstKillName = "";
 
+            if (VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == PlayerControl.LocalPlayer && !VampireHunter.canStakeRoundOne) {
+                VampireHunter.canStake = false;
+            }
+
             // Close role summary
             HudManagerUpdate.CloseSummary();
         }

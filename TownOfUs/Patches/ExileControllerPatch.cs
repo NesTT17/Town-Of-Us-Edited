@@ -115,6 +115,10 @@ namespace TownOfUs.Patches {
                     RPCProcedure.vampireHunterPromotes();
                 }
             }
+
+            if (VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == PlayerControl.LocalPlayer && !VampireHunter.canStake) {
+                VampireHunter.canStake = true;
+            } 
         }
     }
 
