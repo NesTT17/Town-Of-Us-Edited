@@ -13,10 +13,11 @@ namespace TownOfUs
         public static DateTime startTime = DateTime.UtcNow;
         public static System.Random rnd = new System.Random((int)DateTime.Now.Ticks);
 
-        public static void clearAndReloadRoles() {
+        public static void clearAndReloadRoles()
+        {
             startTime = DateTime.UtcNow;
             PlayerGameInfo.clearAndReload();
-            
+
             Morphling.clearAndReload();
             Camouflager.clearAndReload();
             Snitch.clearAndReload();
@@ -63,7 +64,8 @@ namespace TownOfUs
             Oracle.clearAndReload();
             Bomber.clearAndReload();
             VampireHunter.clearAndReload();
-            
+            TimeLord.clearAndReload();
+
             Lovers.clearAndReload();
             Blind.clearAndReload();
             Bait.clearAndReload();
@@ -76,19 +78,20 @@ namespace TownOfUs
             DoubleShot.clearAndReload();
             Disperser.clearAndReload();
             Armored.clearAndReload();
-            
+
             // Gamemodes
             HandleGuesser.clearAndReload();
         }
     }
 
-    public static class Morphling {
+    public static class Morphling
+    {
         public static PlayerControl morphling;
         public static PlayerControl morphTarget;
         public static PlayerControl sampledTarget;
         public static PlayerControl currentTarget;
         public static Color color = Palette.ImpostorRed;
-        
+
         public static float morphTimer = 0f;
 
         public static float cooldown = 30f;
@@ -101,14 +104,16 @@ namespace TownOfUs
         public static Sprite getMorphSprite()
             => morphSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.MorphButton.png", 115f);
 
-        public static void resetMorph() {
+        public static void resetMorph()
+        {
             morphTarget = null;
             morphTimer = 0f;
             if (morphling == null) return;
             morphling.setDefaultLook();
         }
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             resetMorph();
             morphling = null;
             currentTarget = null;
@@ -120,10 +125,11 @@ namespace TownOfUs
         }
     }
 
-    public static class Camouflager {
+    public static class Camouflager
+    {
         public static PlayerControl camouflager;
         public static Color color = Palette.ImpostorRed;
-        
+
         public static bool camoComms;
         public static float camouflageTimer = 0f;
 
@@ -133,11 +139,13 @@ namespace TownOfUs
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.CamoButton.png", 115f);
-        
-        public static void resetCamouflage() {
+
+        public static void resetCamouflage()
+        {
             if (Helpers.isCamoComms()) return;
             camouflageTimer = 0f;
-            foreach (PlayerControl p in PlayerControl.AllPlayerControls) {
+            foreach (PlayerControl p in PlayerControl.AllPlayerControls)
+            {
                 if (p == Swooper.swooper && Swooper.isInvisble || p == Phantom.phantom && Phantom.isInvisble)
                     continue;
                 p.setDefaultLook();
@@ -145,7 +153,8 @@ namespace TownOfUs
             }
         }
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             resetCamouflage();
             camouflager = null;
             camouflageTimer = 0f;
@@ -155,7 +164,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Snitch {
+    public static class Snitch
+    {
         public static PlayerControl snitch;
         public static List<Arrow> localArrows = new List<Arrow>();
         public static Color color = new Color(0.83f, 0.69f, 0.22f, 1f);
@@ -165,11 +175,13 @@ namespace TownOfUs
         public static bool includeKillingNeutral = false;
         public static bool seeInMeeting = false;
 
-        public static void clearAndReload() {
-            if (localArrows != null) {
+        public static void clearAndReload()
+        {
+            if (localArrows != null)
+            {
                 foreach (Arrow arrow in localArrows)
                     if (arrow?.arrow != null)
-                    UnityEngine.Object.Destroy(arrow.arrow);
+                        UnityEngine.Object.Destroy(arrow.arrow);
             }
             localArrows = new List<Arrow>();
             taskCountForReveal = Mathf.RoundToInt(CustomOptionHolder.snitchLeftTasksForReveal.getFloat());
@@ -180,7 +192,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Engineer {
+    public static class Engineer
+    {
         public static PlayerControl engineer;
         public static Color color = new Color(1f, 0.65f, 0.04f, 1f);
 
@@ -190,19 +203,21 @@ namespace TownOfUs
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite = Helpers.loadSpriteFromResources("TownOfUs.Resources.RepairButton.png", 115f);
-        
+
         private static Sprite doorsButtonSprite;
         public static Sprite getDoorButtonSprite()
             => doorsButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.EngineerDoors.png", 115f);
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             engineer = null;
             cooldown = CustomOptionHolder.engineerDoorsCooldown.getFloat();
             remainingFixes = Mathf.RoundToInt(CustomOptionHolder.engineerNumberOfFixes.getFloat());
         }
     }
 
-    public static class Sheriff {
+    public static class Sheriff
+    {
         public static PlayerControl sheriff;
         public static PlayerControl currentTarget;
         public static Color color = Color.yellow;
@@ -211,7 +226,8 @@ namespace TownOfUs
         public static bool canKillNeutrals = false;
         public static bool canKillKNeutrals = false;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             sheriff = null;
             currentTarget = null;
             cooldown = CustomOptionHolder.sheriffCooldown.getFloat();
@@ -220,7 +236,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Jester {
+    public static class Jester
+    {
         public static PlayerControl jester;
         public static Color color = new Color(1f, 0.75f, 0.8f, 1f);
 
@@ -229,7 +246,8 @@ namespace TownOfUs
         public static bool canCallEmergency = true;
         public static bool hasImpostorVision = false;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             jester = null;
             triggerJesterWin = false;
             canCallEmergency = CustomOptionHolder.jesterCanCallEmergency.getBool();
@@ -237,7 +255,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Shifter {
+    public static class Shifter
+    {
         public static PlayerControl shifter;
         public static PlayerControl futureShift;
         public static PlayerControl currentTarget;
@@ -246,38 +265,43 @@ namespace TownOfUs
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ShiftButton.png", 115f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             shifter = null;
             currentTarget = null;
             futureShift = null;
         }
     }
 
-    public static class Spy {
+    public static class Spy
+    {
         public static PlayerControl spy;
         public static Color color = new Color(0.8f, 0.64f, 0.8f, 1f);
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             spy = null;
         }
     }
 
-    public static class Swapper {
+    public static class Swapper
+    {
         public static PlayerControl swapper;
         public static Color color = new Color(0.4f, 0.9f, 0.4f, 1f);
-        
+
         public static byte playerId1 = Byte.MaxValue;
         public static byte playerId2 = Byte.MaxValue;
-        
+
         public static bool canCallEmergency = false;
         public static bool canOnlySwapOthers = false;
 
         private static Sprite spriteCheck;
         public static Sprite getCheckSprite()
             => spriteCheck ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.SwapperCheck.png", 150f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             swapper = null;
             playerId1 = Byte.MaxValue;
             playerId2 = Byte.MaxValue;
@@ -286,7 +310,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Mayor {
+    public static class Mayor
+    {
         public static PlayerControl mayor;
         public static Color color = new Color(0.44f, 0.31f, 0.66f, 1f);
 
@@ -295,14 +320,16 @@ namespace TownOfUs
         private static Sprite spriteCheck;
         public static Sprite getCheckSprite()
             => spriteCheck ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.MayorReveal.png", 100f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             mayor = null;
             isRevealed = false;
         }
     }
 
-    public static class Medic {
+    public static class Medic
+    {
         public static PlayerControl medic;
         public static PlayerControl shielded;
         public static PlayerControl currentTarget;
@@ -319,23 +346,26 @@ namespace TownOfUs
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ShieldButton.png", 115f);
-        
-        public static bool shieldVisible(PlayerControl target) {
+
+        public static bool shieldVisible(PlayerControl target)
+        {
             bool hasVisibleShield = false;
             bool isMorphedMorphling = target == Morphling.morphling && Morphling.morphTarget != null && Morphling.morphTimer > 0f;
             bool isMorphedGlitch = target == Glitch.glitch && Glitch.morphPlayer != null && Glitch.morphTimer > 0f;
             bool isMorphedVenerer = target == Venerer.venerer && Venerer.morphTimer > 0f;
 
-            if (shielded != null && ((target == shielded && !isMorphedMorphling && !isMorphedGlitch && !isMorphedVenerer) || (isMorphedMorphling && Morphling.morphTarget == shielded) || (isMorphedGlitch && Glitch.morphPlayer == shielded))) {
+            if (shielded != null && ((target == shielded && !isMorphedMorphling && !isMorphedGlitch && !isMorphedVenerer) || (isMorphedMorphling && Morphling.morphTarget == shielded) || (isMorphedGlitch && Glitch.morphPlayer == shielded)))
+            {
                 hasVisibleShield = showShielded == 0 || Helpers.shouldShowGhostInfo() // Everyone
                     || showShielded == 1 & PlayerControl.LocalPlayer == shielded // Shielded
                     || showShielded == 2 & PlayerControl.LocalPlayer == medic // Medic
-                    || showShielded == 3 && (PlayerControl.LocalPlayer ==  shielded || PlayerControl.LocalPlayer == medic);
+                    || showShielded == 3 && (PlayerControl.LocalPlayer == shielded || PlayerControl.LocalPlayer == medic);
             }
             return hasVisibleShield;
         }
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             medic = null;
             shielded = null;
             currentTarget = null;
@@ -348,18 +378,19 @@ namespace TownOfUs
         }
     }
 
-    public static class Dracula {
+    public static class Dracula
+    {
         public static PlayerControl dracula;
         public static PlayerControl fakeVampire;
         public static PlayerControl currentTarget;
         public static List<PlayerControl> formerDraculas = new List<PlayerControl>();
         public static Color color = new Color(0.15f, 0.15f, 0.15f, 1f);
-        
+
         public static bool wasTeamRed;
         public static bool wasImpostor;
         public static int numberOfAllVampires = 1;
         public static bool canCreateVampire = true;
-        
+
         public static int maxVampires = 2;
         public static float cooldown = 30f;
         public static float createVampireCooldown = 30f;
@@ -370,8 +401,9 @@ namespace TownOfUs
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.BiteButton.png", 100f);
-        
-        public static void removeCurrentDracula() {
+
+        public static void removeCurrentDracula()
+        {
             if (!formerDraculas.Any(x => x.PlayerId == dracula.PlayerId)) formerDraculas.Add(dracula);
             dracula = null;
             currentTarget = null;
@@ -379,7 +411,8 @@ namespace TownOfUs
             cooldown = CustomOptionHolder.draculaKillCooldown.getFloat();
         }
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             dracula = null;
             fakeVampire = null;
             currentTarget = null;
@@ -395,19 +428,21 @@ namespace TownOfUs
         }
     }
 
-    public static class Vampire {
+    public static class Vampire
+    {
         public static PlayerControl vampire;
         public static PlayerControl currentTarget;
         public static Color color = new Color(0.15f, 0.15f, 0.15f, 1f);
 
         public static bool wasTeamRed;
         public static bool wasImpostor;
-        
+
         public static float cooldown = 30f;
         public static bool canUseVents = true;
         public static bool hasImpostorVision = false;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             vampire = null;
             currentTarget = null;
             cooldown = CustomOptionHolder.draculaKillCooldown.getFloat();
@@ -417,7 +452,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Poisoner {
+    public static class Poisoner
+    {
         public static PlayerControl poisoner;
         public static PlayerControl poisoned;
         public static PlayerControl currentTarget;
@@ -430,7 +466,8 @@ namespace TownOfUs
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.PoisonButton.png", 100f);
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             poisoner = null;
             poisoned = null;
             currentTarget = null;
@@ -439,11 +476,12 @@ namespace TownOfUs
         }
     }
 
-    public static class Scavenger {
+    public static class Scavenger
+    {
         public static PlayerControl scavenger;
         public static List<Arrow> localArrows = new List<Arrow>();
         public static Color color = new Color(0.6f, 0.15f, 0.15f, 1f);
-        
+
         public static int eatenBodies = 0;
         public static bool triggerScavengerWin = false;
 
@@ -456,8 +494,9 @@ namespace TownOfUs
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.DevourButton.png", 100f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             scavenger = null;
             eatenBodies = 0;
             triggerScavengerWin = false;
@@ -465,7 +504,8 @@ namespace TownOfUs
             scavengerNumberToWin = Mathf.RoundToInt(CustomOptionHolder.scavengerNumberToWin.getFloat());
             canUseVents = CustomOptionHolder.scavengerCanUseVents.getBool();
             showArrows = CustomOptionHolder.scavengerShowArrows.getBool();
-            if (localArrows != null) {
+            if (localArrows != null)
+            {
                 foreach (Arrow arrow in localArrows)
                     if (arrow?.arrow != null)
                         UnityEngine.Object.Destroy(arrow.arrow);
@@ -475,20 +515,23 @@ namespace TownOfUs
         }
     }
 
-    public static class Executioner {
+    public static class Executioner
+    {
         public static PlayerControl executioner;
         public static PlayerControl target;
         public static Color color = new Color(0.55f, 0.25f, 0.02f, 1f);
-        
+
         public static bool targetWasGuessed = false;
         public static bool triggerExecutionerWin = false;
-        
+
         public static float vision = 1f;
         public static bool canCallEmergency = true;
 
-        public static void clearAndReload(bool clearTarget = true) {
+        public static void clearAndReload(bool clearTarget = true)
+        {
             executioner = null;
-            if (clearTarget) {
+            if (clearTarget)
+            {
                 target = null;
                 targetWasGuessed = false;
             }
@@ -498,11 +541,12 @@ namespace TownOfUs
         }
     }
 
-    public static class Lawyer {
+    public static class Lawyer
+    {
         public static PlayerControl lawyer;
         public static PlayerControl target;
         public static Color color = new Color32(134, 153, 25, byte.MaxValue);
-        
+
         public static bool targetWasGuessed = false;
 
         public static float vision = 1f;
@@ -510,9 +554,11 @@ namespace TownOfUs
         public static bool canCallEmergency = true;
         public static bool targetCanBeJester = false;
 
-        public static void clearAndReload(bool clearTarget = true) {
+        public static void clearAndReload(bool clearTarget = true)
+        {
             lawyer = null;
-            if (clearTarget) {
+            if (clearTarget)
+            {
                 target = null;
                 targetWasGuessed = false;
             }
@@ -523,7 +569,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Pursuer {
+    public static class Pursuer
+    {
         public static PlayerControl pursuer;
         public static PlayerControl target;
         public static List<PlayerControl> blankedList = new List<PlayerControl>();
@@ -539,7 +586,8 @@ namespace TownOfUs
         public static Sprite getTargetSprite()
             => blank ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.PursuerButton.png", 115f);
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             pursuer = null;
             target = null;
             blankedList = new List<PlayerControl>();
@@ -550,7 +598,8 @@ namespace TownOfUs
         }
     }
 
-    public static class GuardianAngel {
+    public static class GuardianAngel
+    {
         public static PlayerControl guardianAngel;
         public static PlayerControl target;
         public static Color color = new Color(0.7f, 1f, 1f, 1f);
@@ -568,25 +617,29 @@ namespace TownOfUs
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ProtectButton.png", 100f);
-        
-        public static bool protectVisible(PlayerControl player) {
+
+        public static bool protectVisible(PlayerControl player)
+        {
             bool hasVisibleProtect = false;
             bool isMorphedMorphling = player == Morphling.morphling && Morphling.morphTarget != null && Morphling.morphTimer > 0f;
             bool isMorphedGlitch = target == Glitch.glitch && Glitch.morphPlayer != null && Glitch.morphTimer > 0f;
             bool isMorphedVenerer = target == Venerer.venerer && Venerer.morphTimer > 0f;
 
-            if (target != null && ((player == target && !isMorphedMorphling && !isMorphedGlitch && !isMorphedVenerer) || (isMorphedMorphling && Morphling.morphTarget == target) || (isMorphedGlitch && Glitch.morphPlayer == target))) {
+            if (target != null && ((player == target && !isMorphedMorphling && !isMorphedGlitch && !isMorphedVenerer) || (isMorphedMorphling && Morphling.morphTarget == target) || (isMorphedGlitch && Glitch.morphPlayer == target)))
+            {
                 hasVisibleProtect = showProtected == 0 || Helpers.shouldShowGhostInfo() // Everyone
                     || showProtected == 1 & PlayerControl.LocalPlayer == target // Protected
                     || showProtected == 2 & PlayerControl.LocalPlayer == guardianAngel // GA
-                    || showProtected == 3 && (PlayerControl.LocalPlayer ==  target || PlayerControl.LocalPlayer == guardianAngel);
+                    || showProtected == 3 && (PlayerControl.LocalPlayer == target || PlayerControl.LocalPlayer == guardianAngel);
             }
             return hasVisibleProtect;
         }
 
-        public static void clearAndReload(bool clearTarget = true) {
+        public static void clearAndReload(bool clearTarget = true)
+        {
             guardianAngel = null;
-            if (clearTarget) {
+            if (clearTarget)
+            {
                 target = null;
                 targetWasGuessed = false;
             }
@@ -598,7 +651,8 @@ namespace TownOfUs
         }
     }
 
-    public static class FallenAngel {
+    public static class FallenAngel
+    {
         public static PlayerControl fallenAngel;
         public static PlayerControl target;
         public static PlayerControl currentTarget;
@@ -606,7 +660,8 @@ namespace TownOfUs
 
         public static float cooldown = 30f;
 
-        public static void clearAndReload(bool clearTarget = true) {
+        public static void clearAndReload(bool clearTarget = true)
+        {
             fallenAngel = null;
             if (clearTarget) target = null;
             currentTarget = null;
@@ -614,7 +669,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Survivor {
+    public static class Survivor
+    {
         public static PlayerControl survivor;
         public static Color color = new Color(1f, 0.9f, 0.3f, 1f);
 
@@ -628,7 +684,8 @@ namespace TownOfUs
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.SafeguardButton.png", 100f);
 
-        public static void clearAndReload(bool clearTarget = true) {
+        public static void clearAndReload(bool clearTarget = true)
+        {
             survivor = null;
             safeguardActive = false;
             cooldown = CustomOptionHolder.survivorSafeguardCooldown.getFloat();
@@ -637,7 +694,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Amnesiac {
+    public static class Amnesiac
+    {
         public static PlayerControl amnesiac;
         public static List<Arrow> localArrows = new List<Arrow>();
         public static Color color = new Color(0.5f, 0.7f, 1f, 1f);
@@ -649,9 +707,11 @@ namespace TownOfUs
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.RememberButton.png", 100f);
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             amnesiac = null;
-            if (localArrows != null) {
+            if (localArrows != null)
+            {
                 foreach (Arrow arrow in localArrows)
                     if (arrow?.arrow != null)
                         UnityEngine.Object.Destroy(arrow.arrow);
@@ -662,7 +722,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Investigator {
+    public static class Investigator
+    {
         public static PlayerControl investigator;
         public static PlayerControl watching;
         public static PlayerControl currentTarget;
@@ -678,8 +739,9 @@ namespace TownOfUs
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.WatchButton.png", 115f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             investigator = null;
             watching = null;
             currentTarget = null;
@@ -691,7 +753,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Veteran {
+    public static class Veteran
+    {
         public static PlayerControl veteran;
         public static Color color = new Color(0.6f, 0.5f, 0.25f, 1f);
 
@@ -704,8 +767,9 @@ namespace TownOfUs
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.AlertButton.png", 100f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             veteran = null;
             isAlertActive = false;
             cooldown = CustomOptionHolder.veteranCooldown.getFloat();
@@ -714,7 +778,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Seer {
+    public static class Seer
+    {
         public static PlayerControl seer;
         public static PlayerControl currentTarget;
         public static List<PlayerControl> revealedPlayers = new List<PlayerControl>();
@@ -723,12 +788,13 @@ namespace TownOfUs
         public static float cooldown = 30f;
         public static bool neutRed = false;
         public static bool kneutRed = false;
-        
+
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.RevealButton.png", 115f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             seer = null;
             currentTarget = null;
             revealedPlayers = new List<PlayerControl>();
@@ -738,7 +804,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Juggernaut {
+    public static class Juggernaut
+    {
         public static PlayerControl juggernaut;
         public static PlayerControl currentTarget;
         public static Color color = new Color(0.55f, 0f, 0.3f, 1f);
@@ -748,7 +815,8 @@ namespace TownOfUs
         public static bool hasImpostorVision = false;
         public static bool canUseVents = false;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             juggernaut = null;
             currentTarget = null;
             cooldown = CustomOptionHolder.juggernautCooldown.getFloat();
@@ -758,21 +826,23 @@ namespace TownOfUs
         }
     }
 
-    public static class Swooper {
+    public static class Swooper
+    {
         public static PlayerControl swooper;
         public static Color color = Palette.ImpostorRed;
-        
+
         public static bool isInvisble = false;
         public static float invisibleTimer = 0f;
 
         public static float swoopCooldown = 30f;
         public static float swoopDuration = 5f;
-        
+
         public static Sprite swoopButtonSprite;
         public static Sprite getSwoopButtonSprite()
             => swoopButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.SwoopButton.png", 100f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             swooper = null;
             isInvisble = false;
             invisibleTimer = 0f;
@@ -781,7 +851,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Mercenary {
+    public static class Mercenary
+    {
         public static PlayerControl mercenary;
         public static PlayerControl shielded;
         public static PlayerControl currentTarget;
@@ -795,8 +866,9 @@ namespace TownOfUs
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ShieldButton.png", 115f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             mercenary = null;
             shielded = null;
             currentTarget = null;
@@ -806,7 +878,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Blackmailer {
+    public static class Blackmailer
+    {
         public static PlayerControl blackmailer;
         public static PlayerControl blackmailed;
         public static PlayerControl currentTarget;
@@ -821,10 +894,11 @@ namespace TownOfUs
             => overlaySprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.BlackmailOverlay.png", 100f);
 
         private static Sprite blackmailButtonSprite;
-        public static Sprite getBlackmailButtonSprite() 
+        public static Sprite getBlackmailButtonSprite()
             => blackmailButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.BlackmailButton.png", 100f);
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             blackmailer = null;
             blackmailed = null;
             currentTarget = null;
@@ -832,7 +906,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Escapist {
+    public static class Escapist
+    {
         public static PlayerControl escapist;
         public static Color color = Palette.ImpostorRed;
 
@@ -841,45 +916,50 @@ namespace TownOfUs
 
         public static float markCooldown = 0;
         public static bool markStaysOverMeeting = false;
-        
+
         private static Sprite markButtonSprite;
         public static Sprite getMarkButtonSprite()
             => markButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.MarkButton.png", 100f);
-        
+
         private static Sprite recallButtonSprite;
         public static Sprite getRecallButtonSprite()
             => recallButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.RecallButton.png", 100f);
-        
-        public static void markLocation(Vector3 position) {
+
+        public static void markLocation(Vector3 position)
+        {
             markedLocation = position;
         }
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             escapist = null;
             recallDuration = CustomOptionHolder.escapistRecallDuration.getFloat();
             markCooldown = CustomOptionHolder.escapistMarkCooldown.getFloat();
             markStaysOverMeeting = CustomOptionHolder.escapistMarkStaysOverMeeting.getBool();
-            markedLocation = null;   
+            markedLocation = null;
         }
     }
 
-    public static class Miner {
+    public static class Miner
+    {
         public static PlayerControl miner;
         public static Color color = Palette.ImpostorRed;
 
         public static float placeVentCooldown = 30f;
-        
+
         private static Sprite placeVentButtonSprite;
         public static Sprite getPlaceBoxButtonSprite()
             => placeVentButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.MineButton.png", 100f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             miner = null;
             placeVentCooldown = CustomOptionHolder.minerPlaceVentCooldown.getFloat();
         }
     }
 
-    public static class Cleaner {
+    public static class Cleaner
+    {
         public static PlayerControl cleaner;
         public static Color color = Palette.ImpostorRed;
 
@@ -888,18 +968,20 @@ namespace TownOfUs
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.CleanButton.png", 100f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             cleaner = null;
             cooldown = CustomOptionHolder.cleanerCooldown.getFloat();
         }
     }
 
-    public static class Trapper {
+    public static class Trapper
+    {
         public static PlayerControl trapper;
         public static Color color = new Color(0.65f, 0.82f, 0.7f, 1f);
         public static Material trapMaterial = TownOfUsPlugin.bundledAssets.Get<Material>("trap");
-        
+
         public static List<Trap> traps = new List<Trap>();
         public static List<PlayerControl> trappedPlayers = new List<PlayerControl>();
 
@@ -915,8 +997,9 @@ namespace TownOfUs
         private static Sprite trapButtonSprite;
         public static Sprite getButtonSprite()
             => trapButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.TrapButton.png", 100f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             trapper = null;
             trappedPlayers = new List<PlayerControl>();
             traps.ClearTraps();
@@ -931,21 +1014,23 @@ namespace TownOfUs
         }
     }
 
-    public static class Phantom {
+    public static class Phantom
+    {
         public static PlayerControl phantom;
         public static Color color = Palette.ImpostorRed;
-        
+
         public static bool isInvisble = false;
         public static float ghostTimer = 0f;
 
         public static float cooldown = 30f;
         public static float duration = 10f;
-        
+
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.PhantomButton.png", 115f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             phantom = null;
             isInvisble = false;
             ghostTimer = 0f;
@@ -954,7 +1039,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Grenadier {
+    public static class Grenadier
+    {
         public static PlayerControl grenadier;
         public static Color color = Palette.ImpostorRed;
         public static Color flash = new Color32(153, 153, 153, byte.MaxValue);
@@ -966,12 +1052,13 @@ namespace TownOfUs
         public static float duration = 10f;
         public static int radius = 2;
         public static bool indicateFlashedCrewmates = false;
-        
+
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.FlashButton.png", 100f);
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             grenadier = null;
             flashedPlayers.Clear();
             flashTimer = 0f;
@@ -982,7 +1069,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Doomsayer {
+    public static class Doomsayer
+    {
         public static PlayerControl doomsayer;
         public static PlayerControl currentTarget;
         public static List<PlayerControl> observedPlayers = new List<PlayerControl>();
@@ -993,12 +1081,13 @@ namespace TownOfUs
 
         public static float cooldown = 30f;
         public static int guessesToWin = 3;
-        
+
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ObserveButton.png", 100f);
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             doomsayer = null;
             currentTarget = null;
             observedPlayers = new List<PlayerControl>();
@@ -1009,26 +1098,30 @@ namespace TownOfUs
         }
     }
 
-    public static class Mystic {
+    public static class Mystic
+    {
         public static PlayerControl mystic;
         public static List<Arrow> localArrows = new List<Arrow>();
         public static Color color = new Color(0.3f, 0.6f, 0.9f, 1f);
 
         public static float duration = 1f;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             mystic = null;
-            if (localArrows != null) {
+            if (localArrows != null)
+            {
                 foreach (Arrow arrow in localArrows)
                     if (arrow?.arrow != null)
-                    UnityEngine.Object.Destroy(arrow.arrow);
+                        UnityEngine.Object.Destroy(arrow.arrow);
             }
             localArrows = new List<Arrow>();
             duration = CustomOptionHolder.mysticArrowDuration.getFloat();
         }
     }
 
-    public static class Tracker {
+    public static class Tracker
+    {
         public static PlayerControl tracker;
         public static PlayerControl currentTarget;
         public static List<PlayerControl> trackedPlayers = new List<PlayerControl>();
@@ -1040,16 +1133,18 @@ namespace TownOfUs
         public static int maxTracksPerRound = 3;
         public static bool resetAfterMeeting = false;
 
-        public static void resetTracked() {
+        public static void resetTracked()
+        {
             trackedPlayers = new List<PlayerControl>();
             tracksInRound = 0;
         }
-        
+
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.TrackButton.png", 100f);
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             tracker = null;
             currentTarget = null;
             resetTracked();
@@ -1059,7 +1154,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Werewolf {
+    public static class Werewolf
+    {
         public static PlayerControl werewolf;
         public static PlayerControl currentTarget;
         public static Color color = new Color(0.66f, 0.4f, 0.16f, 1f);
@@ -1070,12 +1166,13 @@ namespace TownOfUs
         public static float duration = 10f;
         public static float killCooldown = 3f;
         public static bool canVent = false;
-        
+
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.RampageButton.png", 100f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             werewolf = null;
             currentTarget = null;
             isRampageActive = false;
@@ -1086,7 +1183,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Detective {
+    public static class Detective
+    {
         public static PlayerControl detective;
         public static PlayerControl examined;
         public static PlayerControl currentTarget;
@@ -1099,12 +1197,13 @@ namespace TownOfUs
         public static float reportRoleDuration = 15f;
         public static float reportFactionDuration = 30f;
         public static bool getExamineInfo = false;
-        
+
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ExamineButton.png", 100f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             detective = null;
             examined = null;
             currentTarget = null;
@@ -1118,7 +1217,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Glitch {
+    public static class Glitch
+    {
         public static PlayerControl glitch;
         public static PlayerControl morphPlayer;
         public static PlayerControl sampledPlayer;
@@ -1137,23 +1237,25 @@ namespace TownOfUs
         public static float killCooldown = 30f;
         public static bool canVent = false;
         public static bool hasImpostorVision = false;
-        
+
         private static Sprite mimicButtonSprite;
         public static Sprite getMimicButtonSprite()
             => mimicButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.MimicButton.png", 100f);
-            
+
         private static Sprite hackButtonSprite;
         public static Sprite getHackButtonSprite()
             => hackButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.HackButton.png", 100f);
-        
-        public static void resetMorph() {
+
+        public static void resetMorph()
+        {
             morphPlayer = null;
             morphTimer = 0f;
             if (glitch == null) return;
             glitch.setDefaultLook();
         }
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             glitch = null;
             resetMorph();
             sampledPlayer = null;
@@ -1171,7 +1273,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Venerer {
+    public static class Venerer
+    {
         public static PlayerControl venerer;
         public static Color color = Palette.ImpostorRed;
 
@@ -1198,14 +1301,16 @@ namespace TownOfUs
         private static Sprite freezeButton;
         public static Sprite getfreezeButton()
             => freezeButton ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.FreezeButton.png", 100f);
-        
-        public static void resetMorph() {
+
+        public static void resetMorph()
+        {
             morphTimer = 0f;
             if (venerer == null) return;
             venerer.setDefaultLook();
         }
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             venerer = null;
             resetMorph();
             numberOfKills = 0;
@@ -1216,13 +1321,14 @@ namespace TownOfUs
         }
     }
 
-    public static class BountyHunter {
+    public static class BountyHunter
+    {
         public static PlayerControl bountyHunter;
         public static PlayerControl bounty;
         public static TMPro.TextMeshPro cooldownText;
         public static Arrow arrow;
         public static Color color = Palette.ImpostorRed;
-        
+
         public static float arrowUpdateTimer = 0f;
         public static float bountyUpdateTimer = 0f;
 
@@ -1232,7 +1338,8 @@ namespace TownOfUs
         public static float punishmentTime = 15f;
         public static float arrowUpdateIntervall = 10f;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             arrow = new Arrow(Palette.EnabledColor);
             bountyHunter = null;
             bounty = null;
@@ -1242,7 +1349,8 @@ namespace TownOfUs
             arrow = null;
             if (cooldownText != null && cooldownText.gameObject != null) UnityEngine.Object.Destroy(cooldownText.gameObject);
             cooldownText = null;
-            foreach (PoolablePlayer p in TOUMapOptions.playerIcons.Values) {
+            foreach (PoolablePlayer p in TOUMapOptions.playerIcons.Values)
+            {
                 if (p != null && p.gameObject != null) p.gameObject.SetActive(false);
             }
             bountyDuration = CustomOptionHolder.bountyHunterBountyDuration.getFloat();
@@ -1253,7 +1361,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Oracle {
+    public static class Oracle
+    {
         public static PlayerControl oracle;
         public static PlayerControl confessor;
         public static PlayerControl currentTarget;
@@ -1270,7 +1379,8 @@ namespace TownOfUs
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ConfessButton.png", 100f);
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             oracle = null;
             confessor = null;
             currentTarget = null;
@@ -1282,7 +1392,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Bomber {
+    public static class Bomber
+    {
         public static PlayerControl bomber;
         public static Color color = Palette.ImpostorRed;
         public static Material bombMaterial = TownOfUsPlugin.bundledAssets.Get<Material>("bomb");
@@ -1294,16 +1405,17 @@ namespace TownOfUs
         public static int maxKills = 3;
         public static float radius = 1f;
 
-        
+
         private static Sprite plantButtonSprite;
         public static Sprite getPlantButtonSprite()
             => plantButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.PlantButton.png", 100f);
-        
+
         private static Sprite detonateButtonSprite;
         public static Sprite getDetonateButtonSprite()
             => detonateButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.DetonateButton.png", 100f);
-        
-        public static void clearAndReload() {
+
+        public static void clearAndReload()
+        {
             bomber = null;
             Bomb = new Bomb();
             delay = CustomOptionHolder.bomberDetonateDelay.getFloat();
@@ -1312,7 +1424,8 @@ namespace TownOfUs
         }
     }
 
-    public static class VampireHunter {
+    public static class VampireHunter
+    {
         // Vampire Hunter
         public static PlayerControl vampireHunter;
         public static PlayerControl currentTarget;
@@ -1329,8 +1442,9 @@ namespace TownOfUs
         private static Sprite buttonSprite;
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.StakeButton.png", 100f);
-        
-        public static void clearAndReloadVampireHunter() {
+
+        public static void clearAndReloadVampireHunter()
+        {
             vampireHunter = null;
             currentTarget = null;
             usedStakes = 0;
@@ -1343,14 +1457,15 @@ namespace TownOfUs
 
         // Veteran
         public static PlayerControl veteran;
-        
+
         public static bool isAlertActive = false;
 
         public static float cooldown = 30f;
         public static float duration = 5f;
         public static int remainingAlerts = 5;
-        
-        public static void clearAndReloadVeteran() {
+
+        public static void clearAndReloadVeteran()
+        {
             veteran = null;
             isAlertActive = false;
             cooldown = CustomOptionHolder.veteranCooldown.getFloat();
@@ -1358,13 +1473,15 @@ namespace TownOfUs
             remainingAlerts = Mathf.RoundToInt(CustomOptionHolder.veteranNumberOfAlerts.getFloat());
         }
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             clearAndReloadVeteran();
             clearAndReloadVampireHunter();
         }
     }
 
-    public static class Guesser {
+    public static class Guesser
+    {
         public static PlayerControl niceGuesser;
         public static PlayerControl evilGuesser;
         public static Color color = new Color(1f, 1f, 0.6f, 1f);
@@ -1372,28 +1489,35 @@ namespace TownOfUs
         public static int remainingShotsEvilGuesser = 2;
         public static int remainingShotsNiceGuesser = 2;
 
-        public static bool isGuesser (byte playerId) {
+        public static bool isGuesser(byte playerId)
+        {
             if ((niceGuesser != null && niceGuesser.PlayerId == playerId) || (evilGuesser != null && evilGuesser.PlayerId == playerId)) return true;
             return false;
         }
 
-        public static void clear (byte playerId) {
+        public static void clear(byte playerId)
+        {
             if (niceGuesser != null && niceGuesser.PlayerId == playerId) niceGuesser = null;
             else if (evilGuesser != null && evilGuesser.PlayerId == playerId) evilGuesser = null;
         }
 
-        public static int remainingShots(byte playerId, bool shoot = false) {
+        public static int remainingShots(byte playerId, bool shoot = false)
+        {
             int remainingShots = remainingShotsEvilGuesser;
-            if (niceGuesser != null && niceGuesser.PlayerId == playerId) {
+            if (niceGuesser != null && niceGuesser.PlayerId == playerId)
+            {
                 remainingShots = remainingShotsNiceGuesser;
                 if (shoot) remainingShotsNiceGuesser = Mathf.Max(0, remainingShotsNiceGuesser - 1);
-            } else if (shoot) {
+            }
+            else if (shoot)
+            {
                 remainingShotsEvilGuesser = Mathf.Max(0, remainingShotsEvilGuesser - 1);
             }
             return remainingShots;
         }
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             niceGuesser = null;
             evilGuesser = null;
             remainingShotsEvilGuesser = Mathf.RoundToInt(CustomOptionHolder.guesserNumberOfShots.getFloat());
@@ -1401,7 +1525,8 @@ namespace TownOfUs
         }
     }
 
-    public static class Lovers {
+    public static class Lovers
+    {
         public static PlayerControl lover1;
         public static PlayerControl lover2;
         public static Color color = new Color32(232, 57, 185, byte.MaxValue);
@@ -1411,32 +1536,38 @@ namespace TownOfUs
         // Lovers save if next to be exiled is a lover, because RPC of ending game comes before RPC of exiled
         public static bool notAckedExiledIsLover = false;
 
-        public static bool existing() {
+        public static bool existing()
+        {
             return lover1 != null && lover2 != null && !lover1.Data.Disconnected && !lover2.Data.Disconnected;
         }
 
-        public static bool existingAndAlive() {
+        public static bool existingAndAlive()
+        {
             return existing() && !lover1.Data.IsDead && !lover2.Data.IsDead && !notAckedExiledIsLover; // ADD NOT ACKED IS LOVER
         }
 
-        public static PlayerControl otherLover(PlayerControl oneLover) {
+        public static PlayerControl otherLover(PlayerControl oneLover)
+        {
             if (!existingAndAlive()) return null;
             if (oneLover == lover1) return lover2;
             if (oneLover == lover2) return lover1;
             return null;
         }
 
-        public static bool existingWithKiller() {
+        public static bool existingWithKiller()
+        {
             return existing() && (lover1.isKiller() || lover2.isKiller());
         }
 
-        public static bool hasAliveKillingLover(this PlayerControl player) {
+        public static bool hasAliveKillingLover(this PlayerControl player)
+        {
             if (!Lovers.existingAndAlive() || !existingWithKiller())
                 return false;
             return (player != null && (player == lover1 || player == lover2));
         }
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             lover1 = null;
             lover2 = null;
             notAckedExiledIsLover = false;
@@ -1444,7 +1575,8 @@ namespace TownOfUs
             enableChat = CustomOptionHolder.modifierLoverEnableChat.getBool();
         }
 
-        public static PlayerControl getPartner(this PlayerControl player) {
+        public static PlayerControl getPartner(this PlayerControl player)
+        {
             if (player == null)
                 return null;
             if (lover1 == player)
@@ -1455,22 +1587,26 @@ namespace TownOfUs
         }
     }
 
-    public static class Blind {
+    public static class Blind
+    {
         public static PlayerControl blind;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             blind = null;
         }
     }
 
-    public static class Bait {
+    public static class Bait
+    {
         public static PlayerControl bait;
         public static Dictionary<DeadPlayer, float> active = new Dictionary<DeadPlayer, float>();
-        
+
         public static float reportDelayMin = 0f;
         public static float reportDelayMax = 0f;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             bait = null;
             active = new Dictionary<DeadPlayer, float>();
             reportDelayMin = CustomOptionHolder.modifierBaitReportDelayMin.getFloat();
@@ -1479,28 +1615,33 @@ namespace TownOfUs
         }
     }
 
-    public static class Sleuth {
+    public static class Sleuth
+    {
         public static PlayerControl sleuth;
         public static List<PlayerControl> reported = new List<PlayerControl>();
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             sleuth = null;
             reported = new List<PlayerControl>();
         }
     }
 
-    public static class Tiebreaker {
+    public static class Tiebreaker
+    {
         public static PlayerControl tiebreaker;
 
         public static bool isTiebreak = false;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             tiebreaker = null;
             isTiebreak = false;
         }
     }
 
-    public static class ButtonBarry {
+    public static class ButtonBarry
+    {
         public static PlayerControl buttonBarry;
 
         public static bool usedButton = false;
@@ -1509,59 +1650,71 @@ namespace TownOfUs
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.EmergencyButton.png", 100f);
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             buttonBarry = null;
             usedButton = false;
         }
     }
 
-    public static class Indomitable {
+    public static class Indomitable
+    {
         public static PlayerControl indomitable;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             indomitable = null;
         }
     }
 
-    public static class Drunk {
+    public static class Drunk
+    {
         public static PlayerControl drunk;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             drunk = null;
         }
     }
 
-    public static class Sunglasses {
+    public static class Sunglasses
+    {
         public static PlayerControl sunglasses;
 
         public static int vision = 1;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             sunglasses = null;
             vision = CustomOptionHolder.modifierSunglassesVision.getSelection() + 1;
         }
     }
 
-    public static class Torch {
+    public static class Torch
+    {
         public static PlayerControl torch;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             torch = null;
         }
     }
 
-    public static class DoubleShot {
+    public static class DoubleShot
+    {
         public static PlayerControl doubleShot;
-        
+
         public static bool lifeUsed = false;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             doubleShot = null;
             lifeUsed = false;
         }
     }
 
-    public static class Disperser {
+    public static class Disperser
+    {
         public static PlayerControl disperser;
 
         public static bool isButtonUsed = false;
@@ -1570,20 +1723,102 @@ namespace TownOfUs
         public static Sprite getButtonSprite()
             => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.DisperseButton.png", 100f);
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             disperser = null;
             isButtonUsed = false;
         }
     }
 
-    public static class Armored {
+    public static class Armored
+    {
         public static PlayerControl armored;
-        
+
         public static bool isBrokenArmor = false;
 
-        public static void clearAndReload() {
+        public static void clearAndReload()
+        {
             armored = null;
             isBrokenArmor = false;
+        }
+    }
+
+    public static class TimeLord
+    {
+        public static PlayerControl timeLord;
+        public static Color color = new Color(0f, 0f, 1f, 1f);
+
+        public static bool shieldActive = false;
+        public static bool isRewinding = false;
+
+        public static float rewindTime = 3f;
+        public static float cooldown = 30f;
+        public static float rewindCooldown = 30f;
+        public static bool canUseRewind = true;
+        public static float shieldDuration = 3f;
+        public static bool reviveDuringRewind = false;
+        
+        private static Sprite buttonSprite;
+        public static Sprite getTimeShieldButtonSprite()
+            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.TimeShieldButton.png", 115f);
+            
+        private static Sprite twoButtonSprite;
+        public static Sprite getRewindButtonSprite()
+            => twoButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.RewindButton.png", 100f);
+
+        public static void clearAndReload()
+        {
+            timeLord = null;
+            shieldActive = false;
+            isRewinding = false;
+            rewindTime = CustomOptionHolder.timeLordRewindTime.getFloat();
+            shieldDuration = CustomOptionHolder.timeLordShieldDuration.getFloat();
+            cooldown = CustomOptionHolder.timeLordCooldown.getFloat();
+            reviveDuringRewind = CustomOptionHolder.timeLordReviveDuringRewind.getBool();
+            rewindCooldown = CustomOptionHolder.timeLordRewindCooldown.getFloat();
+            canUseRewind = CustomOptionHolder.timeLordCanRewind.getBool();
+        }
+
+        public static void RewindTime()
+        {
+            shieldActive = false; // Shield is no longer active when rewinding
+            if (TimeLord.timeLord != null && TimeLord.timeLord == PlayerControl.LocalPlayer)
+            {
+                HudManagerStartPatch.resetTimeLordButton();
+            }
+
+            FastDestroyableSingleton<HudManager>.Instance.FullScreen.color = new Color(0f, 0.5f, 0.8f, 0.3f);
+            FastDestroyableSingleton<HudManager>.Instance.FullScreen.enabled = true;
+            FastDestroyableSingleton<HudManager>.Instance.FullScreen.gameObject.SetActive(true);
+            FastDestroyableSingleton<HudManager>.Instance.StartCoroutine(Effects.Lerp(TimeLord.rewindTime / 2, new Action<float>((p) =>
+            {
+                if (p == 1f) FastDestroyableSingleton<HudManager>.Instance.FullScreen.enabled = false;
+            })));
+
+            if (TimeLord.timeLord == null || PlayerControl.LocalPlayer == TimeLord.timeLord) return; // Time Lord himself does not rewind
+
+            TimeLord.isRewinding = true;
+
+            if (MapBehaviour.Instance)
+                MapBehaviour.Instance.Close();
+            if (Minigame.Instance)
+                Minigame.Instance.ForceClose();
+
+            if (reviveDuringRewind)
+            {
+                DeadPlayer deadPlayer = GameHistory.deadPlayers.FirstOrDefault();
+                if ((DateTime.UtcNow - deadPlayer.timeOfDeath).Seconds <= rewindTime)
+                {
+                    // Revive Player
+                    var writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId,
+                        (byte)CustomRPC.RevivePlayer, SendOption.Reliable);
+                    writer.Write(deadPlayer.player.PlayerId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.stopStart(deadPlayer.player.PlayerId);
+                    // Remove dead player
+                    GameHistory.deadPlayers.Remove(deadPlayer);
+                }
+            }
         }
     }
 }

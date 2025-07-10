@@ -56,6 +56,7 @@ namespace TownOfUs
         public static RoleInfo oracle = new RoleInfo("Oracle", Oracle.color, "Get another player to confess on your passing", "Get another player to confess on your passing", RoleId.Oracle, FactionId.Crewmate, ObserveResults.Seven);
         public static RoleInfo vampireHunter = new RoleInfo("Vampire Hunter", VampireHunter.color, "Stake the Vampires", "Stake the Vampires", RoleId.VampireHunter, FactionId.Crewmate, ObserveResults.One);
         public static RoleInfo vhVeteran = new RoleInfo("Veteran", Veteran.color, "Protect yourself from other", "Protect yourself from others", RoleId.VHVeteran, FactionId.Crewmate, ObserveResults.Four);
+        public static RoleInfo timeLord = new RoleInfo("Time Lord", TimeLord.color, "Save yourself with your time power", "Save yourself with your time power", RoleId.TimeLord, FactionId.Crewmate, ObserveResults.Three);
 
         // Neutral Roles
         public static RoleInfo jester = new RoleInfo("Jester", Jester.color, "Get voted out", "Get voted out", RoleId.Jester, FactionId.Neutral, ObserveResults.Seven);
@@ -126,6 +127,7 @@ namespace TownOfUs
             snitch,
             spy,
             swapper,
+            timeLord,
             tracker,
             trapper,
             vampireHunter,
@@ -256,6 +258,7 @@ namespace TownOfUs
             if (p == Oracle.oracle) infos.Add(oracle);
             if (p == Bomber.bomber) infos.Add(bomber);
             if (p == VampireHunter.vampireHunter) infos.Add(vampireHunter);
+            if (p == TimeLord.timeLord) infos.Add(timeLord);
 
             // Default roles
             if (infos.Count == count) infos.Add(p.Data.Role.IsImpostor ? impostor : crewmate);

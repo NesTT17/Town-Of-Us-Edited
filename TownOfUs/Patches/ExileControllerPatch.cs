@@ -40,13 +40,16 @@ namespace TownOfUs.Patches {
             }
         }
 
-        static void WrapUpPostfix(PlayerControl exiled) {
+        static void WrapUpPostfix(PlayerControl exiled)
+        {
             // Jester win condition
-            if (exiled != null && Jester.jester != null && Jester.jester.PlayerId == exiled.PlayerId) {
+            if (exiled != null && Jester.jester != null && Jester.jester.PlayerId == exiled.PlayerId)
+            {
                 Jester.triggerJesterWin = true;
             }
             // Executioner win condition
-            else if (exiled != null && Executioner.executioner != null && Executioner.target != null && Executioner.target.PlayerId == exiled.PlayerId && !Executioner.executioner.Data.IsDead) {
+            else if (exiled != null && Executioner.executioner != null && Executioner.target != null && Executioner.target.PlayerId == exiled.PlayerId && !Executioner.executioner.Data.IsDead)
+            {
                 Executioner.triggerExecutionerWin = true;
             }
 
@@ -54,49 +57,56 @@ namespace TownOfUs.Patches {
             CustomButton.MeetingEndedUpdate();
 
             // Executioner promotion trigger
-            if (Executioner.executioner != null && Executioner.target != null && !Executioner.executioner.Data.IsDead && Executioner.targetWasGuessed) {
+            if (Executioner.executioner != null && Executioner.target != null && !Executioner.executioner.Data.IsDead && Executioner.targetWasGuessed)
+            {
                 MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ExecutionerPromotesToPursuer, Hazel.SendOption.Reliable, -1);
                 AmongUsClient.Instance.FinishRpcImmediately(writer);
                 RPCProcedure.executionerPromotesToPursuer();
             }
 
             // Guardian Angel promotion trigger
-            if (GuardianAngel.guardianAngel != null && GuardianAngel.target != null && !GuardianAngel.guardianAngel.Data.IsDead && GuardianAngel.targetWasGuessed) {
+            if (GuardianAngel.guardianAngel != null && GuardianAngel.target != null && !GuardianAngel.guardianAngel.Data.IsDead && GuardianAngel.targetWasGuessed)
+            {
                 MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.GuardianAngelPromotes, Hazel.SendOption.Reliable, -1);
                 AmongUsClient.Instance.FinishRpcImmediately(writer);
                 RPCProcedure.guardianAngelPromotes();
             }
 
             // Reset Mercenary Shield
-            if (Mercenary.shielded != null) {
+            if (Mercenary.shielded != null)
+            {
                 MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.MercenaryResetShield, Hazel.SendOption.Reliable, -1);
                 AmongUsClient.Instance.FinishRpcImmediately(writer);
                 RPCProcedure.mercenaryResetShield();
             }
 
             // Blackmailer reset blackmailed
-            if (Blackmailer.blackmailed != null) {
+            if (Blackmailer.blackmailed != null)
+            {
                 MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.UnblackmailPlayer, SendOption.Reliable, -1);
                 AmongUsClient.Instance.FinishRpcImmediately(writer);
                 RPCProcedure.unblackmailPlayer();
             }
 
             // Trapper Remove traps
-            if (Trapper.trapper != null) {
+            if (Trapper.trapper != null)
+            {
                 MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.CleanTraps, SendOption.Reliable, -1);
                 AmongUsClient.Instance.FinishRpcImmediately(writer);
                 RPCProcedure.cleanTraps();
             }
 
             // Tracker Remove tracks
-            if (Tracker.tracker != null && Tracker.resetAfterMeeting) {
+            if (Tracker.tracker != null && Tracker.resetAfterMeeting)
+            {
                 MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.TrackerResetTrack, SendOption.Reliable, -1);
                 AmongUsClient.Instance.FinishRpcImmediately(writer);
                 RPCProcedure.trackerResetTrack();
             }
 
             // Detective reset examined
-            if (Detective.detective != null) {
+            if (Detective.detective != null)
+            {
                 MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.DetectiveResetExamine, SendOption.Reliable, -1);
                 AmongUsClient.Instance.FinishRpcImmediately(writer);
                 RPCProcedure.detectiveResetExamine();
@@ -105,20 +115,26 @@ namespace TownOfUs.Patches {
             // Force Bounty Hunter Bounty Update
             if (BountyHunter.bountyHunter != null && BountyHunter.bountyHunter == PlayerControl.LocalPlayer)
                 BountyHunter.bountyUpdateTimer = 0f;
-            
+
             // Vampire Hunter promotion trigger
-            if (VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == PlayerControl.LocalPlayer) {
+            if (VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == PlayerControl.LocalPlayer)
+            {
                 int aliveVampires = PlayerControl.AllPlayerControls.ToArray().Where(x => x != null && !x.Data.Disconnected && !x.Data.IsDead && (x.PlayerId == Dracula.dracula.PlayerId || x.PlayerId == Vampire.vampire.PlayerId)).Count();
-                if (aliveVampires == 0) {
+                if (aliveVampires == 0)
+                {
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.VampireHunterPromotes, SendOption.Reliable, -1);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
                     RPCProcedure.vampireHunterPromotes();
                 }
             }
 
-            if (VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == PlayerControl.LocalPlayer && !VampireHunter.canStake) {
+            if (VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == PlayerControl.LocalPlayer && !VampireHunter.canStake)
+            {
                 VampireHunter.canStake = true;
-            } 
+            }
+
+            if (PlayerControl.LocalPlayer.Data.IsDead && !Helpers.localPlayerCanSeeOthersRoles)
+                Helpers.localPlayerCanSeeOthersRoles = true;
         }
     }
 

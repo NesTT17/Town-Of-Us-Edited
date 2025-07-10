@@ -37,7 +37,12 @@ namespace TownOfUs
         public static string previousEndGameSummary = "";
         public static Dictionary<string, Sprite> CachedSprites = new();
         public static Color impAbilityTargetColor = new Color(0.3f, 0f, 0f);
-        public static Sprite loadSpriteFromResources(string path, float pixelsPerUnit, bool cache=true) {
+        public static List<byte> revealedTimeLords = new();
+        public static List<byte> knownTimeLordKillers = new();
+        public static bool localPlayerCanSeeOthersRoles = false;
+
+        public static Sprite loadSpriteFromResources(string path, float pixelsPerUnit, bool cache = true)
+        {
             try
             {
                 if (cache && CachedSprites.TryGetValue(path + pixelsPerUnit, out var sprite)) return sprite;
@@ -46,7 +51,9 @@ namespace TownOfUs
                 if (cache) sprite.hideFlags |= HideFlags.HideAndDontSave | HideFlags.DontSaveInEditor;
                 if (!cache) return sprite;
                 return CachedSprites[path + pixelsPerUnit] = sprite;
-            } catch {
+            }
+            catch
+            {
                 System.Console.WriteLine("Error loading sprite from path: " + path);
             }
             return null;
@@ -147,7 +154,7 @@ namespace TownOfUs
         }
 
         public static bool shouldShowGhostInfo() {
-            return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.Data.IsDead && TOUMapOptions.ghostsSeeInformation || AmongUsClient.Instance.GameState == InnerNet.InnerNetClient.GameStates.Ended;
+            return PlayerControl.LocalPlayer != null && localPlayerCanSeeOthersRoles && PlayerControl.LocalPlayer.Data.IsDead && TOUMapOptions.ghostsSeeInformation || AmongUsClient.Instance.GameState == InnerNet.InnerNetClient.GameStates.Ended;
         }
 
         public static void clearAllTasks(this PlayerControl player) {
@@ -386,14 +393,30 @@ namespace TownOfUs
                 return MurderAttemptResult.BlankKill;
             }
 
+            if (TimeLord.shieldActive && TimeLord.timeLord != null && TimeLord.timeLord == target)
+            {
+                if (!blockRewind) // Only rewind the attempt was not called because a meeting started
+                {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.TimeLordRewindTime, Hazel.SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.timeLordRewindTime();
+                    revealedTimeLords.Add(target.PlayerId);
+                    knownTimeLordKillers.Add(killer.PlayerId);
+                }
+                return MurderAttemptResult.SuppressKill;
+            }
+
             // Reverse veteran kill
-            if (Veteran.veteran != null && Veteran.veteran == target && Veteran.isAlertActive) {
-                if (Medic.shielded != null && Medic.shielded == target) {
+            if (Veteran.veteran != null && Veteran.veteran == target && Veteran.isAlertActive)
+            {
+                if (Medic.shielded != null && Medic.shielded == target)
+                {
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, SendOption.Reliable, -1);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
                     RPCProcedure.shieldedMurderAttempt();
                 }
-                if (Mercenary.shielded != null && Mercenary.shielded == target) {
+                if (Mercenary.shielded != null && Mercenary.shielded == target)
+                {
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryAddMurder, SendOption.Reliable, -1);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
                     RPCProcedure.mercenaryAddMurder();

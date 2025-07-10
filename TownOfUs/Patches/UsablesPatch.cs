@@ -185,10 +185,23 @@ namespace TownOfUs.Patches {
         private static List<TMPro.TextMeshPro> spyTexts = new List<TMPro.TextMeshPro>();
         [HarmonyPatch(typeof(VitalsMinigame), nameof(VitalsMinigame.Begin))]
         class VitalsMinigameStartPatch {
-            static void Postfix(VitalsMinigame __instance) {
-                if (Spy.spy != null && PlayerControl.LocalPlayer == Spy.spy) {
+            public static bool Prefix(VitalsMinigame __instance)
+            {
+                if (TimeLord.timeLord != null && TimeLord.timeLord == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead)
+                {
+                    UnityEngine.Object.Destroy(__instance.gameObject);
+                    return false;
+                }
+                return true;
+            }
+            
+            static void Postfix(VitalsMinigame __instance)
+            {
+                if (Spy.spy != null && PlayerControl.LocalPlayer == Spy.spy)
+                {
                     spyTexts = new List<TMPro.TextMeshPro>();
-                    foreach (VitalsPanel panel in __instance.vitals) {
+                    foreach (VitalsPanel panel in __instance.vitals)
+                    {
                         TMPro.TextMeshPro text = UnityEngine.Object.Instantiate(__instance.SabText, panel.transform);
                         spyTexts.Add(text);
                         UnityEngine.Object.DestroyImmediate(text.GetComponent<AlphaBlink>());
@@ -199,8 +212,10 @@ namespace TownOfUs.Patches {
                 }
 
                 //Fix Visor in Vitals
-                foreach (VitalsPanel panel in __instance.vitals) {
-                    if (panel.PlayerIcon != null && panel.PlayerIcon.cosmetics.skin != null) {
+                foreach (VitalsPanel panel in __instance.vitals)
+                {
+                    if (panel.PlayerIcon != null && panel.PlayerIcon.cosmetics.skin != null)
+                    {
                         panel.PlayerIcon.cosmetics.skin.transform.position = new Vector3(0, 0, 0f);
                     }
                 }

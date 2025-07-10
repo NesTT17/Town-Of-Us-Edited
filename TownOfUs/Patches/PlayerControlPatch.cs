@@ -19,7 +19,7 @@ namespace TownOfUs.Patches {
         // Helpers
         static PlayerControl setTarget(bool onlyCrewmates = false, bool targetPlayersInVents = true, List<PlayerControl> untargetablePlayers = null, PlayerControl targetingPlayer = null) {
             PlayerControl result = null;
-            float num = AmongUs.GameOptions.GameOptionsData.KillDistances[Mathf.Clamp(GameOptionsManager.Instance.currentNormalGameOptions.KillDistance, 0, 2)];
+            float num = AmongUs.GameOptions.LegacyGameOptions.KillDistances[Mathf.Clamp(GameOptionsManager.Instance.currentNormalGameOptions.KillDistance, 0, 2)];
             if (!MapUtilities.CachedShipStatus) return result;
             if (targetingPlayer == null) targetingPlayer = PlayerControl.LocalPlayer;
             if (targetingPlayer.Data.IsDead) return result;
@@ -137,15 +137,7 @@ namespace TownOfUs.Patches {
 
                 p.cosmetics.nameText.transform.parent.SetLocalZ(-0.0001f);  // This moves both the name AND the colorblindtext behind objects (if the player is behind the object), like the rock on polus
 
-                bool showSnitch = false;
-                if (Snitch.snitch != null) {
-                    var (playerCompleted, playerTotal) = TasksHandler.taskInfo(Snitch.snitch.Data);
-                    int numberOfTasks = playerTotal - playerCompleted;
-                    if (numberOfTasks <= Snitch.taskCountForReveal && (PlayerControl.LocalPlayer.Data.Role.IsImpostor || PlayerControl.LocalPlayer.isNeutral() && Snitch.includeNeutral || PlayerControl.LocalPlayer.isNeutralKiller() && Snitch.includeKillingNeutral))
-                        showSnitch = true;
-                }
-
-                if ((Lawyer.lawyerKnowsRole && PlayerControl.LocalPlayer == Lawyer.lawyer && p == Lawyer.target) || (Sleuth.sleuth != null && Sleuth.sleuth == PlayerControl.LocalPlayer && Sleuth.reported.Any(x => x.PlayerId == p.PlayerId)) || p == PlayerControl.LocalPlayer || PlayerControl.LocalPlayer.Data.IsDead || p == Snitch.snitch && showSnitch || Mayor.mayor != null && Mayor.mayor == p && Mayor.isRevealed && PlayerControl.LocalPlayer != Mayor.mayor) {
+                if ((Lawyer.lawyerKnowsRole && PlayerControl.LocalPlayer == Lawyer.lawyer && p == Lawyer.target) || (Sleuth.sleuth != null && Sleuth.sleuth == PlayerControl.LocalPlayer && Sleuth.reported.Any(x => x.PlayerId == p.PlayerId)) || p == PlayerControl.LocalPlayer || PlayerControl.LocalPlayer.Data.IsDead || Mayor.mayor != null && Mayor.mayor == p && Mayor.isRevealed && PlayerControl.LocalPlayer != Mayor.mayor) {
                     Transform playerInfoTransform = p.cosmetics.nameText.transform.parent.FindChild("Info");
                     TMPro.TextMeshPro playerInfo = playerInfoTransform != null ? playerInfoTransform.GetComponent<TMPro.TextMeshPro>() : null;
                     if (playerInfo == null) {
@@ -188,19 +180,19 @@ namespace TownOfUs.Patches {
                         }
                         meetingInfoText = $"{roleNames} {taskInfo}".Trim();
                     }
-                    else if (TOUMapOptions.ghostsSeeRoles && TOUMapOptions.ghostsSeeInformation ) {
+                    else if (TOUMapOptions.ghostsSeeRoles && TOUMapOptions.ghostsSeeInformation && Helpers.localPlayerCanSeeOthersRoles) {
                         playerInfoText = $"{roleText} {taskInfo}".Trim();
                         meetingInfoText = playerInfoText;
                     }
-                    else if (TOUMapOptions.ghostsSeeInformation ) {
+                    else if (TOUMapOptions.ghostsSeeInformation && Helpers.localPlayerCanSeeOthersRoles) {
                         playerInfoText = $"{taskInfo}".Trim();
                         meetingInfoText = playerInfoText;
                     }
-                    else if (TOUMapOptions.ghostsSeeRoles) {
+                    else if (TOUMapOptions.ghostsSeeRoles && Helpers.localPlayerCanSeeOthersRoles) {
                         playerInfoText = $"{roleText}";
                         meetingInfoText = playerInfoText;
                     }
-                    if ((Lawyer.lawyerKnowsRole && PlayerControl.LocalPlayer == Lawyer.lawyer && p == Lawyer.target) || (Sleuth.sleuth != null && Sleuth.sleuth == PlayerControl.LocalPlayer && Sleuth.reported.Any(x => x.PlayerId == p.PlayerId)) || (p == Snitch.snitch && showSnitch) || (Mayor.mayor != null && Mayor.mayor == p && Mayor.isRevealed && PlayerControl.LocalPlayer != Mayor.mayor)) {
+                    if ((Lawyer.lawyerKnowsRole && PlayerControl.LocalPlayer == Lawyer.lawyer && p == Lawyer.target) || (Sleuth.sleuth != null && Sleuth.sleuth == PlayerControl.LocalPlayer && Sleuth.reported.Any(x => x.PlayerId == p.PlayerId)) || (Mayor.mayor != null && Mayor.mayor == p && Mayor.isRevealed && PlayerControl.LocalPlayer != Mayor.mayor)) {
                         roleText = RoleInfo.GetRolesString(p, true, false, true);
                         playerInfoText = $"{roleText}";
                         meetingInfoText = playerInfoText;
@@ -715,10 +707,61 @@ namespace TownOfUs.Patches {
             setPlayerOutline(VampireHunter.currentTarget, VampireHunter.color);
         }
 
-        public static void Postfix(PlayerControl __instance) {
+        static void bendTimeUpdate()
+        {
+            if (TimeLord.isRewinding)
+            {
+                if (localPlayerPositions.Count > 0)
+                {
+                    // Set position
+                    var next = localPlayerPositions[0];
+                    if (next.Item2 == true)
+                    {
+                        // Exit current vent if necessary
+                        if (PlayerControl.LocalPlayer.inVent)
+                        {
+                            foreach (Vent vent in MapUtilities.CachedShipStatus.AllVents)
+                            {
+                                bool canUse;
+                                bool couldUse;
+                                vent.CanUse(PlayerControl.LocalPlayer.Data, out canUse, out couldUse);
+                                if (canUse)
+                                {
+                                    PlayerControl.LocalPlayer.MyPhysics.RpcExitVent(vent.Id);
+                                    vent.SetButtons(false);
+                                }
+                            }
+                        }
+                        PlayerControl.LocalPlayer.transform.position = next.Item1;
+                    }
+                    else if (localPlayerPositions.Any(x => x.Item2 == true))
+                    {
+                        PlayerControl.LocalPlayer.transform.position = next.Item1;
+                    }
+
+                    localPlayerPositions.RemoveAt(0);
+
+                    if (localPlayerPositions.Count > 1) localPlayerPositions.RemoveAt(0); // Skip every second position to rewinde twice as fast, but never skip the last position
+                }
+                else
+                {
+                    TimeLord.isRewinding = false;
+                    PlayerControl.LocalPlayer.moveable = true;
+                }
+            }
+            else
+            {
+                while (localPlayerPositions.Count >= Mathf.Round(TimeLord.rewindTime / Time.fixedDeltaTime)) localPlayerPositions.RemoveAt(localPlayerPositions.Count - 1);
+                localPlayerPositions.Insert(0, new Tuple<Vector3, bool>(PlayerControl.LocalPlayer.transform.position, PlayerControl.LocalPlayer.CanMove)); // CanMove = CanMove
+            }
+        }
+
+        public static void Postfix(PlayerControl __instance)
+        {
             if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Started || GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek) return;
-            
-            if (PlayerControl.LocalPlayer == __instance) {
+
+            if (PlayerControl.LocalPlayer == __instance)
+            {
                 // Update player outlines
                 setBasePlayerOutlines();
 
@@ -799,6 +842,8 @@ namespace TownOfUs.Patches {
                 oracleSetTarget();
                 // Vampire Hunter
                 vampireHunterSetTarget();
+                // Time Lord
+                bendTimeUpdate();
 
                 // -- MODIFIER--
                 // Bait

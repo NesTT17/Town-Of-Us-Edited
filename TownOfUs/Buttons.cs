@@ -68,6 +68,8 @@ namespace TownOfUs
         public static TMPro.TMP_Text vampireHunterStakeButtonText;
         public static CustomButton vhVeteranAlertButton;
         public static TMPro.TMP_Text vhVeteranAlertButtonText;
+        public static CustomButton timeLordShieldButton;
+        public static CustomButton timeLordRewindTimeButton;
         
         public static void setCustomButtonCooldowns() {
             if (!initialized) {
@@ -139,13 +141,27 @@ namespace TownOfUs
             vampireHunterStakeButton.MaxTimer = VampireHunter.stakeCooldown;
             vhVeteranAlertButton.MaxTimer = VampireHunter.cooldown;
             vhVeteranAlertButton.EffectDuration = VampireHunter.duration;
+            timeLordShieldButton.MaxTimer = TimeLord.cooldown;
+            timeLordShieldButton.EffectDuration = TimeLord.shieldDuration;
+            timeLordRewindTimeButton.MaxTimer = TimeLord.rewindCooldown;
+            timeLordRewindTimeButton.EffectDuration = TimeLord.rewindTime;
             // Already set the timer to the max, as the button is enabled during the game and not available at the start
             zoomOutButton.MaxTimer = 0f;
         }
 
-        private static void setButtonTargetDisplay(PlayerControl target, CustomButton button = null, Vector3? offset=null) {
-            if (target == null || button == null) {
-                if (targetDisplay != null) {  // Reset the poolable player
+        public static void resetTimeLordButton()
+        {
+            timeLordShieldButton.Timer = timeLordShieldButton.MaxTimer;
+            timeLordShieldButton.isEffectActive = false;
+            timeLordShieldButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
+        }
+
+        private static void setButtonTargetDisplay(PlayerControl target, CustomButton button = null, Vector3? offset = null)
+        {
+            if (target == null || button == null)
+            {
+                if (targetDisplay != null)
+                {  // Reset the poolable player
                     targetDisplay.gameObject.SetActive(false);
                     GameObject.Destroy(targetDisplay.gameObject);
                     targetDisplay = null;
@@ -400,12 +416,18 @@ namespace TownOfUs
             draculaButton = new CustomButton(
                 () => {
                     if (Dracula.canCreateVampire) {
-                        if (VampireHunter.vampireHunter != null && Dracula.currentTarget == VampireHunter.vampireHunter) {
+                        if (VampireHunter.vampireHunter != null && Dracula.currentTarget == VampireHunter.vampireHunter)
+                        {
                             Helpers.checkMurderAttemptAndKill(Dracula.currentTarget, Dracula.dracula);
                             return;
-                        } else if (Mayor.mayor != null && Mayor.isRevealed && Dracula.currentTarget == Mayor.mayor) {
-                            if (Helpers.checkMurderAttemptAndKill(Dracula.dracula, Dracula.currentTarget) == MurderAttemptResult.SuppressKill) return;
-                        } else {
+                        }
+                        else if (Mayor.mayor != null && Mayor.isRevealed && Dracula.currentTarget == Mayor.mayor)
+                        {
+                            Helpers.checkMurderAttemptAndKill(Dracula.dracula, Dracula.currentTarget);
+                            return;
+                        }
+                        else
+                        {
                             if (Helpers.checkAndDoVetKill(Dracula.currentTarget)) return;
                             if (Helpers.checkAndDoVHVetKill(Dracula.currentTarget)) return;
                             MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.DraculaCreatesVampire, Hazel.SendOption.Reliable, -1);
@@ -1437,6 +1459,46 @@ namespace TownOfUs
             vhVeteranAlertButtonText.enableWordWrapping = false;
             vhVeteranAlertButtonText.transform.localScale = Vector3.one * 0.5f;
             vhVeteranAlertButtonText.transform.localPosition += new Vector3(-0.05f, 0.7f, 0);
+
+            // Time Lord Rewind
+            timeLordRewindTimeButton = new CustomButton(
+                () =>
+                {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.TimeLordRewindTime, Hazel.SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.timeLordRewindTime();
+                },
+                () => { return TimeLord.timeLord != null && TimeLord.timeLord == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () =>
+                {
+                    timeLordRewindTimeButton.Timer = timeLordRewindTimeButton.MaxTimer;
+                    timeLordRewindTimeButton.isEffectActive = false;
+                    timeLordRewindTimeButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
+                },
+                TimeLord.getRewindButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.G,
+                true, TimeLord.rewindTime, () => { timeLordRewindTimeButton.Timer = timeLordRewindTimeButton.MaxTimer; }
+            );
+
+            // Time Lord Shield
+            timeLordShieldButton = new CustomButton(
+                () =>
+                {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.TimeLordShield, Hazel.SendOption.Reliable, -1);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.timeLordShield();
+                },
+                () => { return TimeLord.timeLord != null && TimeLord.timeLord == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () =>
+                {
+                    timeLordShieldButton.Timer = timeLordShieldButton.MaxTimer;
+                    timeLordShieldButton.isEffectActive = false;
+                    timeLordShieldButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
+                },
+                TimeLord.getTimeShieldButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F,
+                true, TimeLord.shieldDuration, () => { timeLordShieldButton.Timer = timeLordShieldButton.MaxTimer; }
+            );
 
             // Zoom Button
             zoomOutButton = new CustomButton(

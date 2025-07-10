@@ -33,7 +33,7 @@ namespace TownOfUs
     public class TownOfUsPlugin : BasePlugin
     {
         public const string Id = "me.nestt.townofus";
-        public const string VersionString = "1.1.2";
+        public const string VersionString = "1.1.3";
 
         public static Version Version = Version.Parse(VersionString);
         internal static BepInEx.Logging.ManualLogSource Logger;
@@ -101,7 +101,6 @@ namespace TownOfUs
             ShowChatNotifications = Config.Bind("Custom", "Show Chat Notifications", true);
             ExtendedColorblindMode = Config.Bind("Custom", "Extended Colorblind Mode", false);
 
-            ServerManager.DefaultRegions = new Il2CppReferenceArray<IRegionInfo>(new IRegionInfo[0]);
             UpdateRegions();
 
             Harmony.PatchAll();

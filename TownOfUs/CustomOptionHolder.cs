@@ -307,6 +307,14 @@ namespace TownOfUs
         public static CustomOption vampireHunterCanStakeRoundOne;
         public static CustomOption vampireHunterSelfKillAfterFinalStake;
 
+        public static CustomOption timeLordSpawnRate;
+        public static CustomOption timeLordCooldown;
+        public static CustomOption timeLordRewindTime;
+        public static CustomOption timeLordShieldDuration;
+        public static CustomOption timeLordReviveDuringRewind;
+        public static CustomOption timeLordRewindCooldown;
+        public static CustomOption timeLordCanRewind;
+
         // Guesser Gamemode
         public static CustomOption guesserGamemodeCrewNumber;
         public static CustomOption guesserGamemodeNNeutralNumber;
@@ -423,6 +431,14 @@ namespace TownOfUs
             swapperSpawnRate = CustomOption.Create(45, Types.Crewmate, cs(Swapper.color, "Swapper"), rates, null, true);
             swapperCanCallEmergency = CustomOption.Create(46, Types.Crewmate, "Swapper Can Call Emergency Meeting", false, swapperSpawnRate);
             swapperCanOnlySwapOthers = CustomOption.Create(47, Types.Crewmate, "Swapper Can Only Swap Others", false, swapperSpawnRate);
+
+            timeLordSpawnRate = CustomOption.Create(451, Types.Crewmate, cs(TimeLord.color, "Time Lord"), rates, null, true);
+            timeLordRewindTime = CustomOption.Create(452, Types.Crewmate, "Rewind Time", 3f, 1f, 10f, 1f, timeLordSpawnRate);
+            timeLordCooldown = CustomOption.Create(453, Types.Crewmate, "Time Lord Shield Cooldown", 30f, 10f, 60f, 2.5f, timeLordSpawnRate);
+            timeLordShieldDuration = CustomOption.Create(454, Types.Crewmate, "Time Lord Shield Duration", 3f, 1f, 20f, 1f, timeLordSpawnRate);
+            timeLordReviveDuringRewind = CustomOption.Create(455, Types.Crewmate, "Revive During Rewind", false, timeLordSpawnRate);
+            timeLordCanRewind = CustomOption.Create(456, Types.Crewmate, "Time Lord Can Rewind", false, timeLordSpawnRate);
+            timeLordRewindCooldown = CustomOption.Create(457, Types.Crewmate, "Rewind Cooldown", 30f, 10f, 60f, 2.5f, timeLordCanRewind);
 
             trackerSpawnRate = CustomOption.Create(185, Types.Crewmate, cs(Tracker.color, "Tracker"), rates, null, true);
             trackerCooldown = CustomOption.Create(186, Types.Crewmate, "Track Cooldown", 30f, 10f, 60f, 2.5f, trackerSpawnRate);

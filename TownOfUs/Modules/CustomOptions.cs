@@ -492,7 +492,7 @@ namespace TownOfUs {
                     viewSettingsInfoPanel.titleText.outlineColor = Color.white;
                     viewSettingsInfoPanel.titleText.outlineWidth = 0.2f;
                     if (option.type == CustomOptionType.Modifier)
-                        viewSettingsInfoPanel.settingText.text = viewSettingsInfoPanel.settingText.text + GameOptionsDataPatch.buildModifierExtras(option);
+                        viewSettingsInfoPanel.settingText.text = viewSettingsInfoPanel.settingText.text + LegacyGameOptionsPatch.buildModifierExtras(option);
                 }
                 __instance.settingsInfo.Add(viewSettingsInfoPanel.gameObject);
 
@@ -847,7 +847,7 @@ namespace TownOfUs {
 
 
     [HarmonyPatch] 
-    class GameOptionsDataPatch
+    class LegacyGameOptionsPatch
     {
         private static string buildRoleOptions() {
             var crewRoles = buildOptionsOfType(CustomOption.CustomOptionType.Crewmate, true) + "\n";
@@ -978,15 +978,15 @@ namespace TownOfUs {
     [HarmonyPatch]
     public class AddToKillDistanceSetting
     {
-        [HarmonyPatch(typeof(GameOptionsData), nameof(GameOptionsData.AreInvalid))]
+        [HarmonyPatch(typeof(LegacyGameOptions), nameof(LegacyGameOptions.AreInvalid))]
         [HarmonyPrefix]
         
-        public static bool Prefix(GameOptionsData __instance, ref int maxExpectedPlayers)
+        public static bool Prefix(LegacyGameOptions __instance, ref int maxExpectedPlayers)
         {
             //making the killdistances bound check higher since extra short is added
             return __instance.MaxPlayers > maxExpectedPlayers || __instance.NumImpostors < 1
                     || __instance.NumImpostors > 3 || __instance.KillDistance < 0
-                    || __instance.KillDistance >= GameOptionsData.KillDistances.Count
+                    || __instance.KillDistance >= LegacyGameOptions.KillDistances.Count
                     || __instance.PlayerSpeedMod <= 0f || __instance.PlayerSpeedMod > 3f;
         }
 
@@ -997,7 +997,7 @@ namespace TownOfUs {
         {
             return __instance.MaxPlayers > maxExpectedPlayers || __instance.NumImpostors < 1
                     || __instance.NumImpostors > 3 || __instance.KillDistance < 0
-                    || __instance.KillDistance >= GameOptionsData.KillDistances.Count
+                    || __instance.KillDistance >= LegacyGameOptions.KillDistances.Count
                     || __instance.PlayerSpeedMod <= 0f || __instance.PlayerSpeedMod > 3f;
         }
 
@@ -1040,7 +1040,7 @@ namespace TownOfUs {
                 else {
                     index = GameOptionsManager.Instance.currentHideNSeekGameOptions.KillDistance;
                 }
-                value = GameOptionsData.KillDistanceStrings[index];
+                value = LegacyGameOptions.KillDistanceStrings[index];
             }
         }
 
@@ -1059,15 +1059,15 @@ namespace TownOfUs {
 
         public static void addKillDistance()
         {
-            GameOptionsData.KillDistances = new(new float[] { 0.5f, 1f, 1.8f, 2.5f });
-            GameOptionsData.KillDistanceStrings = new(new string[] { "Very Short", "Short", "Medium", "Long" });
+            LegacyGameOptions.KillDistances = new(new float[] { 0.5f, 1f, 1.8f, 2.5f });
+            LegacyGameOptions.KillDistanceStrings = new(new string[] { "Very Short", "Short", "Medium", "Long" });
         }
 
         [HarmonyPatch(typeof(StringGameSetting), nameof(StringGameSetting.GetValueString))]
         [HarmonyPrefix]
         public static bool AjdustStringForViewPanel(StringGameSetting __instance, float value, ref string __result) {
             if (__instance.OptionName != Int32OptionNames.KillDistance) return true;
-            __result = GameOptionsData.KillDistanceStrings[(int)value];
+            __result = LegacyGameOptions.KillDistanceStrings[(int)value];
             return false;
         }
     }
@@ -1109,7 +1109,7 @@ namespace TownOfUs {
                 HudManagerUpdate.ToggleSettings(HudManager.Instance);
             if (Input.GetKeyDown(KeyCode.F2) && LobbyBehaviour.Instance)
                 HudManagerUpdate.ToggleSummary(HudManager.Instance);
-            if (TownOfUsPlugin.optionsPage >= GameOptionsDataPatch.maxPage) TownOfUsPlugin.optionsPage = 0;
+            if (TownOfUsPlugin.optionsPage >= LegacyGameOptionsPatch.maxPage) TownOfUsPlugin.optionsPage = 0;
         }
     }
 
@@ -1117,8 +1117,7 @@ namespace TownOfUs {
     //This class is taken and adapted from Town of Us Reactivated, https://github.com/eDonnes124/Town-Of-Us-R/blob/master/source/Patches/CustomOption/Patches.cs, Licensed under GPLv3
     [HarmonyPatch(typeof(HudManager), nameof(HudManager.Update))]
     public class HudManagerUpdate {
-        private static GameObject GameSettingsObject;
-        private static TextMeshPro GameSettings;
+        private static TextMeshPro GameSettings = null;
         public static float
             MinX,/*-5.3F*/
             OriginalY = 2.9F,
@@ -1196,7 +1195,7 @@ namespace TownOfUs {
         public static void Prefix2(HudManager __instance) {
             if (!settingsTMPs[0]) return;
             foreach (var tmp in settingsTMPs) tmp.text = "";
-            var settingsString = GameOptionsDataPatch.buildAllOptions(hideExtras: true);
+            var settingsString = LegacyGameOptionsPatch.buildAllOptions(hideExtras: true);
             var blocks = settingsString.Split("\n\n", StringSplitOptions.RemoveEmptyEntries); ;
             string curString = "";
             string curBlock;

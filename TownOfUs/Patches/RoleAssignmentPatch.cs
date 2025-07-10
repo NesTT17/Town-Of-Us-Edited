@@ -24,14 +24,6 @@ namespace TownOfUs.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(GameOptionsData), nameof(GameOptionsData.Validate))]
-    class GameOptionsDataValidatePatch {
-        public static void Postfix(GameOptionsData __instance) {
-            if (GameOptionsManager.Instance.CurrentGameOptions.GameMode != GameModes.Normal) return;
-            __instance.NumImpostors = GameOptionsManager.Instance.CurrentGameOptions.NumImpostors;
-        }
-    }
-
     [HarmonyPatch(typeof(RoleManager), nameof(RoleManager.SelectRoles))]
     class RoleManagerSelectRolesPatch {
         private static int crewValues;
@@ -168,8 +160,10 @@ namespace TownOfUs.Patches {
             crewSettings.Add((byte)RoleId.Tracker, CustomOptionHolder.trackerSpawnRate.getSelection());
             crewSettings.Add((byte)RoleId.Detective, CustomOptionHolder.detectiveSpawnRate.getSelection());
             crewSettings.Add((byte)RoleId.Oracle, CustomOptionHolder.oracleSpawnRate.getSelection());
+            crewSettings.Add((byte)RoleId.TimeLord, CustomOptionHolder.timeLordSpawnRate.getSelection());
 
-            return new RoleAssignmentData {
+            return new RoleAssignmentData
+            {
                 crewmates = crewmates,
                 impostors = impostors,
                 crewSettings = crewSettings,

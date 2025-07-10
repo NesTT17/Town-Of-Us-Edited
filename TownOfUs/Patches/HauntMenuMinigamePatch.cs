@@ -19,7 +19,7 @@ namespace TownOfUs.Patches {
             else factionInfo = "Crewmate";
 
             var roleInfo = RoleInfo.getRoleInfoForPlayer(target, false);
-            string roleString = (roleInfo.Count > 0 && TOUMapOptions.ghostsSeeRoles) ? roleInfo[0].name : "";
+            string roleString = (roleInfo.Count > 0 && TOUMapOptions.ghostsSeeRoles && Helpers.localPlayerCanSeeOthersRoles) ? roleInfo[0].name : "";
             if (__instance.HauntTarget.Data.IsDead) {
                 __instance.FilterText.text = !TOUMapOptions.ghostsSeeRoles ? factionInfo : roleString + " Ghost";
                 return;
@@ -43,7 +43,7 @@ namespace TownOfUs.Patches {
         [HarmonyPrefix]
         [HarmonyPatch(typeof(HauntMenuMinigame), nameof(HauntMenuMinigame.Start))]
         public static bool StartPrefix(HauntMenuMinigame __instance) {
-            if (GameOptionsManager.Instance.currentGameOptions.GameMode != GameModes.Normal || !TOUMapOptions.ghostsSeeRoles) return true;
+            if (GameOptionsManager.Instance.currentGameOptions.GameMode != GameModes.Normal || !TOUMapOptions.ghostsSeeRoles || !Helpers.localPlayerCanSeeOthersRoles) return true;
             __instance.FilterButtons[0].gameObject.SetActive(true);
             int numActive = 0;
             int numButtons = __instance.FilterButtons.Count((PassiveButton s) => s.isActiveAndEnabled);
