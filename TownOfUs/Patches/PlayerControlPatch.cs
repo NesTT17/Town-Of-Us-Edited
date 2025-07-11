@@ -342,8 +342,10 @@ namespace TownOfUs.Patches {
 
         static void shifterSetTarget() {
             if (Shifter.shifter == null || Shifter.shifter != PlayerControl.LocalPlayer) return;
-            Shifter.currentTarget = setTarget();
-            if (Shifter.futureShift == null) setPlayerOutline(Shifter.currentTarget, Color.yellow);
+            List<PlayerControl> untargetables = new List<PlayerControl>();
+            if (Mayor.mayor != null && Mayor.isRevealed) untargetables.Add(Mayor.mayor);
+            Shifter.currentTarget = setTarget(untargetablePlayers: untargetables);
+            if (Shifter.futureShift == null) setPlayerOutline(Shifter.currentTarget, Shifter.color);
         }
 
         static void baitUpdate() {
@@ -654,7 +656,7 @@ namespace TownOfUs.Patches {
                 BountyHunter.bountyUpdateTimer = BountyHunter.bountyDuration;
                 var possibleTargets = new List<PlayerControl>();
                 foreach (PlayerControl p in PlayerControl.AllPlayerControls) {
-                    if (!p.Data.IsDead && !p.Data.Disconnected && p != p.Data.Role.IsImpostor && p != Spy.spy && (p != Vampire.vampire || !Vampire.wasTeamRed) && (p != Dracula.dracula || !Dracula.wasTeamRed) && (Lovers.getPartner(BountyHunter.bountyHunter) == null || p != Lovers.getPartner(BountyHunter.bountyHunter)) && (!TOUMapOptions.shieldFirstKill || TOUMapOptions.firstKillPlayer != p)) possibleTargets.Add(p);
+                    if (!p.Data.IsDead && !p.Data.Disconnected && p != p.Data.Role.IsImpostor && (p != Vampire.vampire || !Vampire.wasTeamRed) && (p != Dracula.dracula || !Dracula.wasTeamRed) && (Lovers.getPartner(BountyHunter.bountyHunter) == null || p != Lovers.getPartner(BountyHunter.bountyHunter)) && (!TOUMapOptions.shieldFirstKill || TOUMapOptions.firstKillPlayer != p)) possibleTargets.Add(p);
                 }
                 BountyHunter.bounty = possibleTargets[TownOfUs.rnd.Next(0, possibleTargets.Count)];
                 if (BountyHunter.bounty == null) return;
@@ -956,11 +958,16 @@ namespace TownOfUs.Patches {
             // Remove fake tasks when player dies
             if (target.hasFakeTasks())
                 target.clearAllTasks();
+                
+            // First kill (set before lover suicide)
+            if (TOUMapOptions.firstKillName == "") TOUMapOptions.firstKillName = target.Data.PlayerName;
 
             // Lover suicide trigger on murder
-            if ((Lovers.lover1 != null && target == Lovers.lover1) || (Lovers.lover2 != null && target == Lovers.lover2)) {
+            if ((Lovers.lover1 != null && target == Lovers.lover1) || (Lovers.lover2 != null && target == Lovers.lover2))
+            {
                 PlayerControl otherLover = target == Lovers.lover1 ? Lovers.lover2 : Lovers.lover1;
-                if (otherLover != null && !otherLover.Data.IsDead && Lovers.bothDie) {
+                if (otherLover != null && !otherLover.Data.IsDead && Lovers.bothDie)
+                {
                     otherLover.MurderPlayer(otherLover);
                     GameHistory.overrideDeathReasonAndKiller(otherLover, DeadPlayer.CustomDeathReason.LoverSuicide, otherLover);
                 }

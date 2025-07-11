@@ -117,14 +117,15 @@ namespace TownOfUs.Patches {
                 BountyHunter.bountyUpdateTimer = 0f;
 
             // Vampire Hunter promotion trigger
-            if (VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == PlayerControl.LocalPlayer)
+            if (VampireHunter.vampireHunter != null && !VampireHunter.vampireHunter.Data.IsDead)
             {
                 int aliveVampires = PlayerControl.AllPlayerControls.ToArray().Where(x => x != null && !x.Data.Disconnected && !x.Data.IsDead && (x.PlayerId == Dracula.dracula.PlayerId || x.PlayerId == Vampire.vampire.PlayerId)).Count();
                 if (aliveVampires == 0)
                 {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.VampireHunterPromotes, SendOption.Reliable, -1);
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(VampireHunter.vampireHunter.NetId, (byte)CustomRPC.VampireHunterPromotes, SendOption.Reliable, -1);
+                    writer.Write(VampireHunter.vampireHunter.PlayerId);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.vampireHunterPromotes();
+                    RPCProcedure.vampireHunterPromotes(VampireHunter.vampireHunter.PlayerId);
                 }
             }
 
@@ -135,6 +136,14 @@ namespace TownOfUs.Patches {
 
             if (PlayerControl.LocalPlayer.Data.IsDead && !Helpers.localPlayerCanSeeOthersRoles)
                 Helpers.localPlayerCanSeeOthersRoles = true;
+
+            if (Oracle.confessor != null && (Oracle.oracle == null || Oracle.oracle.Data.Disconnected || Oracle.oracle.Data.IsDead))
+            {
+                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(Oracle.confessor.NetId, (byte)CustomRPC.OracleConfess, SendOption.Reliable, -1);
+                writer.Write(Oracle.confessor.PlayerId);
+                AmongUsClient.Instance.FinishRpcImmediately(writer);
+                RPCProcedure.oracleConfess(Oracle.confessor.PlayerId);
+            }
         }
     }
 

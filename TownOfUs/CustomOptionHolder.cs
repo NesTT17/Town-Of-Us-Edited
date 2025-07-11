@@ -33,6 +33,7 @@ namespace TownOfUs
         public static CustomOption allowParallelMedBayScans;
         public static CustomOption shieldFirstKill;
         public static CustomOption blockSkippingInEmergencyMeetings;
+        public static CustomOption enableBetterPolus;
         
         public static CustomOption sheriffBlockGameEnd;
         public static CustomOption veteranBlockGameEnd;
@@ -142,7 +143,7 @@ namespace TownOfUs
         public static CustomOption lawyerVision;
         public static CustomOption lawyerKnowsRole;
         public static CustomOption lawyerCanCallEmergency;
-        public static CustomOption lawyerTargetCanBeJester;
+        // public static CustomOption lawyerTargetCanBeJester;
 
         public static CustomOption pursuerSettings;
         public static CustomOption pursuerCooldown;
@@ -345,6 +346,7 @@ namespace TownOfUs
             allowParallelMedBayScans = CustomOption.Create(4, Types.General, "Allow Parallel MedBay Scans", false);
             shieldFirstKill = CustomOption.Create(5, Types.General, "Shield Last Game First Kill", false);
             blockSkippingInEmergencyMeetings = CustomOption.Create(6, Types.General, "Block Skipping In Emergency Meetings", new string[] { "Off", "Emergency", "Always"} );
+            enableBetterPolus = CustomOption.Create(7000, Types.General, "Enable Better Polus", false);
 
             sheriffBlockGameEnd = CustomOption.Create(800, Types.General, "Sheriff Blocks Game End", false, null, true, heading: "Extended End Game");
             mayorBlockGameEnd = CustomOption.Create(802, Types.General, "Mayor Blocks Game End", false);
@@ -503,7 +505,7 @@ namespace TownOfUs
             lawyerVision = CustomOption.Create(81, Types.Neutral, "Lawyer Vision", 1f, 0.25f, 3f, 0.25f, lawyerSpawnRate);
             lawyerKnowsRole = CustomOption.Create(82, Types.Neutral, "Lawyer Knows Target Role", false, lawyerSpawnRate);
             lawyerCanCallEmergency = CustomOption.Create(83, Types.Neutral, "Lawyer Can Call Emergency Meeting", true, lawyerSpawnRate);
-            lawyerTargetCanBeJester = CustomOption.Create(84, Types.Neutral, "Lawyer Target Can Be The Jester", false, lawyerSpawnRate);
+            // lawyerTargetCanBeJester = CustomOption.Create(84, Types.Neutral, "Lawyer Target Can Be The Jester", false, lawyerSpawnRate);
 
             mercenarySpawnRate = CustomOption.Create(130, Types.Neutral, cs(Mercenary.color, "Mercenary"), rates, null, true);
             mercenaryNeededAttempts = CustomOption.Create(131, Types.Neutral, "Murders Required To Win", 3f, 2f, 15f, 1f, mercenarySpawnRate);

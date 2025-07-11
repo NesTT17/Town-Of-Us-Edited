@@ -407,10 +407,6 @@ namespace TownOfUs.Patches {
                 if (roleInfo.roleId == RoleId.VampireHunter && CustomOptionHolder.draculaSpawnRate.getSelection() == 0) continue;
                 if (roleInfo.roleId == RoleId.VHVeteran) continue;
                 
-                if (Doomsayer.doomsayer != null && Doomsayer.doomsayer == PlayerControl.LocalPlayer && Doomsayer.observedPlayers.Contains(Helpers.playerById(guesserCurrentTarget))) {
-                    if (roleInfo.observeResults != RoleInfo.getRoleInfoForPlayer(Helpers.playerById(guesserCurrentTarget), false).FirstOrDefault().observeResults) continue;
-                }
-                
                 if (Snitch.snitch != null && HandleGuesser.guesserCantGuessSnitch) {
                     var (playerCompleted, playerTotal) = TasksHandler.taskInfo(Snitch.snitch.Data);
                     int numberOfLeftTasks = playerTotal - playerCompleted;
@@ -468,7 +464,7 @@ namespace TownOfUs.Patches {
                         if (mainRoleInfo == null) return;
 
                         PlayerControl dyingTarget = (mainRoleInfo == roleInfo) ? focusedTarget : PlayerControl.LocalPlayer;
-                        if (mainRoleInfo == RoleInfo.vhVeteran && roleInfo == RoleInfo.veteran) {
+                        if (mainRoleInfo.roleId == RoleId.VHVeteran && roleInfo == RoleInfo.veteran) {
                             dyingTarget = focusedTarget;
                         }
                         if (DoubleShot.doubleShot != null && DoubleShot.doubleShot == PlayerControl.LocalPlayer && !DoubleShot.lifeUsed && dyingTarget == PlayerControl.LocalPlayer) {
@@ -748,16 +744,14 @@ namespace TownOfUs.Patches {
 
                 // Add examined Info into Detective chat
                 if (Detective.detective != null && !Detective.detective.Data.IsDead && Detective.detective == PlayerControl.LocalPlayer && Detective.examined != null && !Detective.examined.Data.IsDead) {
-                    string msg = "Detective Examine Report Info:\n\n";
-                    foreach (RoleInfo roleInfo in RoleInfo.allRoleInfos.Where(x => x.observeResults == RoleInfo.getRoleInfoForPlayer(Detective.examined, false).FirstOrDefault().observeResults).OrderBy(x => Guid.NewGuid())) {
-                        if (roleInfo == RoleInfo.vhVeteran) roleInfo.name = "";
-                        msg += $"{roleInfo.name} ";
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(msg)) {
+                    string msg = Detective.GetInfo(Detective.examined);
+                    
+                    if (!string.IsNullOrWhiteSpace(msg))
+                    {   
                         if (AmongUsClient.Instance.AmClient && FastDestroyableSingleton<HudManager>.Instance)
                         {
-                            FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(PlayerControl.LocalPlayer, msg, false);
+                            FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(PlayerControl.LocalPlayer, $"{msg}", false);
+
                             // Ghost Info
                             MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareGhostInfo, Hazel.SendOption.Reliable, -1);
                             writer.Write(PlayerControl.LocalPlayer.PlayerId);
@@ -774,31 +768,7 @@ namespace TownOfUs.Patches {
 
                 // Add confessor Info into Oracle chat
                 if (Oracle.oracle != null && !Oracle.oracle.Data.IsDead && Oracle.confessor != null && Oracle.oracle == PlayerControl.LocalPlayer) {
-                    string msg = "Oracle Confess Info:\n\n";
-                    
-                    if (Oracle.confessor.Data.IsDead || Oracle.confessor.Data.Disconnected) {
-                        msg += "Your confessor failed to survive so you received no confession";
-                    } else {
-                        var allPlayers = PlayerControl.AllPlayerControls.ToArray().Where(x => !x.Data.IsDead && !x.Data.Disconnected && x != PlayerControl.LocalPlayer && x != Oracle.confessor).ToList();
-                        if (allPlayers.Count < 2) msg += "Too few people alive to receive a confessional";
-                        var evilPlayers = PlayerControl.AllPlayerControls.ToArray().Where(x => !x.Data.IsDead && !x.Data.Disconnected && (x.Data.Role.IsImpostor || (x.isNeutral() && Oracle.neutShowsEvil) || (x.isNeutralKiller() && Oracle.kneutShowsEvil))).ToList();
-                        if (evilPlayers.Count == 0) msg += $"{Oracle.confessor.Data.DefaultOutfit.PlayerName} confesses to knowing that there are no more evil players!";
-                        allPlayers.Shuffle();
-                        evilPlayers.Shuffle();
-                        var secondPlayer = allPlayers[0];
-                        var firstTwoEvil = false;
-                        foreach (var evilPlayer in evilPlayers)
-                            if (evilPlayer == Oracle.confessor || evilPlayer == secondPlayer)
-                                firstTwoEvil = true;
-                        
-                        if (firstTwoEvil) {
-                            var thirdPlayer = allPlayers[1];
-                            msg += $"{Oracle.confessor.Data.DefaultOutfit.PlayerName} confesses to knowing that they, {secondPlayer.Data.DefaultOutfit.PlayerName} and/or {thirdPlayer.Data.DefaultOutfit.PlayerName} is evil!";
-                        } else {
-                            var thirdPlayer = evilPlayers[0];
-                            msg +=  $"{Oracle.confessor.Data.DefaultOutfit.PlayerName} confesses to knowing that they, {secondPlayer.Data.DefaultOutfit.PlayerName} and/or {thirdPlayer.Data.DefaultOutfit.PlayerName} is evil!";
-                        }
-                    }
+                    string msg = Oracle.GetInfo(Oracle.confessor);
                     
                     if (!string.IsNullOrWhiteSpace(msg)) {
                         if (AmongUsClient.Instance.AmClient && FastDestroyableSingleton<HudManager>.Instance)

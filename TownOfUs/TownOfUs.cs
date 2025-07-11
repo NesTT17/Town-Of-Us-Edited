@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using HarmonyLib;
 using Hazel;
 using UnityEngine;
@@ -564,7 +565,7 @@ namespace TownOfUs
             }
             vision = CustomOptionHolder.lawyerVision.getFloat();
             lawyerKnowsRole = CustomOptionHolder.lawyerKnowsRole.getBool();
-            targetCanBeJester = CustomOptionHolder.lawyerTargetCanBeJester.getBool();
+            targetCanBeJester = false;
             canCallEmergency = CustomOptionHolder.lawyerCanCallEmergency.getBool();
         }
     }
@@ -625,7 +626,7 @@ namespace TownOfUs
             bool isMorphedGlitch = target == Glitch.glitch && Glitch.morphPlayer != null && Glitch.morphTimer > 0f;
             bool isMorphedVenerer = target == Venerer.venerer && Venerer.morphTimer > 0f;
 
-            if (target != null && ((player == target && !isMorphedMorphling && !isMorphedGlitch && !isMorphedVenerer) || (isMorphedMorphling && Morphling.morphTarget == target) || (isMorphedGlitch && Glitch.morphPlayer == target)))
+            if (target != null && protectActive && ((player == target && !isMorphedMorphling && !isMorphedGlitch && !isMorphedVenerer) || (isMorphedMorphling && Morphling.morphTarget == target) || (isMorphedGlitch && Glitch.morphPlayer == target)))
             {
                 hasVisibleProtect = showProtected == 0 || Helpers.shouldShowGhostInfo() // Everyone
                     || showProtected == 1 & PlayerControl.LocalPlayer == target // Protected
@@ -665,7 +666,7 @@ namespace TownOfUs
             fallenAngel = null;
             if (clearTarget) target = null;
             currentTarget = null;
-            cooldown = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown;
+            cooldown = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown * 0.75f;
         }
     }
 
@@ -1096,6 +1097,38 @@ namespace TownOfUs
             cooldown = CustomOptionHolder.doomsayerCooldown.getFloat();
             guessesToWin = Mathf.RoundToInt(CustomOptionHolder.doomsayerGuessesToWin.getFloat());
         }
+
+        public static string GetInfo(PlayerControl target)
+        {
+            try
+            {
+                var allRoleInfo = Helpers.allRoleInfos().OrderBy(_ => TownOfUs.rnd.Next()).ToList();
+                var roleInfoTarget = RoleInfo.getRoleInfoForPlayer(target, false).FirstOrDefault();
+                var AllMessage = new List<string>();
+                allRoleInfo.Remove(RoleInfo.doomsayer);
+                allRoleInfo.Remove(roleInfoTarget);
+
+                var formation = 6;
+                var x = TownOfUs.rnd.Next(0, formation);
+                var message = new StringBuilder();
+                var tempNumList = Enumerable.Range(0, allRoleInfo.Count).ToList();
+                var temp = (tempNumList.Count > formation ? tempNumList.Take(formation) : tempNumList).OrderBy(_ => TownOfUs.rnd.Next()).ToList();
+                message.AppendLine($"{target.Data.PlayerName} Observe Info: \n");
+
+                for (int num = 0, tempNum = 0; num < formation; num++, tempNum++)
+                {
+                    var info = allRoleInfo[temp[tempNum]];
+
+                    message.Append(num == x ? roleInfoTarget.name : info.name);
+                    message.Append(num < formation - 1 ? ", " : ';');
+                }
+
+                AllMessage.Add(message.ToString());
+
+                return $"{message}";
+            }
+            catch { return "Doomsayer Error"; }
+        }
     }
 
     public static class Mystic
@@ -1214,6 +1247,38 @@ namespace TownOfUs
             reportRoleDuration = CustomOptionHolder.detectiveReportRoleDuration.getFloat();
             reportFactionDuration = CustomOptionHolder.detectiveReportFactionDuration.getFloat();
             getExamineInfo = CustomOptionHolder.detectiveGetExamineInfo.getBool();
+        }
+
+        public static string GetInfo(PlayerControl target)
+        {
+            try
+            {
+                var allRoleInfo = Helpers.allRoleInfos().OrderBy(_ => TownOfUs.rnd.Next()).ToList();
+                var roleInfoTarget = RoleInfo.getRoleInfoForPlayer(target, false).FirstOrDefault();
+                var AllMessage = new List<string>();
+                allRoleInfo.Remove(RoleInfo.detective);
+                allRoleInfo.Remove(roleInfoTarget);
+
+                var formation = 6;
+                var x = TownOfUs.rnd.Next(0, formation);
+                var message = new StringBuilder();
+                var tempNumList = Enumerable.Range(0, allRoleInfo.Count).ToList();
+                var temp = (tempNumList.Count > formation ? tempNumList.Take(formation) : tempNumList).OrderBy(_ => TownOfUs.rnd.Next()).ToList();
+                message.AppendLine($"{target.Data.PlayerName} Examine Info: \n");
+
+                for (int num = 0, tempNum = 0; num < formation; num++, tempNum++)
+                {
+                    var info = allRoleInfo[temp[tempNum]];
+
+                    message.Append(num == x ? roleInfoTarget.name : info.name);
+                    message.Append(num < formation - 1 ? ", " : ';');
+                }
+
+                AllMessage.Add(message.ToString());
+
+                return $"{message}";
+            }
+            catch { return "Detective Error"; }
         }
     }
 
@@ -1389,6 +1454,57 @@ namespace TownOfUs
             cooldown = CustomOptionHolder.oracleCooldown.getFloat();
             neutShowsEvil = CustomOptionHolder.oracleNeutShowsEvil.getBool();
             kneutShowsEvil = CustomOptionHolder.oracleKNeutShowsEvil.getBool();
+        }
+
+        public static string GetInfo(PlayerControl target)
+        {
+            try
+            {
+                string msg = "";
+                if (Oracle.confessor.Data.IsDead || Oracle.confessor.Data.Disconnected)
+                {
+                    msg = "Your confessor failed to survive so you received no confession";
+                    return $"{msg}";
+                }
+                else
+                {
+                    var allPlayers = PlayerControl.AllPlayerControls.ToArray().Where(x => !x.Data.IsDead && !x.Data.Disconnected && x != PlayerControl.LocalPlayer && x != Oracle.confessor).ToList();
+                    if (allPlayers.Count < 2)
+                    {
+                        msg = "Too few people alive to receive a confessional";
+                        return $"{msg}";
+                    }
+
+                    var evilPlayers = PlayerControl.AllPlayerControls.ToArray().Where(x => !x.Data.IsDead && !x.Data.Disconnected && (x.Data.Role.IsImpostor || (x.isNeutral() && Oracle.neutShowsEvil) || (x.isNeutralKiller() && Oracle.kneutShowsEvil))).ToList();
+                    if (evilPlayers.Count == 0)
+                    {
+                        msg = $"{Oracle.confessor.Data.DefaultOutfit.PlayerName} confesses to knowing that there are no more evil players!";
+                        return $"{msg}";
+                    }
+
+                    allPlayers.Shuffle();
+                    evilPlayers.Shuffle();
+                    var secondPlayer = allPlayers[0];
+                    var firstTwoEvil = false;
+                    foreach (var evilPlayer in evilPlayers)
+                        if (evilPlayer == Oracle.confessor || evilPlayer == secondPlayer)
+                            firstTwoEvil = true;
+
+                    if (firstTwoEvil)
+                    {
+                        var thirdPlayer = allPlayers[1];
+                        msg = $"{Oracle.confessor.Data.DefaultOutfit.PlayerName} confesses to knowing that they, {secondPlayer.Data.DefaultOutfit.PlayerName} and/or {thirdPlayer.Data.DefaultOutfit.PlayerName} is evil!";
+                        return $"{msg}";
+                    }
+                    else
+                    {
+                        var thirdPlayer = evilPlayers[0];
+                        msg = $"{Oracle.confessor.Data.DefaultOutfit.PlayerName} confesses to knowing that they, {secondPlayer.Data.DefaultOutfit.PlayerName} and/or {thirdPlayer.Data.DefaultOutfit.PlayerName} is evil!";
+                        return $"{msg}";
+                    }
+                }
+            }
+            catch { return "Oracle Error"; }
         }
     }
 

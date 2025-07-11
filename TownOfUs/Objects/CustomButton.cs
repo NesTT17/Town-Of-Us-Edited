@@ -107,7 +107,7 @@ namespace TownOfUs.Objects
                 }
                 catch (NullReferenceException)
                 {
-                    System.Console.WriteLine("[WARNING] NullReferenceException from HudUpdate().HasButton(), if theres only one warning its fine");
+                    System.Console.WriteLine("[WARNING] NullReferenceException from HudUpdate().HasButton(), if theres only one warning its fine" + $"{buttons[i].actionButtonRenderer.sprite.name}");
                 }
             }
         }
@@ -123,7 +123,7 @@ namespace TownOfUs.Objects
                 }
                 catch (NullReferenceException)
                 {
-                    System.Console.WriteLine("[WARNING] NullReferenceException from MeetingEndedUpdate().HasButton(), if theres only one warning its fine");
+                    System.Console.WriteLine("[WARNING] NullReferenceException from MeetingEndedUpdate().HasButton(), if theres only one warning its fine" + $"{buttons[i].actionButtonRenderer.sprite.name}");
                 }
             }
         }
@@ -138,7 +138,7 @@ namespace TownOfUs.Objects
                 }
                 catch (NullReferenceException)
                 {
-                    System.Console.WriteLine("[WARNING] NullReferenceException from MeetingEndedUpdate().HasButton(), if theres only one warning its fine");
+                    System.Console.WriteLine("[WARNING] NullReferenceException from MeetingEndedUpdate().HasButton(), if theres only one warning its fine" + $"{buttons[i].actionButtonRenderer.sprite.name}");
                 }
             }
         }

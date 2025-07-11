@@ -18,6 +18,7 @@ namespace TownOfUs
         public static bool allowParallelMedBayScans = false;
         public static bool shieldFirstKill = false;
         public static int blockSkippingInEmergencyMeetings = 0; // 0 - off, 1 - emergency, 2 - always
+        public static bool enableBetterPolus = false;
         
         // Updating values
         public static Dictionary<byte, PoolablePlayer> playerIcons = new Dictionary<byte, PoolablePlayer>();
@@ -33,6 +34,7 @@ namespace TownOfUs
             shieldFirstKill = CustomOptionHolder.shieldFirstKill.getBool();
             firstKillPlayer = null;
             blockSkippingInEmergencyMeetings = CustomOptionHolder.blockSkippingInEmergencyMeetings.getSelection();
+            enableBetterPolus = CustomOptionHolder.enableBetterPolus.getBool();
         }
 
         public static void reloadPluginOptions() {

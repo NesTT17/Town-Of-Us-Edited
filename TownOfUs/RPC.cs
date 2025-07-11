@@ -167,6 +167,7 @@ namespace TownOfUs
         VenererCamo,
         Disperse,
         BreakArmor,
+        OracleSetConfessor,
         OracleConfess,
         VHVeteranAlert,
         VampireHunterPromotes,
@@ -323,7 +324,7 @@ namespace TownOfUs
                             break;
                         case RoleId.Veteran:
                             Veteran.veteran = player;
-                            PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.vhVeteran);
+                            PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.veteran);
                             break;
                         case RoleId.Seer:
                             Seer.seer = player;
@@ -1514,13 +1515,19 @@ namespace TownOfUs
             }
         }
 
-        public static void oracleConfess(byte targetId)
+        public static void oracleSetConfessor(byte targetId)
         {
             PlayerControl target = Helpers.playerById(targetId);
             if (Oracle.oracle == null || target == null) return;
 
-            Oracle.confessor = target;
-            if (Oracle.confessor == null) return;
+            Oracle.confessor = target;   
+        }
+
+        public static void oracleConfess(byte targetId)
+        {
+            PlayerControl target = Helpers.playerById(targetId);
+            if (target == null) return;
+            if (Oracle.confessor != target) return;
 
             bool showsCorrectFaction = true;
             int faction = 1;
@@ -1560,13 +1567,14 @@ namespace TownOfUs
             })));
         }
 
-        public static void vampireHunterPromotes()
+        public static void vampireHunterPromotes(byte playerId)
         {
-            PlayerControl player = VampireHunter.vampireHunter;
+            PlayerControl player = Helpers.playerById(playerId);
+            if (player != VampireHunter.vampireHunter) return;
             VampireHunter.clearAndReloadVampireHunter();
 
             VampireHunter.veteran = player;
-            PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.vhVeteran);
+            PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.veteran);
         }
 
         public static void timeLordShield()
@@ -1834,6 +1842,9 @@ namespace TownOfUs
                 case (byte)CustomRPC.BreakArmor:
                     RPCProcedure.breakArmor();
                     break;
+                case (byte)CustomRPC.OracleSetConfessor:
+                    RPCProcedure.oracleSetConfessor(reader.ReadByte());
+                    break;
                 case (byte)CustomRPC.OracleConfess:
                     RPCProcedure.oracleConfess(reader.ReadByte());
                     break;
@@ -1841,7 +1852,7 @@ namespace TownOfUs
                     RPCProcedure.vhVeteranAlert();
                     break;
                 case (byte)CustomRPC.VampireHunterPromotes:
-                    RPCProcedure.vampireHunterPromotes();
+                    RPCProcedure.vampireHunterPromotes(reader.ReadByte());
                     break;
                 case (byte)CustomRPC.TimeLordShield:
                     RPCProcedure.timeLordShield();

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Assets.CoreScripts;
 using HarmonyLib;
 using Hazel;
 using Reactor.Utilities;
@@ -1109,7 +1110,31 @@ namespace TownOfUs
                 () => { return Doomsayer.doomsayer != null && Doomsayer.doomsayer == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return Doomsayer.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
                 () => { doomsayerObserveButton.Timer = doomsayerObserveButton.MaxTimer; },
-                Doomsayer.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.F
+                Doomsayer.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.F,
+                true, 0f, () =>
+                {
+                    doomsayerObserveButton.Timer = doomsayerObserveButton.MaxTimer;
+                    var msg = Doomsayer.GetInfo(Doomsayer.currentTarget);
+
+                    if (!string.IsNullOrWhiteSpace(msg))
+                    {   
+                        if (AmongUsClient.Instance.AmClient && FastDestroyableSingleton<HudManager>.Instance)
+                        {
+                            FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(PlayerControl.LocalPlayer, $"{msg}", false);
+
+                            // Ghost Info
+                            MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareGhostInfo, Hazel.SendOption.Reliable, -1);
+                            writer.Write(PlayerControl.LocalPlayer.PlayerId);
+                            writer.Write((byte)RPCProcedure.GhostInfoTypes.ChatInfo);
+                            writer.Write(msg);
+                            AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        }
+                        if (msg.IndexOf("who", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            FastDestroyableSingleton<UnityTelemetry>.Instance.SendWho();
+                        }
+                    }
+                }
             );
 
             // Tracker Track
@@ -1345,7 +1370,7 @@ namespace TownOfUs
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.OracleConfess, SendOption.Reliable, -1);
                     writer.Write(Oracle.currentTarget.PlayerId);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.oracleConfess(Oracle.currentTarget.PlayerId);
+                    RPCProcedure.oracleSetConfessor(Oracle.currentTarget.PlayerId);
                     oracleConfessButton.Timer = oracleConfessButton.MaxTimer;
 
                     Helpers.checkWatchFlash(Oracle.currentTarget);
@@ -1411,9 +1436,6 @@ namespace TownOfUs
                             }
                         } else {
                             VampireHunter.usedStakes++;
-                            if (VampireHunter.usedStakes == VampireHunter.maxFailedStakes && VampireHunter.selfKillAfterFinalStake) {
-                                Helpers.MurderPlayer(VampireHunter.vampireHunter, VampireHunter.vampireHunter, true);
-                            }
                         }
                     }
                 },
@@ -1502,10 +1524,8 @@ namespace TownOfUs
 
             // Zoom Button
             zoomOutButton = new CustomButton(
-                () => { Helpers.toggleZoom();
-                },
-                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.Data.IsDead;
-                },
+                () => { Helpers.toggleZoom(); },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return PlayerControl.LocalPlayer.CanMove; },
                 () => { return; },
                 null, new Vector3(0.4f, 2.8f, 0), __instance, KeyCode.KeypadPlus
