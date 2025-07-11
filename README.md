@@ -3,14 +3,11 @@
 ![LOGO](./Images/TOU-logo.png)
 
 <p align="center">
-  <img src="https://badgen.net/static/AmongUs/2024.11.26/red"> 
-</p>
-
-<p align="center">
-  <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases"><img src="https://img.shields.io/github/v/release/NesTT17/Town-Of-Us-Edited?style=plastic"></a>
-  <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases"><img src="https://img.shields.io/github/release-date/NesTT17/Town-Of-Us-Edited?style=plastic"></a>
-  <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases"><img src="https://img.shields.io/github/downloads/NesTT17/Town-Of-Us-Edited/total?style=plastic"></a>
-  <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases/latest"><img src="https://img.shields.io/github/downloads/nestt17/town-of-us-edited/latest/total?style=plastic"></a>
+    <img src="https://badgen.net/static/AmongUs/16.0.2/red"> 
+    <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases/"><img alt="Release Version" src="https://badgen.net/github/release/NesTT17/Town-Of-Us-Edited?icon=github"></a>
+  <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases"><img alt="Release Date" src="https://img.shields.io/github/release-date/NesTT17/Town-Of-Us-Edited?style=plastic"></a>
+    <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases"><img alt="Total Downloads" src="https://img.shields.io/github/downloads/NesTT17/Town-Of-Us-Edited/total"></a>
+  <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases/latest"><img alt="Download@Latest" src="https://img.shields.io/github/downloads/NesTT17/Town-Of-Us-Edited/latest/total?style=plastic"></a>
 </p>
 
 <p align="center">
