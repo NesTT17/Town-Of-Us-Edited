@@ -52,22 +52,22 @@ namespace TownOfUs
         Escapist,
         Miner,
         Cleaner,
-        Trapper,
         Phantom,
         Grenadier,
         Doomsayer,
         Mystic,
-        Tracker,
         Werewolf,
         Detective,
         Glitch,
         Venerer,
         BountyHunter,
-        Oracle,
         Bomber,
         VampireHunter,
         VHVeteran,
         TimeLord,
+        Oracle,
+        Medusa,
+        Archer,
         // Modifier ---
         Lover,
         Blind,
@@ -82,6 +82,8 @@ namespace TownOfUs
         DoubleShot,
         Disperser,
         Armored,
+        Underdog,
+        Teamist,
         // Vanilla Roles
         Crewmate, Impostor
     }
@@ -126,9 +128,6 @@ namespace TownOfUs
         VampirePromotes,
         PoisonerSetPoisoned,
         CleanBody,
-        PlaceTrap,
-        TriggerTrap,
-        CleanTraps,
         ExecutionerSetTarget,
         ExecutionerPromotesToPursuer,
         LawyerSetTarget,
@@ -157,8 +156,6 @@ namespace TownOfUs
         PhantomInvis,
         GrenadierFlash,
         DoomsayerObserve,
-        TrackerUseTrack,
-        TrackerResetTrack,
         WerewolfRampage,
         DetectiveExamine,
         DetectiveResetExamine,
@@ -167,13 +164,14 @@ namespace TownOfUs
         VenererCamo,
         Disperse,
         BreakArmor,
-        OracleSetConfessor,
-        OracleConfess,
         VHVeteranAlert,
         VampireHunterPromotes,
         TimeLordShield,
         TimeLordRewindTime,
         RevivePlayer,
+        OracleConfess,
+        MedusaPetrify,
+        ShowArcherNotification,
         
         // Gamemode
         SetGuesserGm,
@@ -192,7 +190,6 @@ namespace TownOfUs
             GameStartManagerPatch.GameStartManagerUpdatePatch.startingTimer = 0;
             MapBehaviourPatch.clearAndReload();
             MinerVent.ClearMinerVents();
-            Trapper.traps.ClearTraps();
             Helpers.localPlayerCanSeeOthersRoles = false;
         }
 
@@ -358,10 +355,6 @@ namespace TownOfUs
                             Cleaner.cleaner = player;
                             PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.cleaner);
                             break;
-                        case RoleId.Trapper:
-                            Trapper.trapper = player;
-                            PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.trapper);
-                            break;
                         case RoleId.Phantom:
                             Phantom.phantom = player;
                             PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.phantom);
@@ -377,10 +370,6 @@ namespace TownOfUs
                         case RoleId.Mystic:
                             Mystic.mystic = player;
                             PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.mystic);
-                            break;
-                        case RoleId.Tracker:
-                            Tracker.tracker = player;
-                            PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.tracker);
                             break;
                         case RoleId.Werewolf:
                             Werewolf.werewolf = player;
@@ -402,10 +391,6 @@ namespace TownOfUs
                             BountyHunter.bountyHunter = player;
                             PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.bountyHunter);
                             break;
-                        case RoleId.Oracle:
-                            Oracle.oracle = player;
-                            PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.oracle);
-                            break;
                         case RoleId.Bomber:
                             Bomber.bomber = player;
                             PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.bomber);
@@ -421,6 +406,18 @@ namespace TownOfUs
                         case RoleId.TimeLord:
                             TimeLord.timeLord = player;
                             PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.timeLord);
+                            break;
+                        case RoleId.Oracle:
+                            Oracle.oracle = player;
+                            PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.oracle);
+                            break;
+                        case RoleId.Medusa:
+                            Medusa.medusa = player;
+                            PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.medusa);
+                            break;
+                        case RoleId.Archer:
+                            Archer.archer = player;
+                            PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.archer);
                             break;
                     }
                     if (AmongUsClient.Instance.AmHost && Helpers.roleCanUseVents(player) && !player.Data.Role.IsImpostor)
@@ -489,6 +486,14 @@ namespace TownOfUs
                 case RoleId.Armored:
                     Armored.armored = player;
                     PlayerGameInfo.AddModifier(player.PlayerId, RoleInfo.armored);
+                    break;
+                case RoleId.Underdog:
+                    Underdog.underdog = player;
+                    PlayerGameInfo.AddModifier(player.PlayerId, RoleInfo.underdog);
+                    break;
+                case RoleId.Teamist:
+                    Teamist.teamist = player;
+                    PlayerGameInfo.AddModifier(player.PlayerId, RoleInfo.teamist);
                     break;
             }
         }
@@ -572,6 +577,7 @@ namespace TownOfUs
             PoisonerTimer,
             DeathReasonAndKiller,
             BountyTarget,
+            OracleInfo,
         }
 
         public static void receiveGhostInfo(byte senderId, MessageReader reader)
@@ -594,6 +600,11 @@ namespace TownOfUs
                     break;
                 case GhostInfoTypes.BountyTarget:
                     BountyHunter.bounty = Helpers.playerById(reader.ReadByte());
+                    break;
+                case GhostInfoTypes.OracleInfo:
+                    string oracleInfo = reader.ReadString();
+                    if (Helpers.shouldShowGhostInfo())
+                        FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(sender, oracleInfo);
                     break;
             }
         }
@@ -634,14 +645,12 @@ namespace TownOfUs
             if (player == Investigator.investigator) Investigator.clearAndReload();
             if (player == Veteran.veteran) Veteran.clearAndReload();
             if (player == Seer.seer) Seer.clearAndReload();
-            if (player == Trapper.trapper) Trapper.clearAndReload();
             if (player == Mystic.mystic) Mystic.clearAndReload();
-            if (player == Tracker.tracker) Tracker.clearAndReload();
             if (player == Detective.detective) Detective.clearAndReload();
-            if (player == Oracle.oracle) Oracle.clearAndReload();
             if (player == VampireHunter.vampireHunter) VampireHunter.clearAndReloadVampireHunter();
             if (player == VampireHunter.veteran) VampireHunter.clearAndReloadVeteran();
             if (player == TimeLord.timeLord) TimeLord.clearAndReload();
+            if (player == Oracle.oracle) Oracle.clearAndReload();
 
             // Neutral Roles
             if (player == Jester.jester) Jester.clearAndReload();
@@ -687,6 +696,8 @@ namespace TownOfUs
             if (player == Venerer.venerer) Venerer.clearAndReload();
             if (player == BountyHunter.bountyHunter) BountyHunter.clearAndReload();
             if (player == Bomber.bomber) Bomber.clearAndReload();
+            if (player == Medusa.medusa) Medusa.clearAndReload();
+            if (player == Archer.archer) Archer.clearAndReload();
 
             // Double Roles
             if (Guesser.isGuesser(player.PlayerId)) Guesser.clear(player.PlayerId);
@@ -706,6 +717,8 @@ namespace TownOfUs
                 if (player == DoubleShot.doubleShot) DoubleShot.clearAndReload();
                 if (player == Disperser.disperser) Disperser.clearAndReload();
                 if (player == Armored.armored) Armored.clearAndReload();
+                if (player == Underdog.underdog) Underdog.clearAndReload();
+                if (player == Teamist.teamist) Teamist.clearAndReload();
             }
         }
 
@@ -1006,6 +1019,21 @@ namespace TownOfUs
                 {
                     phantomInvis(Phantom.phantom.PlayerId, byte.MaxValue);
                 }
+                if (Archer.archer != null && player == Archer.archer)
+                {
+                    if (Archer.Guides.Count != 0)
+                    {
+                        foreach (var guide in Archer.Guides)
+                        {
+                            guide.Value.color = Color.clear;
+                        }
+                    }
+                    Archer.weaponEquiped = false;
+                    if (Archer.bow != null)
+                    {
+                        Archer.bow.gameObject.SetActive(Archer.weaponEquiped);
+                    }
+                }
                 erasePlayerRoles(player.PlayerId, true);
                 setRole((byte)RoleId.Vampire, player.PlayerId);
                 if (player.PlayerId == PlayerControl.LocalPlayer.PlayerId) PlayerControl.LocalPlayer.moveable = true;
@@ -1062,28 +1090,6 @@ namespace TownOfUs
                     Scavenger.triggerScavengerWin = true;
                 }
             }
-        }
-
-        public static void placeTrap()
-        {
-            var pos = PlayerControl.LocalPlayer.transform.position;
-            pos.z += 0.001f;
-            Trapper.traps.Add(TrapExtentions.CreateTrap(pos));
-            Trapper.maxTraps--;
-        }
-
-        public static void triggerTrap(byte targetId)
-        {
-            PlayerControl target = Helpers.playerById(targetId);
-            if (target == null) return;
-            if (target.PlayerId != Trapper.trapper.PlayerId && !Trapper.trappedPlayers.Contains(target))
-                Trapper.trappedPlayers.Add(target);
-        }
-
-        public static void cleanTraps()
-        {
-            if (Trapper.removeTraps) Trapper.traps.ClearTraps();
-            Trapper.trappedPlayers = new List<PlayerControl>();
         }
 
         public static void executionerSetTarget(byte playerId)
@@ -1430,18 +1436,6 @@ namespace TownOfUs
             Doomsayer.observedPlayers.Add(target);
         }
 
-        public static void trackerUseTrack(byte playerId)
-        {
-            PlayerControl target = Helpers.playerById(playerId);
-            Tracker.trackedPlayers.Add(target);
-            Tracker.tracksInRound++;
-        }
-
-        public static void trackerResetTrack()
-        {
-            Tracker.resetTracked();
-        }
-
         public static void werewolfRampage()
         {
             Werewolf.isRampageActive = true;
@@ -1515,48 +1509,6 @@ namespace TownOfUs
             }
         }
 
-        public static void oracleSetConfessor(byte targetId)
-        {
-            PlayerControl target = Helpers.playerById(targetId);
-            if (Oracle.oracle == null || target == null) return;
-
-            Oracle.confessor = target;   
-        }
-
-        public static void oracleConfess(byte targetId)
-        {
-            PlayerControl target = Helpers.playerById(targetId);
-            if (target == null) return;
-            if (Oracle.confessor != target) return;
-
-            bool showsCorrectFaction = true;
-            int faction = 1;
-            if (Oracle.accuracy == 0) showsCorrectFaction = false;
-            else
-            {
-                var num = UnityEngine.Random.RandomRangeInt(1, 101);
-                showsCorrectFaction = num <= (Oracle.accuracy * 10);
-            }
-
-            if (showsCorrectFaction)
-            {
-                if (!Oracle.confessor.isEvil()) faction = 0;
-                else if (Oracle.confessor.Data.Role.IsImpostor) faction = 2;
-            }
-            else
-            {
-                var num = UnityEngine.Random.RandomRangeInt(0, 2);
-                if (Oracle.confessor.Data.Role.IsImpostor) faction = num;
-                else if (!Oracle.confessor.isEvil()) faction = num + 1;
-                else if (num == 1) faction = 2;
-                else faction = 0;
-            }
-
-            if (faction == 0) Oracle.revealedFaction = FactionId.Crewmate;
-            else if (faction == 1) Oracle.revealedFaction = FactionId.Neutral;
-            else Oracle.revealedFaction = FactionId.Impostor;
-        }
-
         public static void vhVeteranAlert()
         {
             VampireHunter.remainingAlerts--;
@@ -1607,6 +1559,106 @@ namespace TownOfUs
                 RoleManager.Instance.SetRole(player, RoleTypes.Crewmate);
             else if (RoleInfo.getRoleInfoForPlayer(player, false).FirstOrDefault().factionId == FactionId.Impostor)
                 RoleManager.Instance.SetRole(player, RoleTypes.Impostor);
+        }
+
+        public static void oracleConfess(byte targetId)
+        {
+            if (Oracle.oracle == null || Oracle.oracle.Data.IsDead) return;
+
+            Oracle.confessor = Helpers.playerById(targetId);
+            if (Oracle.confessor == null) return;
+
+            RoleInfo roleInfo = RoleInfo.getRoleInfoForPlayer(Oracle.confessor, false).FirstOrDefault();
+            if (roleInfo == null) return;
+
+            bool showsCorrectFaction = UnityEngine.Random.RandomRangeInt(1, 101) <= Oracle.accuracy;
+            FactionId revealedFactionId;
+
+            if (showsCorrectFaction)
+            {
+                if (roleInfo.factionId == FactionId.NeutralKiller) revealedFactionId = FactionId.Neutral;
+                else revealedFactionId = roleInfo.factionId;
+            }
+            else
+            {
+                List<FactionId> possibleFaction = new List<FactionId> { FactionId.Crewmate, FactionId.Impostor, FactionId.Neutral };
+                possibleFaction.Remove(roleInfo.factionId);
+                revealedFactionId = possibleFaction[UnityEngine.Random.RandomRangeInt(0, possibleFaction.Count)];
+            }
+
+            Oracle.revealedFaction = revealedFactionId;
+
+            var results = Oracle.GetInfo(Oracle.confessor);
+            FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(Oracle.oracle, $"{results}");
+
+            var writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.OracleConfess, SendOption.Reliable, -1);
+            writer.Write(Oracle.confessor.PlayerId);
+            writer.Write((int)revealedFactionId);
+            AmongUsClient.Instance.FinishRpcImmediately(writer);
+
+            // Ghost Info
+            MessageWriter writer2 = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareGhostInfo, Hazel.SendOption.Reliable, -1);
+            writer.Write(Oracle.confessor.PlayerId);
+            writer.Write((byte)GhostInfoTypes.OracleInfo);
+            writer.Write(results);
+            AmongUsClient.Instance.FinishRpcImmediately(writer2);
+        }
+
+        public static void medusaPetrify(byte targetId)
+        {
+            foreach (PlayerControl player in PlayerControl.AllPlayerControls)
+            {
+                if (player.PlayerId == targetId)
+                {
+                    Medusa.messageTimer = Medusa.duration;
+                    if (PlayerControl.LocalPlayer == player)
+                    {
+                        if (MapBehaviour.Instance)
+                        {
+                            MapBehaviour.Instance.Close();
+                        }
+                        new CustomMessage("Petrified!", Medusa.duration);
+                    }
+                    player.moveable = false;
+                    player.NetTransform.Halt(); // Stop current movement
+                    HudManager.Instance.StartCoroutine(Effects.Lerp(Medusa.duration, new Action<float>((p) =>
+                    { // Delayed action
+                        if (p == 1f)
+                        {
+                            player.moveable = true;
+                        }
+                    })));
+                    return;
+                }
+            }
+        }
+
+        public static void showArcherNotification(byte murderId)
+        {
+
+            foreach (PlayerControl player in PlayerControl.AllPlayerControls)
+            {
+                if (player == PlayerControl.LocalPlayer && Vector2.Distance(player.transform.position, Helpers.playerById(murderId).transform.position) < Archer.noticeRange)
+                {
+                    Arrow arrow = new Arrow(Color.white);
+                    arrow.image.sprite = Archer.getArcherWarningSprite();
+                    Vector3 pos = Helpers.playerById(murderId).transform.position;
+
+                    HudManager.Instance.StartCoroutine(Effects.Lerp(10f, new Action<float>((p) =>
+                    {
+                        arrow.Update(pos);
+                        arrow.arrow.transform.eulerAngles = new Vector3(0f, 0f, 0f);
+                        if (p > 0.8f)
+                        {
+                            arrow.image.color = new Color(1f, 1f, 1f, (1f - p) * 5f);
+                        }
+                        if (p == 1f)
+                        {
+                            UnityEngine.Object.Destroy(arrow.arrow);
+                        }
+                    })));
+                }
+            }
         }
     }
 
@@ -1719,15 +1771,6 @@ namespace TownOfUs
                 case (byte)CustomRPC.CleanBody:
                     RPCProcedure.cleanBody(reader.ReadByte(), reader.ReadByte());
                     break;
-                case (byte)CustomRPC.PlaceTrap:
-                    RPCProcedure.placeTrap(); 
-                    break;
-                case (byte)CustomRPC.TriggerTrap:
-                    RPCProcedure.triggerTrap(reader.ReadByte()); 
-                    break;
-                case (byte)CustomRPC.CleanTraps:
-                    RPCProcedure.cleanTraps();
-                    break;
                 case (byte)CustomRPC.ExecutionerSetTarget:
                     RPCProcedure.executionerSetTarget(reader.ReadByte()); 
                     break;
@@ -1812,12 +1855,6 @@ namespace TownOfUs
                 case (byte)CustomRPC.DoomsayerObserve:
                     RPCProcedure.doomsayerObserve(reader.ReadByte());
                     break;
-                case (byte)CustomRPC.TrackerUseTrack:
-                    RPCProcedure.trackerUseTrack(reader.ReadByte());
-                    break;
-                case (byte)CustomRPC.TrackerResetTrack:
-                    RPCProcedure.trackerResetTrack();
-                    break;
                 case (byte)CustomRPC.WerewolfRampage:
                     RPCProcedure.werewolfRampage();
                     break;
@@ -1842,12 +1879,6 @@ namespace TownOfUs
                 case (byte)CustomRPC.BreakArmor:
                     RPCProcedure.breakArmor();
                     break;
-                case (byte)CustomRPC.OracleSetConfessor:
-                    RPCProcedure.oracleSetConfessor(reader.ReadByte());
-                    break;
-                case (byte)CustomRPC.OracleConfess:
-                    RPCProcedure.oracleConfess(reader.ReadByte());
-                    break;
                 case (byte)CustomRPC.VHVeteranAlert:
                     RPCProcedure.vhVeteranAlert();
                     break;
@@ -1862,6 +1893,26 @@ namespace TownOfUs
                     break;
                 case (byte)CustomRPC.RevivePlayer:
                     RPCProcedure.revivePlayer(reader.ReadByte());
+                    break;
+                case (byte)CustomRPC.OracleConfess:
+                    byte confessorId = reader.ReadByte();
+                    Oracle.confessor = Helpers.playerById(confessorId);
+                    if (Oracle.confessor == null) break;
+                    int factionId = reader.ReadInt32();
+                    if (Enum.IsDefined(typeof(FactionId), factionId))
+                    {
+                        Oracle.revealedFaction = (FactionId)factionId;
+                    }
+                    else
+                    {
+                        Oracle.revealedFaction = FactionId.Crewmate;
+                    }
+                    break;
+                case (byte)CustomRPC.MedusaPetrify:
+                    RPCProcedure.medusaPetrify(reader.ReadByte());
+                    break;
+                case (byte)CustomRPC.ShowArcherNotification:
+                    RPCProcedure.showArcherNotification(reader.ReadByte());
                     break;
 
                 // Game mode

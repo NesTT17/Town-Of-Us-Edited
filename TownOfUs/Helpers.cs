@@ -7,6 +7,7 @@ using System.Reflection;
 using AmongUs.GameOptions;
 using HarmonyLib;
 using Hazel;
+using Reactor.Utilities;
 using Reactor.Utilities.Extensions;
 using UnityEngine;
 
@@ -663,27 +664,69 @@ namespace TownOfUs
         }
 
         public static bool zoomOutStatus = false;
+        public static IEnumerator zoomOut()
+        {
+            for (var ft = Camera.main!.orthographicSize; ft < 12f; ft += 0.3f)
+            {
+                Camera.main.orthographicSize = MeetingHud.Instance ? 3f : ft;
+                ResolutionManager.ResolutionChanged.Invoke((float)Screen.width / Screen.height, Screen.width, Screen.height, Screen.fullScreen);
+                foreach (var cam in Camera.allCameras) cam.orthographicSize = Camera.main.orthographicSize;
+                yield return null;
+            }
+            foreach (var cam in Camera.allCameras) cam.orthographicSize = 12f;
+            ResolutionManager.ResolutionChanged.Invoke((float)Screen.width / Screen.height, Screen.width, Screen.height, Screen.fullScreen);
+        }
+
+        public static IEnumerator zoomIn()
+        {
+            for (var ft = Camera.main!.orthographicSize; ft > 3f; ft -= 0.3f)
+            {
+                Camera.main.orthographicSize = MeetingHud.Instance ? 3f : ft;
+                ResolutionManager.ResolutionChanged.Invoke((float)Screen.width / Screen.height, Screen.width, Screen.height, Screen.fullScreen);
+                foreach (var cam in Camera.allCameras) cam.orthographicSize = Camera.main.orthographicSize;
+                yield return null;
+            }
+            foreach (var cam in Camera.allCameras) cam.orthographicSize = 3f;
+            ResolutionManager.ResolutionChanged.Invoke((float)Screen.width / Screen.height, Screen.width, Screen.height, Screen.fullScreen);
+        }
+
         public static void toggleZoom(bool reset = false)
         {
-            float orthographicSize = reset || zoomOutStatus ? 3f : 12f;
-
-            zoomOutStatus = !zoomOutStatus && !reset;
-            Camera.main.orthographicSize = orthographicSize;
-            foreach (var cam in Camera.allCameras)
+            if (reset)
             {
-                if (cam != null && cam.gameObject.name == "UI Camera") cam.orthographicSize = orthographicSize;  // The UI is scaled too, else we cant click the buttons. Downside: map is super small.
+                if (zoomOutStatus) Coroutines.Start(zoomIn());
+                zoomOutStatus = false;
+                return;
             }
 
-            var tzGO = GameObject.Find("TOGGLEZOOMBUTTON");
-            if (tzGO != null)
+            if (!zoomOutStatus)
             {
-                var rend = tzGO.transform.Find("Inactive").GetComponent<SpriteRenderer>();
-                var rendActive = tzGO.transform.Find("Active").GetComponent<SpriteRenderer>();
-                rend.sprite = zoomOutStatus ? Helpers.loadSpriteFromResources("TownOfUs.Resources.Plus_Button.png", 100f) : Helpers.loadSpriteFromResources("TownOfUs.Resources.Minus_Button.png", 100f);
-                rendActive.sprite = zoomOutStatus ? Helpers.loadSpriteFromResources("TownOfUs.Resources.Plus_ButtonActive.png", 100f) : Helpers.loadSpriteFromResources("TownOfUs.Resources.Minus_ButtonActive.png", 100f);
-            }
+                Coroutines.Start(zoomOut());
+                zoomOutStatus = true;
 
-            ResolutionManager.ResolutionChanged.Invoke((float)Screen.width / Screen.height, Screen.width, Screen.height, Screen.fullScreen); // This will move button positions to the correct position.
+                var tzGO = GameObject.Find("TOGGLEZOOMBUTTON");
+                if (tzGO != null)
+                {
+                    var rend = tzGO.transform.Find("Inactive").GetComponent<SpriteRenderer>();
+                    var rendActive = tzGO.transform.Find("Active").GetComponent<SpriteRenderer>();
+                    rend.sprite = zoomOutStatus ? Helpers.loadSpriteFromResources("TownOfUs.Resources.Plus_Button.png", 100f) : Helpers.loadSpriteFromResources("TownOfUs.Resources.Minus_Button.png", 100f);
+                    rendActive.sprite = zoomOutStatus ? Helpers.loadSpriteFromResources("TownOfUs.Resources.Plus_ButtonActive.png", 100f) : Helpers.loadSpriteFromResources("TownOfUs.Resources.Minus_ButtonActive.png", 100f);
+                }
+            }
+            else
+            {
+                Coroutines.Start(zoomIn());
+                zoomOutStatus = false;
+
+                var tzGO = GameObject.Find("TOGGLEZOOMBUTTON");
+                if (tzGO != null)
+                {
+                    var rend = tzGO.transform.Find("Inactive").GetComponent<SpriteRenderer>();
+                    var rendActive = tzGO.transform.Find("Active").GetComponent<SpriteRenderer>();
+                    rend.sprite = zoomOutStatus ? Helpers.loadSpriteFromResources("TownOfUs.Resources.Plus_Button.png", 100f) : Helpers.loadSpriteFromResources("TownOfUs.Resources.Minus_Button.png", 100f);
+                    rendActive.sprite = zoomOutStatus ? Helpers.loadSpriteFromResources("TownOfUs.Resources.Plus_ButtonActive.png", 100f) : Helpers.loadSpriteFromResources("TownOfUs.Resources.Minus_ButtonActive.png", 100f);
+                }
+            }
         }
 
         public static bool hasImpVision(NetworkedPlayerInfo player)
@@ -1212,6 +1255,34 @@ namespace TownOfUs
                 allRoleInfo.Add(role);
             }
             return allRoleInfo;
+        }
+
+        public static void DestroyAll(this IEnumerable<Component> listie)
+        {
+            foreach (var item in listie)
+            {
+                if (item == null) continue;
+                UnityEngine.Object.Destroy(item);
+                if (item.gameObject == null) return;
+                UnityEngine.Object.Destroy(item.gameObject);
+            }
+        }
+
+        public static bool IsWinner(this string playerName)
+        {
+            var flag = false;
+            var winners = EndGameResult.CachedWinners;
+
+            foreach (var win in winners)
+            {
+                if (win.PlayerName == playerName)
+                {
+                    flag = true;
+                    break;
+                }
+            }
+
+            return flag;
         }
     }
 

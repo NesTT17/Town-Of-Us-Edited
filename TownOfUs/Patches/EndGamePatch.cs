@@ -53,31 +53,33 @@ namespace TownOfUs.Patches {
             timer = 0;
         }
 
-        internal class PlayerRoleInfo {
+        internal class PlayerRoleInfo
+        {
             private string mDeathReason = "";
-            public  string PlayerName { get; set; }
-            public bool IsGATarget {get; set;}
-            public bool IsFATarget {get; set;}
-            public bool IsExeTarget {get; set;}
-            public bool IsLawyerTarget {get; set;}
+            public string PlayerName { get; set; }
+            public bool IsGATarget { get; set; }
+            public bool IsFATarget { get; set; }
+            public bool IsExeTarget { get; set; }
+            public bool IsLawyerTarget { get; set; }
 
             public string DeathReason
             {
                 get => mDeathReason;
                 set
                 {
-                    if(!mDeathReason.Equals("")) return;
-                    
+                    if (!mDeathReason.Equals("")) return;
+
                     mDeathReason = value;
                 }
             }
 
             public List<RoleInfo> Roles { get; set; }
             public List<RoleInfo> Modifiers { get; set; }
-            public int TasksCompleted  {get;set;}
-            public int TasksTotal  {get;set;}
-            public bool IsGuesser {get; set;}
-            public int? Kills {get; set;}
+            public int TasksCompleted { get; set; }
+            public int TasksTotal { get; set; }
+            public bool IsGuesser { get; set; }
+            public int? Kills { get; set; }
+            public bool IsAlive { get; set; }
         }
     }
 
@@ -92,7 +94,7 @@ namespace TownOfUs.Patches {
             // Reset zoomed out ghosts
             Helpers.toggleZoom(reset: true);
         }
-        
+
         public static void UpdatePlayerSummary(PlayerControl player)
         {
             AdditionalTempData.PlayerRoleInfo playerControlRole = AdditionalTempData.playerRoles.Find(x => x.PlayerName.Equals(player.Data.PlayerName));
@@ -102,22 +104,23 @@ namespace TownOfUs.Patches {
             playerControlRole.IsFATarget = FallenAngel.fallenAngel != null && FallenAngel.target != null && player.PlayerId == FallenAngel.target.PlayerId;
             playerControlRole.IsExeTarget = Executioner.executioner != null && Executioner.target != null && player.PlayerId == Executioner.target.PlayerId;
             playerControlRole.IsLawyerTarget = Lawyer.lawyer != null && Lawyer.target != null && player.PlayerId == Lawyer.target.PlayerId;
-            
+
             List<RoleInfo> roles = PlayerGameInfo.GetRoles(player);
             (int tasksCompleted, int tasksTotal) = TasksHandler.taskInfo(player.Data);
-                
-            List<DeadPlayer> killedPlayers = GameHistory.GetKilledPlayers(player);
-            int?             killCount     = killedPlayers.Count == 0 ? null : killedPlayers.Count;
 
-            bool             isGuesser     = HandleGuesser.isGuesserGm && HandleGuesser.isGuesser(player.PlayerId);
-            playerControlRole.PlayerName     =   player.Data.PlayerName;
-            playerControlRole.DeathReason    =   player.getDeathReasonString();
-            playerControlRole.Roles          =   roles;
-            playerControlRole.Modifiers      =   PlayerGameInfo.GetModifiers(player.PlayerId);
-            playerControlRole.TasksTotal     =   tasksTotal;
-            playerControlRole.TasksCompleted =   tasksCompleted;
-            playerControlRole.IsGuesser      =   isGuesser;
-            playerControlRole.Kills          ??= killCount;
+            List<DeadPlayer> killedPlayers = GameHistory.GetKilledPlayers(player);
+            int? killCount = killedPlayers.Count == 0 ? null : killedPlayers.Count;
+
+            bool isGuesser = HandleGuesser.isGuesserGm && HandleGuesser.isGuesser(player.PlayerId);
+            playerControlRole.PlayerName = player.Data.PlayerName;
+            playerControlRole.DeathReason = player.getDeathReasonString();
+            playerControlRole.Roles = roles;
+            playerControlRole.Modifiers = PlayerGameInfo.GetModifiers(player.PlayerId);
+            playerControlRole.TasksTotal = tasksTotal;
+            playerControlRole.TasksCompleted = tasksCompleted;
+            playerControlRole.IsGuesser = isGuesser;
+            playerControlRole.Kills ??= killCount;
+            playerControlRole.IsAlive = !player.Data.IsDead;
         }
 
         public static void Postfix(AmongUsClient __instance, [HarmonyArgument(0)]ref EndGameResult endGameResult) {
@@ -518,12 +521,24 @@ namespace TownOfUs.Patches {
             roleSummary.transform.localScale = new Vector3(1f, 1f, 1f);
 
             var roleSummaryText = new StringBuilder();
+            var winnersText = new StringBuilder();
+            var winnersCache = new StringBuilder();
+            var losersText = new StringBuilder();
+            var winnerCount = 0;
+            var loserCount = 0;
             int minutes = (int)AdditionalTempData.timer / 60;
             int seconds = (int)AdditionalTempData.timer % 60;
-            roleSummaryText.AppendLine($"<color=#FAD934FF>Time: {minutes:00}:{seconds:00}</color> \n");
-        
-            roleSummaryText.AppendLine("<size=90%>Players and roles at the end of the game:</size>");
-            foreach (AdditionalTempData.PlayerRoleInfo data in AdditionalTempData.playerRoles) {
+            roleSummaryText.AppendLine($"<size=125%><u><b><color=#FAD934FF>Match Duration: {minutes:00}:{seconds:00}</color></b></u></size> \n");
+            roleSummaryText.AppendLine("<size=125%><u><b>Game Stats:</b></u></size>");
+            roleSummaryText.AppendLine();
+            winnersText.AppendLine("<size=105%><color=#00FF00FF><b>★ - Winners List - ★</b></color></size>");
+            losersText.AppendLine("<size=105%><color=#FF0000FF><b>◆ - Losers List - ◆</b></color></size>");
+
+            foreach (AdditionalTempData.PlayerRoleInfo data in AdditionalTempData.playerRoles)
+            {
+                var summaryText = new List<string>();
+
+                string name = Helpers.cs(data.IsAlive ? Color.white : new Color(.7f, .7f, .7f), data.PlayerName);
                 string gaTarget = data.IsGATarget ? $"{Helpers.cs(GuardianAngel.color, " ★")}" : "";
                 string faTarget = data.IsFATarget ? $"{Helpers.cs(FallenAngel.color, " ★")}" : "";
                 string exeTarget = data.IsExeTarget ? $"{Helpers.cs(Executioner.color, " X")}" : "";
@@ -532,12 +547,27 @@ namespace TownOfUs.Patches {
                 string modifiers = data.Modifiers.Count > 0 ? string.Join(" ", data.Modifiers.Select(x => Helpers.cs(x.color, $"({x.name}) "))) : "";
                 string deathReason = data.DeathReason.IsNullOrWhiteSpace() ? "" : data.DeathReason;
                 string guesserInfo = data.IsGuesser ? " (Gs)" : "";
-
                 string taskInfo = data.TasksTotal > 0 ? (data.TasksCompleted == data.TasksTotal ? $" - Tasks: {Helpers.cs(Color.green, $"{data.TasksCompleted}/{data.TasksTotal}")}" : $" - Tasks: {Helpers.cs(Color.red, $"{data.TasksCompleted}/{data.TasksTotal}")}") : "";
                 string killInfo = data.Kills != null ? $" - <color=#FF0000FF>Kills: {data.Kills}</color>" : "";
-                    
-                roleSummaryText.AppendLine($"<size=80%>{data.PlayerName}{gaTarget}{faTarget}{exeTarget}{lawyerTarget}{deathReason} | {modifiers}{roles}{guesserInfo}{taskInfo}{killInfo}</size>");
+                summaryText.Add($"{name}{gaTarget}{faTarget}{exeTarget}{lawyerTarget}{deathReason} | {modifiers}{roles}{guesserInfo}{taskInfo}{killInfo}");
+
+                string dataString = $"<size=70%>{string.Join("", summaryText)}</size>";
+
+                if (data.PlayerName.IsWinner())
+                {
+                    winnersText.AppendLine(dataString);
+                    winnerCount++;
+                }
+                else
+                {
+                    losersText.AppendLine(dataString);
+                    loserCount++;
+                }
             }
+
+            roleSummaryText.Append(winnersText);
+            roleSummaryText.AppendLine();
+            roleSummaryText.Append(losersText);
 
             TMPro.TMP_Text roleSummaryTextMesh = roleSummary.GetComponent<TMPro.TMP_Text>();
             roleSummaryTextMesh.alignment = TMPro.TextAlignmentOptions.TopLeft;

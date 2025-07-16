@@ -205,16 +205,6 @@ namespace TownOfUs
         public static CustomOption cleanerSpawnRate;
         public static CustomOption cleanerCooldown;
         
-        public static CustomOption trapperSpawnRate;
-        public static CustomOption trapperCooldown;
-        public static CustomOption trapperTrapsRemoveOnNewRound;
-        public static CustomOption trapperMaxTraps;
-        public static CustomOption trapperMinAmountOfTimeInTrap;
-        public static CustomOption trapperTrapSize;
-        public static CustomOption trapperMinAmountOfPlayersInTrap;
-        public static CustomOption trapperNeutShowsEvil;
-        public static CustomOption trapperKNeutShowsEvil;
-        
         public static CustomOption phantomSpawnRate;
         public static CustomOption phantomInvisCooldown;
         public static CustomOption phantomInvisDuration;
@@ -244,11 +234,6 @@ namespace TownOfUs
         
         public static CustomOption mysticSpawnRate;
         public static CustomOption mysticArrowDuration;
-
-        public static CustomOption trackerSpawnRate;
-        public static CustomOption trackerCooldown;
-        public static CustomOption trackerMaxTracksPerRound;
-        public static CustomOption trackerResetAfterMeeting;
 
         public static CustomOption werewolfSpawnRate;
         public static CustomOption werewolfRampageCooldown;
@@ -291,12 +276,6 @@ namespace TownOfUs
         
         public static CustomOption modifierArmored;
 
-        public static CustomOption oracleSpawnRate;
-        public static CustomOption oracleAccuracy;
-        public static CustomOption oracleCooldown;
-        public static CustomOption oracleNeutShowsEvil;
-        public static CustomOption oracleKNeutShowsEvil;
-        
         public static CustomOption bomberSpawnRate;
         public static CustomOption bomberMaxKillsInDetonation;
         public static CustomOption bomberDetonateDelay;
@@ -315,6 +294,31 @@ namespace TownOfUs
         public static CustomOption timeLordReviveDuringRewind;
         public static CustomOption timeLordRewindCooldown;
         public static CustomOption timeLordCanRewind;
+        
+        public static CustomOption modifierUnderdog;
+        public static CustomOption modifierUnderdogCooldownAddition;
+        public static CustomOption modifierUnderdogIncreaseCd;
+
+        public static CustomOption modifierTeamist;
+        public static CustomOption modifierTeamistCooldownAddition;
+        public static CustomOption modifierTeamistIncreaseCd;
+        
+        public static CustomOption oracleSpawnRate;
+        public static CustomOption oracleConfessCooldown;
+        public static CustomOption oracleRevealAccuracy;
+        public static CustomOption oracleNeutralsShowsEvil;
+        public static CustomOption oracleKillingNeutralsShowsEvil;
+        
+        public static CustomOption medusaSpawnRate;
+        public static CustomOption medusaCooldown;
+        public static CustomOption medusaDelay;
+        public static CustomOption medusaDuration;
+        
+        public static CustomOption archerSpawnRate;
+        public static CustomOption archerShotSize;
+        public static CustomOption archerShotRange;
+        public static CustomOption archerNoticeRange;
+        public static CustomOption archerAimAssistDuration;
 
         // Guesser Gamemode
         public static CustomOption guesserGamemodeCrewNumber;
@@ -327,7 +331,8 @@ namespace TownOfUs
         public static CustomOption guesserGamemodeCantGuessSnitchIfTaksDone;
         public static CustomOption guesserGamemodeNewVampCanAssassinate;
 
-        public static void Load() {
+        public static void Load()
+        {
             CustomOption.vanillaSettings = TownOfUsPlugin.Instance.Config.Bind("Preset0", "VanillaOptions", "");
 
             // Role Options
@@ -345,7 +350,7 @@ namespace TownOfUs
             hidePlayerNames = CustomOption.Create(3, Types.General, "Hide Player Names", false);
             allowParallelMedBayScans = CustomOption.Create(4, Types.General, "Allow Parallel MedBay Scans", false);
             shieldFirstKill = CustomOption.Create(5, Types.General, "Shield Last Game First Kill", false);
-            blockSkippingInEmergencyMeetings = CustomOption.Create(6, Types.General, "Block Skipping In Emergency Meetings", new string[] { "Off", "Emergency", "Always"} );
+            blockSkippingInEmergencyMeetings = CustomOption.Create(6, Types.General, "Block Skipping In Emergency Meetings", new string[] { "Off", "Emergency", "Always" });
             enableBetterPolus = CustomOption.Create(7000, Types.General, "Enable Better Polus", false);
 
             sheriffBlockGameEnd = CustomOption.Create(800, Types.General, "Sheriff Blocks Game End", false, null, true, heading: "Extended End Game");
@@ -385,18 +390,18 @@ namespace TownOfUs
             engineerSpawnRate = CustomOption.Create(15, Types.Crewmate, cs(Engineer.color, "Engineer"), rates, null, true);
             engineerDoorsCooldown = CustomOption.Create(16, Types.Crewmate, "Doors Open CD", 30f, 10f, 60f, 2.5f, engineerSpawnRate);
             engineerNumberOfFixes = CustomOption.Create(17, Types.Crewmate, "Number Of Sabotage Fixes", 1f, 1f, 3f, 1f, engineerSpawnRate);
-            
+
             investigatorSpawnRate = CustomOption.Create(105, Types.Crewmate, cs(Investigator.color, "Investigator"), rates, null, true);
             investigatorSeeColor = CustomOption.Create(106, Types.Crewmate, "Can See Target Player Color", false, investigatorSpawnRate);
-            investigatorAnonymousFootprints = CustomOption.Create(107, Types.Crewmate, "Anonymous Footprints", false, investigatorSpawnRate); 
+            investigatorAnonymousFootprints = CustomOption.Create(107, Types.Crewmate, "Anonymous Footprints", false, investigatorSpawnRate);
             investigatorFootprintIntervall = CustomOption.Create(108, Types.Crewmate, "Footprint Intervall", 0.5f, 0.25f, 10f, 0.25f, investigatorSpawnRate);
             investigatorFootprintDuration = CustomOption.Create(109, Types.Crewmate, "Footprint Duration", 5f, 0.25f, 10f, 0.25f, investigatorSpawnRate);
 
             mayorSpawnRate = CustomOption.Create(54, Types.Crewmate, cs(Mayor.color, "Mayor"), rates, null, true);
 
             medicSpawnRate = CustomOption.Create(55, Types.Crewmate, cs(Medic.color, "Medic"), rates, null, true);
-            medicShowShielded = CustomOption.Create(56, Types.Crewmate, "Show Shielded Player", new string[] {"Everyone", "Shielded", "Medic", "Shielded + Medic", "Nobody"}, medicSpawnRate);
-            medicGetsNotification = CustomOption.Create(57, Types.Crewmate, "Show Murder Attempt", new string[] {"Everyone", "Shielded", "Medic", "Shielded + Medic", "Nobody"}, medicSpawnRate);
+            medicShowShielded = CustomOption.Create(56, Types.Crewmate, "Show Shielded Player", new string[] { "Everyone", "Shielded", "Medic", "Shielded + Medic", "Nobody" }, medicSpawnRate);
+            medicGetsNotification = CustomOption.Create(57, Types.Crewmate, "Show Murder Attempt", new string[] { "Everyone", "Shielded", "Medic", "Shielded + Medic", "Nobody" }, medicSpawnRate);
             medicGetsInfo = CustomOption.Create(58, Types.Crewmate, "Gets Dead Body Info On Report", false, medicSpawnRate);
             medicReportNameDuration = CustomOption.Create(59, Types.Crewmate, "Time Where Medic Reports Will Have Name", 0f, 0f, 30f, 0.25f, medicGetsInfo);
             medicReportColorDuration = CustomOption.Create(60, Types.Crewmate, "Time Where Medic Reports Will Have Color Type", 0f, 0f, 60f, 0.25f, medicGetsInfo);
@@ -404,11 +409,11 @@ namespace TownOfUs
             mysticSpawnRate = CustomOption.Create(180, Types.Crewmate, cs(Mystic.color, "Mystic"), rates, null, true);
             mysticArrowDuration = CustomOption.Create(181, Types.Crewmate, "Arrow Duration", 0.5f, 0.125f, 1f, 0.125f, mysticSpawnRate);
 
-            oracleSpawnRate = CustomOption.Create(230, Types.Crewmate, cs(Oracle.color, "Oracle"), rates, null, true);
-            oracleAccuracy = CustomOption.Create(231, Types.Crewmate, "Reveal Accuracy", rates, oracleSpawnRate);
-            oracleCooldown = CustomOption.Create(232, Types.Crewmate, "Confess Cooldown", 30f, 10f, 60f, 2.5f, oracleSpawnRate);
-            oracleNeutShowsEvil = CustomOption.Create(233, Types.Crewmate, "Neutrals Shows Evil", false, oracleSpawnRate);
-            oracleKNeutShowsEvil = CustomOption.Create(234, Types.Crewmate, "Killing Neutrals Shows Evil", false, oracleSpawnRate);
+            oracleSpawnRate = CustomOption.Create(480, Types.Crewmate, cs(Oracle.color, "Oracle"), rates, null, true);
+            oracleConfessCooldown = CustomOption.Create(481, Types.Crewmate, "Confess Cooldown", 30f, 10f, 60f, 2.5f, oracleSpawnRate);
+            oracleRevealAccuracy = CustomOption.Create(482, Types.Crewmate, "Reveal Accuracy", 100f, 0f, 100f, 10f, oracleSpawnRate);
+            oracleNeutralsShowsEvil = CustomOption.Create(483, Types.Crewmate, "Non-Killing Neutrals Shows Evil", false, oracleSpawnRate);
+            oracleKillingNeutralsShowsEvil = CustomOption.Create(484, Types.Crewmate, "Killing Neutrals Shows Evil", false, oracleSpawnRate);
 
             seerSpawnRate = CustomOption.Create(115, Types.Crewmate, cs(Seer.color, "Seer"), rates, null, true);
             seerCooldown = CustomOption.Create(116, Types.Crewmate, "Reveal Cooldown", 30f, 10f, 60f, 2.5f, seerSpawnRate);
@@ -442,21 +447,6 @@ namespace TownOfUs
             timeLordCanRewind = CustomOption.Create(456, Types.Crewmate, "Time Lord Can Rewind", false, timeLordSpawnRate);
             timeLordRewindCooldown = CustomOption.Create(457, Types.Crewmate, "Rewind Cooldown", 30f, 10f, 60f, 2.5f, timeLordCanRewind);
 
-            trackerSpawnRate = CustomOption.Create(185, Types.Crewmate, cs(Tracker.color, "Tracker"), rates, null, true);
-            trackerCooldown = CustomOption.Create(186, Types.Crewmate, "Track Cooldown", 30f, 10f, 60f, 2.5f, trackerSpawnRate);
-            trackerMaxTracksPerRound = CustomOption.Create(187, Types.Crewmate, "Max Tracks", 3f, 1f, 5f, 1f, trackerSpawnRate);
-            trackerResetAfterMeeting = CustomOption.Create(189, Types.Crewmate, "Tracks Reset After Meeting", false, trackerSpawnRate);
-
-            trapperSpawnRate = CustomOption.Create(150, Types.Crewmate, cs(Trapper.color, "Trapper"), rates, null, true);
-            trapperMinAmountOfTimeInTrap = CustomOption.Create(151, Types.Crewmate, "Min Amount Of Time In Trap To Register", 1f, 0f, 15f, 0.5f, trapperSpawnRate);
-            trapperCooldown = CustomOption.Create(152, Types.Crewmate, "Trapper Cooldown", 30f, 10f, 60f, 2.5f, trapperSpawnRate);
-            trapperTrapsRemoveOnNewRound = CustomOption.Create(153, Types.Crewmate, "Traps Removed After Each Round", false, trapperSpawnRate);
-            trapperMaxTraps = CustomOption.Create(154, Types.Crewmate, "Maximum Number Of Traps Per Game", 5f, 1f, 15f, 1f, trapperSpawnRate);
-            trapperTrapSize = CustomOption.Create(155, Types.Crewmate, "Trap Size", 0.25f, 0.125f, 1f, 0.125f, trapperSpawnRate);
-            trapperMinAmountOfPlayersInTrap = CustomOption.Create(156, Types.Crewmate, "Minimum Number Of Roles Required To Trigger Trap", 3f, 1f, 5f, 1f, trapperSpawnRate);
-            trapperNeutShowsEvil = CustomOption.Create(157, Types.Crewmate, "Neutrals Shows Evil", false, trapperSpawnRate);
-            trapperKNeutShowsEvil = CustomOption.Create(158, Types.Crewmate, "Killing Neutrals Shows Evil", false, trapperSpawnRate);
-
             vampireHunterSpawnRate = CustomOption.Create(240, Types.Crewmate, cs(VampireHunter.color, "Vampire Hunter"), rates, null, true);
             vampireHunterCooldown = CustomOption.Create(241, Types.Crewmate, "Stake Cooldown", 30f, 10f, 60f, 2.5f, vampireHunterSpawnRate);
             vampireHunterMaxFailedStakes = CustomOption.Create(242, Types.Crewmate, "Maximum Failed Stakes Per Game", 5f, 1f, 15f, 1f, vampireHunterSpawnRate);
@@ -472,7 +462,7 @@ namespace TownOfUs
             guesserIsImpGuesserRate = CustomOption.Create(311, Types.Crewmate, "Chance That The Guesser Is An Impostor", rates, guesserSpawnRate);
             guesserNumberOfShots = CustomOption.Create(312, Types.Crewmate, "Number Of Shots", 2f, 1f, 15f, 1f, guesserSpawnRate);
             guesserHasMultipleShotsPerMeeting = CustomOption.Create(313, Types.Crewmate, "Can Shoot Multiple Times Per Meeting", false, guesserSpawnRate);
-            guesserKillsThroughShield  = CustomOption.Create(314, Types.Crewmate, "Guesses Ignore The Medic Shield", true, guesserSpawnRate);
+            guesserKillsThroughShield = CustomOption.Create(314, Types.Crewmate, "Guesses Ignore The Medic Shield", true, guesserSpawnRate);
             guesserSpawnBothRate = CustomOption.Create(315, Types.Crewmate, "Both Guesser Spawn Rate", rates, guesserSpawnRate);
             guesserCantGuessSnitchIfTaksDone = CustomOption.Create(316, Types.Crewmate, "Can't Guess Snitch When Tasks Completed", true, guesserSpawnRate);
 
@@ -492,7 +482,7 @@ namespace TownOfUs
             guardianAngelProtectCooldown = CustomOption.Create(91, Types.Neutral, "Protect Cooldown", 30f, 10f, 60f, 2.5f, guardianAngelSpawnRate);
             guardianAngelProtectDuration = CustomOption.Create(92, Types.Neutral, "Protect Duration", 10f, 1f, 20f, 0.5f, guardianAngelSpawnRate);
             guardianAngelNumberOfProtects = CustomOption.Create(93, Types.Neutral, "Number Of Protects", 5f, 1f, 15f, 1f, guardianAngelSpawnRate);
-            guardianAngelShowProtected = CustomOption.Create(97, Types.Neutral, "Show Protected Player", new string[] {"Everyone", "Protected", "GA", "Protected + GA", "Nobody"}, guardianAngelSpawnRate);
+            guardianAngelShowProtected = CustomOption.Create(97, Types.Neutral, "Show Protected Player", new string[] { "Everyone", "Protected", "GA", "Protected + GA", "Nobody" }, guardianAngelSpawnRate);
             survivorSafeguardCooldown = CustomOption.Create(94, Types.Neutral, "Safeguard Cooldown", 30f, 10f, 60f, 2.5f, guardianAngelSpawnRate);
             survivorSafeguardDuration = CustomOption.Create(95, Types.Neutral, "Safeguard Duration", 10f, 1f, 20f, 0.5f, guardianAngelSpawnRate);
             survivorNumberOfSafeguards = CustomOption.Create(96, Types.Neutral, "Number Of Safeguards", 5f, 1f, 15f, 1f, guardianAngelSpawnRate);
@@ -510,7 +500,7 @@ namespace TownOfUs
             mercenarySpawnRate = CustomOption.Create(130, Types.Neutral, cs(Mercenary.color, "Mercenary"), rates, null, true);
             mercenaryNeededAttempts = CustomOption.Create(131, Types.Neutral, "Murders Required To Win", 3f, 2f, 15f, 1f, mercenarySpawnRate);
 
-            pursuerSettings = CustomOption.Create(85, Types.Neutral, cs(Pursuer.color, "Pursuer"), new string[] {"Hide Settings", "Show Settings"}, null, true);
+            pursuerSettings = CustomOption.Create(85, Types.Neutral, cs(Pursuer.color, "Pursuer"), new string[] { "Hide Settings", "Show Settings" }, null, true);
             pursuerCooldown = CustomOption.Create(86, Types.Neutral, "Pursuer Blank Cooldown", 30f, 5f, 60f, 2.5f, pursuerSettings);
             pursuerBlanksNumber = CustomOption.Create(87, Types.Neutral, "Pursuer Number Of Blanks", 5f, 1f, 20f, 1f, pursuerSettings);
 
@@ -550,13 +540,19 @@ namespace TownOfUs
             werewolfKillCooldown = CustomOption.Create(193, Types.NeutralKiller, "Kill Cooldown", 3f, 1f, 20f, 0.5f, werewolfSpawnRate);
             werewolfCanVent = CustomOption.Create(194, Types.NeutralKiller, "Can Vent While Rampaged", false, werewolfSpawnRate);
 
+            archerSpawnRate = CustomOption.Create(510, Types.Impostor, cs(Archer.color, "Archer"), rates, null, true);
+            archerShotSize = CustomOption.Create(511, Types.Impostor, "Arrow Size", 2f, 1f, 3f, 1f, archerSpawnRate);
+            archerShotRange = CustomOption.Create(512, Types.Impostor, "Arrow Range", 15f, 5f, 15f, 1f, archerSpawnRate);
+            archerNoticeRange = CustomOption.Create(513, Types.Impostor, "Notify Range", 10f, 10f, 30f, 2.5f, archerSpawnRate);
+            archerAimAssistDuration = CustomOption.Create(514, Types.Impostor, "Aim Duration", 10f, 3f, 10f, 1f, archerSpawnRate);
+
             bomberSpawnRate = CustomOption.Create(235, Types.Impostor, cs(Bomber.color, "Bomber"), rates, null, true);
             bomberDetonateDelay = CustomOption.Create(236, Types.Impostor, "Detonate Delay", 5f, 1f, 15f, 1f, bomberSpawnRate);
             bomberMaxKillsInDetonation = CustomOption.Create(237, Types.Impostor, "Max Kills In Detonation", 5f, 1f, 15f, 1f, bomberSpawnRate);
             bomberDetonateRadius = CustomOption.Create(238, Types.Impostor, "Detonate Radius", 0.25f, 0.125f, 1f, 0.125f, bomberSpawnRate);
 
             bountyHunterSpawnRate = CustomOption.Create(220, Types.Impostor, cs(BountyHunter.color, "Bounty Hunter"), rates, null, true);
-            bountyHunterBountyDuration = CustomOption.Create(221, Types.Impostor, "Duration After Which Bounty Changes",  60f, 10f, 180f, 10f, bountyHunterSpawnRate);
+            bountyHunterBountyDuration = CustomOption.Create(221, Types.Impostor, "Duration After Which Bounty Changes", 60f, 10f, 180f, 10f, bountyHunterSpawnRate);
             bountyHunterReducedCooldown = CustomOption.Create(222, Types.Impostor, "Cooldown After Killing Bounty", 2.5f, 0f, 30f, 2.5f, bountyHunterSpawnRate);
             bountyHunterPunishmentTime = CustomOption.Create(223, Types.Impostor, "Additional Cooldown After Killing Others", 20f, 0f, 60f, 2.5f, bountyHunterSpawnRate);
             bountyHunterShowArrow = CustomOption.Create(224, Types.Impostor, "Show Arrow Pointing Towards The Bounty", true, bountyHunterSpawnRate);
@@ -587,6 +583,11 @@ namespace TownOfUs
             morphlingCooldown = CustomOption.Create(21, Types.Impostor, "Morphling Cooldown", 30f, 10f, 60f, 2.5f, morphlingSpawnRate);
             morphlingDuration = CustomOption.Create(22, Types.Impostor, "Morph Duration", 10f, 1f, 20f, 0.5f, morphlingSpawnRate);
 
+            medusaSpawnRate = CustomOption.Create(485, Types.Impostor, cs(Medusa.color, "Medusa"), rates, null, true);
+            medusaCooldown = CustomOption.Create(486, Types.Impostor, "Medusa Cooldown", 30f, 10f, 60f, 2.5f, medusaSpawnRate);
+            medusaDelay = CustomOption.Create(487, Types.Impostor, "Petrify Delay", 10f, 5f, 10f, 1f, medusaSpawnRate);
+            medusaDuration = CustomOption.Create(488, Types.Impostor, "Petrify Duration", 10f, 1f, 20f, 0.5f, medusaSpawnRate);
+
             minerSpawnRate = CustomOption.Create(160, Types.Impostor, cs(Miner.color, "Miner"), rates, null, true);
             minerPlaceVentCooldown = CustomOption.Create(161, Types.Impostor, "Place Vent Cooldown", 10f, 2.5f, 30f, 2.5f, minerSpawnRate);
 
@@ -616,10 +617,10 @@ namespace TownOfUs
 
             modifierIndomitable = CustomOption.Create(1030, Types.Modifier, cs(Palette.CrewmateBlue, "Indomitable"), rates, null, true);
 
-            modifierSunglasses = CustomOption.Create(1006, Types.Modifier, cs(Palette.CrewmateBlue, "Sunglasses"), new string[] {"0%"}, null, true);
+            modifierSunglasses = CustomOption.Create(1006, Types.Modifier, cs(Palette.CrewmateBlue, "Sunglasses"), new string[] { "0%" }, null, true);
             modifierSunglassesVision = CustomOption.Create(1007, Types.Modifier, "Sunglasses Vision", new string[] { "-10%", "-20%", "-30%", "-40%", "-50%" }, modifierSunglasses);
 
-            modifierTorch= CustomOption.Create(1008, Types.Modifier, cs(Palette.CrewmateBlue, "Torch"), rates, null, true);
+            modifierTorch = CustomOption.Create(1008, Types.Modifier, cs(Palette.CrewmateBlue, "Torch"), rates, null, true);
 
             modifierArmored = CustomOption.Create(1131, Types.Modifier, cs(Color.yellow, "Armored"), rates, null, true);
 
@@ -635,21 +636,32 @@ namespace TownOfUs
             modifierSleuth = CustomOption.Create(1015, Types.Modifier, cs(Color.yellow, "Sleuth"), rates, null, true);
 
             modifierTieBreaker = CustomOption.Create(1020, Types.Modifier, cs(Color.yellow, "Tiebreaker"), rates, null, true);
-            
+
             modifierDisperser = CustomOption.Create(1035, Types.Modifier, cs(Palette.ImpostorRed, "Disperser"), rates, null, true);
 
             modifierDoubleShot = CustomOption.Create(1014, Types.Modifier, cs(Palette.ImpostorRed, "Double Shot"), rates, null, true);
 
+            modifierTeamist = CustomOption.Create(1120, Types.Modifier, cs(Palette.ImpostorRed, "Teamist"), rates, null, true);
+            modifierTeamistCooldownAddition = CustomOption.Create(1121, Types.Modifier, "Kill Cooldown Reduce", 10f, 2.5f, 60f, 2.5f, modifierTeamist);
+            modifierTeamistIncreaseCd = CustomOption.Create(1122, Types.Modifier, "Increased Kill Cooldown When Alone", false, modifierTeamist);
+
+            modifierUnderdog = CustomOption.Create(1125, Types.Modifier, cs(Palette.ImpostorRed, "Underdog"), rates, null, true);
+            modifierUnderdogCooldownAddition = CustomOption.Create(1126, Types.Modifier, "Kill Cooldown Reduce", 10f, 2.5f, 60f, 2.5f, modifierUnderdog);
+            modifierUnderdogIncreaseCd = CustomOption.Create(1127, Types.Modifier, "Increased Kill Cooldown When 2+ Imps", false, modifierUnderdog);
+
             // Block Role Pairings
-            blockedRolePairings.Add((byte)RoleId.Lawyer, new [] { (byte)RoleId.Executioner, (byte)RoleId.GuardianAngel });
-            blockedRolePairings.Add((byte)RoleId.Executioner, new [] { (byte)RoleId.Lawyer});
-            blockedRolePairings.Add((byte)RoleId.GuardianAngel, new [] { (byte)RoleId.Lawyer});
+            blockedRolePairings.Add((byte)RoleId.Lawyer, new[] { (byte)RoleId.Executioner, (byte)RoleId.GuardianAngel });
+            blockedRolePairings.Add((byte)RoleId.Executioner, new[] { (byte)RoleId.Lawyer });
+            blockedRolePairings.Add((byte)RoleId.GuardianAngel, new[] { (byte)RoleId.Lawyer });
 
-            blockedRolePairings.Add((byte)RoleId.Scavenger, new [] { (byte)RoleId.Cleaner});
-            blockedRolePairings.Add((byte)RoleId.Cleaner, new [] { (byte)RoleId.Scavenger});
+            blockedRolePairings.Add((byte)RoleId.Scavenger, new[] { (byte)RoleId.Cleaner });
+            blockedRolePairings.Add((byte)RoleId.Cleaner, new[] { (byte)RoleId.Scavenger });
 
-            blockedRolePairings.Add((byte)RoleId.Swooper, new [] { (byte)RoleId.Phantom});
-            blockedRolePairings.Add((byte)RoleId.Phantom, new [] { (byte)RoleId.Swooper});
+            blockedRolePairings.Add((byte)RoleId.Swooper, new[] { (byte)RoleId.Phantom });
+            blockedRolePairings.Add((byte)RoleId.Phantom, new[] { (byte)RoleId.Swooper });
+            
+            blockedRolePairings.Add((byte)RoleId.Underdog, new [] { (byte)RoleId.Teamist});
+            blockedRolePairings.Add((byte)RoleId.Teamist, new [] { (byte)RoleId.Underdog});
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using AmongUs.GameOptions;
 using HarmonyLib;
 using Hazel;
 using UnityEngine;
@@ -51,21 +52,21 @@ namespace TownOfUs
             Escapist.clearAndReload();
             Miner.clearAndReload();
             Cleaner.clearAndReload();
-            Trapper.clearAndReload();
             Phantom.clearAndReload();
             Grenadier.clearAndReload();
             Doomsayer.clearAndReload();
             Mystic.clearAndReload();
-            Tracker.clearAndReload();
             Werewolf.clearAndReload();
             Detective.clearAndReload();
             Glitch.clearAndReload();
             Venerer.clearAndReload();
             BountyHunter.clearAndReload();
-            Oracle.clearAndReload();
             Bomber.clearAndReload();
             VampireHunter.clearAndReload();
             TimeLord.clearAndReload();
+            Oracle.clearAndReload();
+            Medusa.clearAndReload();
+            Archer.clearAndReload();
 
             Lovers.clearAndReload();
             Blind.clearAndReload();
@@ -79,12 +80,14 @@ namespace TownOfUs
             DoubleShot.clearAndReload();
             Disperser.clearAndReload();
             Armored.clearAndReload();
+            Underdog.clearAndReload();
+            Teamist.clearAndReload();
 
-            // Gamemodes
+            // Gamemodes 
             HandleGuesser.clearAndReload();
         }
     }
-
+    #region Roles
     public static class Morphling
     {
         public static PlayerControl morphling;
@@ -977,44 +980,6 @@ namespace TownOfUs
         }
     }
 
-    public static class Trapper
-    {
-        public static PlayerControl trapper;
-        public static Color color = new Color(0.65f, 0.82f, 0.7f, 1f);
-        public static Material trapMaterial = TownOfUsPlugin.bundledAssets.Get<Material>("trap");
-
-        public static List<Trap> traps = new List<Trap>();
-        public static List<PlayerControl> trappedPlayers = new List<PlayerControl>();
-
-        public static float cooldown = 30f;
-        public static bool removeTraps = false;
-        public static int maxTraps = 5;
-        public static float minTimeInTrap = 0.5f;
-        public static float trapSize = 0.25f;
-        public static int minPlayersInTrap = 3;
-        public static bool neutShowsEvil = false;
-        public static bool kneutShowsEvil = false;
-
-        private static Sprite trapButtonSprite;
-        public static Sprite getButtonSprite()
-            => trapButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.TrapButton.png", 100f);
-
-        public static void clearAndReload()
-        {
-            trapper = null;
-            trappedPlayers = new List<PlayerControl>();
-            traps.ClearTraps();
-            cooldown = CustomOptionHolder.trapperCooldown.getFloat();
-            removeTraps = CustomOptionHolder.trapperTrapsRemoveOnNewRound.getBool();
-            maxTraps = Mathf.RoundToInt(CustomOptionHolder.trapperMaxTraps.getFloat());
-            minTimeInTrap = CustomOptionHolder.trapperMinAmountOfTimeInTrap.getFloat();
-            trapSize = CustomOptionHolder.trapperTrapSize.getFloat();
-            minPlayersInTrap = Mathf.RoundToInt(CustomOptionHolder.trapperMinAmountOfPlayersInTrap.getFloat());
-            neutShowsEvil = CustomOptionHolder.trapperNeutShowsEvil.getBool();
-            kneutShowsEvil = CustomOptionHolder.trapperKNeutShowsEvil.getBool();
-        }
-    }
-
     public static class Phantom
     {
         public static PlayerControl phantom;
@@ -1150,40 +1115,6 @@ namespace TownOfUs
             }
             localArrows = new List<Arrow>();
             duration = CustomOptionHolder.mysticArrowDuration.getFloat();
-        }
-    }
-
-    public static class Tracker
-    {
-        public static PlayerControl tracker;
-        public static PlayerControl currentTarget;
-        public static List<PlayerControl> trackedPlayers = new List<PlayerControl>();
-        public static Color color = new Color(0f, 0.6f, 0f, 1f);
-
-        public static int tracksInRound = 0;
-
-        public static float cooldown = 30f;
-        public static int maxTracksPerRound = 3;
-        public static bool resetAfterMeeting = false;
-
-        public static void resetTracked()
-        {
-            trackedPlayers = new List<PlayerControl>();
-            tracksInRound = 0;
-        }
-
-        private static Sprite buttonSprite;
-        public static Sprite getButtonSprite()
-            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.TrackButton.png", 100f);
-
-        public static void clearAndReload()
-        {
-            tracker = null;
-            currentTarget = null;
-            resetTracked();
-            cooldown = CustomOptionHolder.trackerCooldown.getFloat();
-            maxTracksPerRound = Mathf.RoundToInt(CustomOptionHolder.trackerMaxTracksPerRound.getFloat());
-            resetAfterMeeting = CustomOptionHolder.trackerResetAfterMeeting.getBool();
         }
     }
 
@@ -1426,88 +1357,6 @@ namespace TownOfUs
         }
     }
 
-    public static class Oracle
-    {
-        public static PlayerControl oracle;
-        public static PlayerControl confessor;
-        public static PlayerControl currentTarget;
-        public static Color color = new Color(0.75f, 0f, 0.75f, 1f);
-
-        public static FactionId revealedFaction;
-
-        public static int accuracy = 10;
-        public static float cooldown = 30f;
-        public static bool neutShowsEvil = false;
-        public static bool kneutShowsEvil = false;
-
-        private static Sprite buttonSprite;
-        public static Sprite getButtonSprite()
-            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ConfessButton.png", 100f);
-
-        public static void clearAndReload()
-        {
-            oracle = null;
-            confessor = null;
-            currentTarget = null;
-            revealedFaction = FactionId.Crewmate;
-            accuracy = CustomOptionHolder.oracleAccuracy.getSelection();
-            cooldown = CustomOptionHolder.oracleCooldown.getFloat();
-            neutShowsEvil = CustomOptionHolder.oracleNeutShowsEvil.getBool();
-            kneutShowsEvil = CustomOptionHolder.oracleKNeutShowsEvil.getBool();
-        }
-
-        public static string GetInfo(PlayerControl target)
-        {
-            try
-            {
-                string msg = "";
-                if (Oracle.confessor.Data.IsDead || Oracle.confessor.Data.Disconnected)
-                {
-                    msg = "Your confessor failed to survive so you received no confession";
-                    return $"{msg}";
-                }
-                else
-                {
-                    var allPlayers = PlayerControl.AllPlayerControls.ToArray().Where(x => !x.Data.IsDead && !x.Data.Disconnected && x != PlayerControl.LocalPlayer && x != Oracle.confessor).ToList();
-                    if (allPlayers.Count < 2)
-                    {
-                        msg = "Too few people alive to receive a confessional";
-                        return $"{msg}";
-                    }
-
-                    var evilPlayers = PlayerControl.AllPlayerControls.ToArray().Where(x => !x.Data.IsDead && !x.Data.Disconnected && (x.Data.Role.IsImpostor || (x.isNeutral() && Oracle.neutShowsEvil) || (x.isNeutralKiller() && Oracle.kneutShowsEvil))).ToList();
-                    if (evilPlayers.Count == 0)
-                    {
-                        msg = $"{Oracle.confessor.Data.DefaultOutfit.PlayerName} confesses to knowing that there are no more evil players!";
-                        return $"{msg}";
-                    }
-
-                    allPlayers.Shuffle();
-                    evilPlayers.Shuffle();
-                    var secondPlayer = allPlayers[0];
-                    var firstTwoEvil = false;
-                    foreach (var evilPlayer in evilPlayers)
-                        if (evilPlayer == Oracle.confessor || evilPlayer == secondPlayer)
-                            firstTwoEvil = true;
-
-                    if (firstTwoEvil)
-                    {
-                        var thirdPlayer = allPlayers[1];
-                        msg = $"{Oracle.confessor.Data.DefaultOutfit.PlayerName} confesses to knowing that they, {secondPlayer.Data.DefaultOutfit.PlayerName} and/or {thirdPlayer.Data.DefaultOutfit.PlayerName} is evil!";
-                        return $"{msg}";
-                    }
-                    else
-                    {
-                        var thirdPlayer = evilPlayers[0];
-                        msg = $"{Oracle.confessor.Data.DefaultOutfit.PlayerName} confesses to knowing that they, {secondPlayer.Data.DefaultOutfit.PlayerName} and/or {thirdPlayer.Data.DefaultOutfit.PlayerName} is evil!";
-                        return $"{msg}";
-                    }
-                }
-            }
-            catch { return "Oracle Error"; }
-        }
-    }
-
     public static class Bomber
     {
         public static PlayerControl bomber;
@@ -1596,6 +1445,261 @@ namespace TownOfUs
         }
     }
 
+    public static class TimeLord
+    {
+        public static PlayerControl timeLord;
+        public static Color color = new Color(0f, 0f, 1f, 1f);
+
+        public static bool shieldActive = false;
+        public static bool isRewinding = false;
+
+        public static float rewindTime = 3f;
+        public static float cooldown = 30f;
+        public static float rewindCooldown = 30f;
+        public static bool canUseRewind = true;
+        public static float shieldDuration = 3f;
+        public static bool reviveDuringRewind = false;
+
+        private static Sprite buttonSprite;
+        public static Sprite getTimeShieldButtonSprite()
+            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.TimeShieldButton.png", 115f);
+
+        private static Sprite twoButtonSprite;
+        public static Sprite getRewindButtonSprite()
+            => twoButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.RewindButton.png", 100f);
+
+        public static void clearAndReload()
+        {
+            timeLord = null;
+            shieldActive = false;
+            isRewinding = false;
+            rewindTime = CustomOptionHolder.timeLordRewindTime.getFloat();
+            shieldDuration = CustomOptionHolder.timeLordShieldDuration.getFloat();
+            cooldown = CustomOptionHolder.timeLordCooldown.getFloat();
+            reviveDuringRewind = CustomOptionHolder.timeLordReviveDuringRewind.getBool();
+            rewindCooldown = CustomOptionHolder.timeLordRewindCooldown.getFloat();
+            canUseRewind = CustomOptionHolder.timeLordCanRewind.getBool();
+        }
+
+        public static void RewindTime()
+        {
+            shieldActive = false; // Shield is no longer active when rewinding
+            if (TimeLord.timeLord != null && TimeLord.timeLord == PlayerControl.LocalPlayer)
+            {
+                HudManagerStartPatch.resetTimeLordButton();
+            }
+
+            FastDestroyableSingleton<HudManager>.Instance.FullScreen.color = new Color(0f, 0.5f, 0.8f, 0.3f);
+            FastDestroyableSingleton<HudManager>.Instance.FullScreen.enabled = true;
+            FastDestroyableSingleton<HudManager>.Instance.FullScreen.gameObject.SetActive(true);
+            FastDestroyableSingleton<HudManager>.Instance.StartCoroutine(Effects.Lerp(TimeLord.rewindTime / 2, new Action<float>((p) =>
+            {
+                if (p == 1f) FastDestroyableSingleton<HudManager>.Instance.FullScreen.enabled = false;
+            })));
+
+            if (TimeLord.timeLord == null || PlayerControl.LocalPlayer == TimeLord.timeLord) return; // Time Lord himself does not rewind
+
+            TimeLord.isRewinding = true;
+
+            if (MapBehaviour.Instance)
+                MapBehaviour.Instance.Close();
+            if (Minigame.Instance)
+                Minigame.Instance.ForceClose();
+
+            if (reviveDuringRewind)
+            {
+                DeadPlayer deadPlayer = GameHistory.deadPlayers.FirstOrDefault();
+                if ((DateTime.UtcNow - deadPlayer.timeOfDeath).Seconds <= rewindTime)
+                {
+                    // Revive Player
+                    var writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId,
+                        (byte)CustomRPC.RevivePlayer, SendOption.Reliable);
+                    writer.Write(deadPlayer.player.PlayerId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.stopStart(deadPlayer.player.PlayerId);
+                    // Remove dead player
+                    GameHistory.deadPlayers.Remove(deadPlayer);
+                }
+            }
+        }
+    }
+
+    public static class Oracle
+    {
+        public static PlayerControl oracle;
+        public static PlayerControl confessor;
+        public static PlayerControl currentTarget;
+        public static Color color = new Color(0.75f, 0f, 0.75f, 1f);
+
+        public static bool investigated;
+        public static FactionId revealedFaction;
+
+        public static int accuracy = 10;
+        public static float cooldown = 30f;
+        public static bool neutShowsEvil = false;
+        public static bool kneutShowsEvil = false;
+
+        private static Sprite buttonSprite;
+        public static Sprite getButtonSprite()
+            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ConfessButton.png", 100f);
+
+        public static void clearAndReload()
+        {
+            oracle = null;
+            confessor = null;
+            currentTarget = null;
+            investigated = false;
+            revealedFaction = FactionId.Crewmate;
+            accuracy = CustomOptionHolder.oracleRevealAccuracy.getSelection();
+            cooldown = CustomOptionHolder.oracleConfessCooldown.getFloat();
+            neutShowsEvil = CustomOptionHolder.oracleNeutralsShowsEvil.getBool();
+            kneutShowsEvil = CustomOptionHolder.oracleKillingNeutralsShowsEvil.getBool();
+        }
+
+        public static string GetInfo(PlayerControl target)
+        {
+            string msg = "";
+
+            var evilPlayers = PlayerControl.AllPlayerControls.ToArray().Where(x => !x.Data.IsDead && !x.Data.Disconnected && x.Data.Role.IsImpostor || x.isNeutralKiller() && kneutShowsEvil || x.isNeutral() && neutShowsEvil).ToList();
+            var allPlayers = PlayerControl.AllPlayerControls.ToArray().Where(x => !x.Data.IsDead && !x.Data.Disconnected && x != oracle && x != target).ToList();
+
+            if (target.Data.IsDead || target.Data.Disconnected) msg = "Your confessor failed to survive so you received no confession";
+            else if (allPlayers.Count < 2) msg = "Too few people alive to receive a confessional";
+
+            if (evilPlayers.Count == 0) msg = $"{target.Data.PlayerName} confesses to knowing that there are no more evil players!";
+
+            allPlayers.Shuffle();
+            evilPlayers.Shuffle();
+
+            var secondPlayer = allPlayers[0];
+            var firstTwoEvil = false;
+
+            foreach (var evilPlayer in evilPlayers)
+            {
+                if (evilPlayer == target || evilPlayer == secondPlayer) firstTwoEvil = true;
+            }
+
+            if (firstTwoEvil)
+            {
+                var thirdPlayer = allPlayers[1];
+                msg = $"{target.Data.PlayerName} confesses to knowing that they, {secondPlayer.Data.PlayerName} and/or {thirdPlayer.Data.PlayerName} is evil!";
+            }
+            else
+            {
+                var thirdPlayer = evilPlayers[0];
+                msg = $"{target.Data.PlayerName} confesses to knowing that they, {secondPlayer.Data.PlayerName} and/or {thirdPlayer.Data.PlayerName} is evil!";
+            }
+            
+            return msg;
+        }
+    }
+
+    public static class Medusa
+    {
+        public static PlayerControl medusa;
+        public static PlayerControl petrified;
+        public static PlayerControl currentTarget;
+        public static Color color = Palette.ImpostorRed;
+
+        public static float messageTimer = 0f;
+
+        public static float cooldown = 30f;
+        public static float delay = 10f;
+        public static float duration = 10f;
+
+        private static Sprite buttonSprite;
+        public static Sprite getButtonSprite()
+            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.PetrifyButton.png", 90f);
+        
+        public static void clearAndReload() {
+            medusa = null;
+            petrified = null;
+            currentTarget = null;
+            messageTimer = 0f;
+            cooldown = CustomOptionHolder.medusaCooldown.getFloat();
+            delay = CustomOptionHolder.medusaDelay.getFloat();
+            duration = CustomOptionHolder.medusaDuration.getFloat();
+        }
+    }
+
+    public static class Archer
+    {
+        public static PlayerControl archer;
+        public static Dictionary<byte, SpriteRenderer> Guides = new Dictionary<byte, SpriteRenderer>();
+        public static Color color = Palette.ImpostorRed;
+
+        public static GameObject bow = null;
+        private static Sprite bowSprite = null;
+        private static Sprite guideSprite = null;
+
+        public static float mouseArcherAngle = 0f;
+        public static bool weaponEquiped = false;
+        public static float weaponDuration = 0f;
+
+        public static float cooldown = 30f;
+        public static float shotSize = 1f;
+        public static float shotRange = 20f;
+        public static float noticeRange = 20f;
+        public static float AimAssistDelay = 2f;
+        public static float AimAssistDuration = 10f;
+
+        public static Sprite getGuideSprite()
+            => guideSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ArcherGuide.png", 100f);
+        public static Sprite getBowSprite()
+            => bowSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ArcherBow.png", 100f);
+        private static Sprite buttonPickBowprite;
+        public static Sprite getPickBowButtonSprite()
+            => buttonPickBowprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ArcherPickBowButton.png", 90f);
+        private static Sprite buttonHideBowprite;
+        public static Sprite getHideBowButtonSprite()
+            => buttonHideBowprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ArcherHideBowButton.png", 90f);
+        private static Sprite archerWarning = null;
+        public static Sprite getArcherWarningSprite()
+            => archerWarning ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.ArcherWarning.png", 200f);
+
+        public static void clearAndReload()
+        {
+            archer = null;
+            bow = null;
+            AimAssistDelay = 2f;
+            mouseArcherAngle = 0f;
+            weaponEquiped = false;
+            weaponDuration = 0f;
+            Guides = new Dictionary<byte, SpriteRenderer>();
+            cooldown = GameOptionsManager.Instance.CurrentGameOptions.GetFloat(FloatOptionNames.KillCooldown);
+            shotSize = CustomOptionHolder.archerShotSize.getFloat();
+            shotRange = CustomOptionHolder.archerShotRange.getFloat();
+            noticeRange = CustomOptionHolder.archerNoticeRange.getFloat();
+            AimAssistDuration = CustomOptionHolder.archerAimAssistDuration.getFloat();
+        }
+
+        public static PlayerControl GetShootPlayer(float shotSize, float effectiveRange)
+        {
+            PlayerControl result = null;
+            float num = effectiveRange;
+            Vector3 pos;
+            float mouseAngle = mouseArcherAngle;
+            foreach (PlayerControl player in PlayerControl.AllPlayerControls)
+            {
+                if (player.PlayerId == PlayerControl.LocalPlayer.PlayerId) continue;
+
+                if (player.Data.IsDead) continue;
+
+                pos = player.transform.position - PlayerControl.LocalPlayer.transform.position;
+                pos = new Vector3(
+                    pos.x * MathF.Cos(mouseAngle) + pos.y * MathF.Sin(mouseAngle),
+                    pos.y * MathF.Cos(mouseAngle) - pos.x * MathF.Sin(mouseAngle));
+                if (Math.Abs(pos.y) < shotSize && (!(pos.x < 0)) && pos.x < num)
+                {
+                    num = pos.x;
+                    result = player;
+                }
+            }
+            return result;
+        }
+    }
+    #endregion
+    #region Modifiers
     public static class Guesser
     {
         public static PlayerControl niceGuesser;
@@ -1859,82 +1963,34 @@ namespace TownOfUs
         }
     }
 
-    public static class TimeLord
+    public static class Underdog
     {
-        public static PlayerControl timeLord;
-        public static Color color = new Color(0f, 0f, 1f, 1f);
+        public static PlayerControl underdog;
 
-        public static bool shieldActive = false;
-        public static bool isRewinding = false;
-
-        public static float rewindTime = 3f;
-        public static float cooldown = 30f;
-        public static float rewindCooldown = 30f;
-        public static bool canUseRewind = true;
-        public static float shieldDuration = 3f;
-        public static bool reviveDuringRewind = false;
-        
-        private static Sprite buttonSprite;
-        public static Sprite getTimeShieldButtonSprite()
-            => buttonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.TimeShieldButton.png", 115f);
-            
-        private static Sprite twoButtonSprite;
-        public static Sprite getRewindButtonSprite()
-            => twoButtonSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.RewindButton.png", 100f);
+        public static float cooldownAddition = 30f;
+        public static bool increaseWhenImps = false;
 
         public static void clearAndReload()
         {
-            timeLord = null;
-            shieldActive = false;
-            isRewinding = false;
-            rewindTime = CustomOptionHolder.timeLordRewindTime.getFloat();
-            shieldDuration = CustomOptionHolder.timeLordShieldDuration.getFloat();
-            cooldown = CustomOptionHolder.timeLordCooldown.getFloat();
-            reviveDuringRewind = CustomOptionHolder.timeLordReviveDuringRewind.getBool();
-            rewindCooldown = CustomOptionHolder.timeLordRewindCooldown.getFloat();
-            canUseRewind = CustomOptionHolder.timeLordCanRewind.getBool();
+            underdog = null;
+            cooldownAddition = CustomOptionHolder.modifierUnderdogCooldownAddition.getFloat();
+            increaseWhenImps = CustomOptionHolder.modifierUnderdogIncreaseCd.getBool();
         }
+    }
+    
+    public static class Teamist
+    {
+        public static PlayerControl teamist;
 
-        public static void RewindTime()
+        public static float cooldownAddition = 30f;
+        public static bool increaseWhenAlone = false;
+
+        public static void clearAndReload()
         {
-            shieldActive = false; // Shield is no longer active when rewinding
-            if (TimeLord.timeLord != null && TimeLord.timeLord == PlayerControl.LocalPlayer)
-            {
-                HudManagerStartPatch.resetTimeLordButton();
-            }
-
-            FastDestroyableSingleton<HudManager>.Instance.FullScreen.color = new Color(0f, 0.5f, 0.8f, 0.3f);
-            FastDestroyableSingleton<HudManager>.Instance.FullScreen.enabled = true;
-            FastDestroyableSingleton<HudManager>.Instance.FullScreen.gameObject.SetActive(true);
-            FastDestroyableSingleton<HudManager>.Instance.StartCoroutine(Effects.Lerp(TimeLord.rewindTime / 2, new Action<float>((p) =>
-            {
-                if (p == 1f) FastDestroyableSingleton<HudManager>.Instance.FullScreen.enabled = false;
-            })));
-
-            if (TimeLord.timeLord == null || PlayerControl.LocalPlayer == TimeLord.timeLord) return; // Time Lord himself does not rewind
-
-            TimeLord.isRewinding = true;
-
-            if (MapBehaviour.Instance)
-                MapBehaviour.Instance.Close();
-            if (Minigame.Instance)
-                Minigame.Instance.ForceClose();
-
-            if (reviveDuringRewind)
-            {
-                DeadPlayer deadPlayer = GameHistory.deadPlayers.FirstOrDefault();
-                if ((DateTime.UtcNow - deadPlayer.timeOfDeath).Seconds <= rewindTime)
-                {
-                    // Revive Player
-                    var writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId,
-                        (byte)CustomRPC.RevivePlayer, SendOption.Reliable);
-                    writer.Write(deadPlayer.player.PlayerId);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.stopStart(deadPlayer.player.PlayerId);
-                    // Remove dead player
-                    GameHistory.deadPlayers.Remove(deadPlayer);
-                }
-            }
+            teamist = null;
+            cooldownAddition = CustomOptionHolder.modifierTeamistCooldownAddition.getFloat();
+            increaseWhenAlone = CustomOptionHolder.modifierTeamistIncreaseCd.getBool();
         }
     }
 }
+#endregion

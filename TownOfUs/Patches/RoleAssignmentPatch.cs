@@ -120,6 +120,8 @@ namespace TownOfUs.Patches {
             impSettings.Add((byte)RoleId.Venerer, CustomOptionHolder.venererSpawnRate.getSelection());
             impSettings.Add((byte)RoleId.BountyHunter, CustomOptionHolder.bountyHunterSpawnRate.getSelection());
             impSettings.Add((byte)RoleId.Bomber, CustomOptionHolder.bomberSpawnRate.getSelection());
+            impSettings.Add((byte)RoleId.Medusa, CustomOptionHolder.medusaSpawnRate.getSelection());
+            impSettings.Add((byte)RoleId.Archer, CustomOptionHolder.archerSpawnRate.getSelection());
             
             neutralSettings.Add((byte)RoleId.Jester, CustomOptionHolder.jesterSpawnRate.getSelection());
             neutralSettings.Add((byte)RoleId.Scavenger, CustomOptionHolder.scavengerSpawnRate.getSelection());
@@ -155,12 +157,10 @@ namespace TownOfUs.Patches {
             crewSettings.Add((byte)RoleId.Investigator, CustomOptionHolder.investigatorSpawnRate.getSelection());
             crewSettings.Add((byte)RoleId.Veteran, CustomOptionHolder.veteranSpawnRate.getSelection());
             crewSettings.Add((byte)RoleId.Seer, CustomOptionHolder.seerSpawnRate.getSelection());
-            crewSettings.Add((byte)RoleId.Trapper, CustomOptionHolder.trapperSpawnRate.getSelection());
             crewSettings.Add((byte)RoleId.Mystic, CustomOptionHolder.mysticSpawnRate.getSelection());
-            crewSettings.Add((byte)RoleId.Tracker, CustomOptionHolder.trackerSpawnRate.getSelection());
             crewSettings.Add((byte)RoleId.Detective, CustomOptionHolder.detectiveSpawnRate.getSelection());
-            crewSettings.Add((byte)RoleId.Oracle, CustomOptionHolder.oracleSpawnRate.getSelection());
             crewSettings.Add((byte)RoleId.TimeLord, CustomOptionHolder.timeLordSpawnRate.getSelection());
+            crewSettings.Add((byte)RoleId.Oracle, CustomOptionHolder.oracleSpawnRate.getSelection());
 
             return new RoleAssignmentData
             {
@@ -483,6 +483,8 @@ namespace TownOfUs.Patches {
                 RoleId.DoubleShot,
                 RoleId.Disperser,
                 RoleId.Armored,
+                RoleId.Underdog,
+                RoleId.Teamist,
             });
 
             if (rnd.Next(1, 101) <= CustomOptionHolder.modifierLover.getSelection() * 10) { // Assign lover
@@ -666,8 +668,25 @@ namespace TownOfUs.Patches {
                 playerList.RemoveAll(x => x.PlayerId == playerId);
                 modifiers.RemoveAll(x => x == RoleId.ButtonBarry);
             }
+            
+            if (modifiers.Contains(RoleId.Underdog)) {
+                var impPlayerUnderdog = new List<PlayerControl>(impPlayer);
+                playerId = setModifierToRandomPlayer((byte)RoleId.Underdog, impPlayerUnderdog);
+                impPlayer.RemoveAll(x => x.PlayerId == playerId);
+                playerList.RemoveAll(x => x.PlayerId == playerId);
+                modifiers.RemoveAll(x => x == RoleId.Underdog);
+            }
+            
+            if (modifiers.Contains(RoleId.Teamist)) {
+                var impPlayerTeamist = new List<PlayerControl>(impPlayer);
+                playerId = setModifierToRandomPlayer((byte)RoleId.Teamist, impPlayerTeamist);
+                impPlayer.RemoveAll(x => x.PlayerId == playerId);
+                playerList.RemoveAll(x => x.PlayerId == playerId);
+                modifiers.RemoveAll(x => x == RoleId.Teamist);
+            }
 
-            foreach (RoleId modifier in modifiers) {
+            foreach (RoleId modifier in modifiers)
+            {
                 if (playerList.Count == 0) break;
                 playerId = setModifierToRandomPlayer((byte)modifier, playerList);
                 playerList.RemoveAll(x => x.PlayerId == playerId);
@@ -703,6 +722,10 @@ namespace TownOfUs.Patches {
                     if (!Helpers.isAirship()) selection = CustomOptionHolder.modifierDisperser.getSelection(); break;
                 case RoleId.Armored:
                     selection = CustomOptionHolder.modifierArmored.getSelection(); break;
+                case RoleId.Underdog:
+                    selection = CustomOptionHolder.modifierUnderdog.getSelection(); break;
+                case RoleId.Teamist:
+                    selection = CustomOptionHolder.modifierTeamist.getSelection(); break;
             }
                  
             return selection;

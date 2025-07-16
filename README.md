@@ -33,9 +33,7 @@
 | [Snitch](#snitch)  | [Survivor](#survivor) | | [Swooper](#swooper) | [Tiebreaker](#tiebreaker)  |
 | [Spy](#spy)  | | | [Venerer](#venerer) | [Double Shot](#double-shot) |
 | [Swapper](#swapper) | | | [Bounty Hunter](#bounty-hunter) | [Disperser](#disperser) |
-| [Tracker](#tracker) | | | [Bomber](#bomber)  | [Armored](#armored)  |
-| [Trapper](#trapper) | | | | |
-| [Veteran](#veteran) | | | | |
+| [Veteran](#veteran) | | | [Bomber](#bomber)  | [Armored](#armored)  |
 | [Oracle](#oracle)  | | | | |
 | [Vampire Hunter](#vampire-hunter) | | | | |
 
@@ -235,40 +233,6 @@ All the votes for the first player will instead be counted towards the second pl
 | Swapper | The percentage probability of the Swapper appearing | Percentage | 0% |
 | Swapper Can Call Emergency Meeting | Whether the Swapper Can Press the Button | Toggle | False |
 | Swapper Can Only Swap Others | Sets whether the Swapper can swap themself or not | Toggle | False |
-
------------------------
-
-## Tracker
-The Tracker is a Crewmate that can track other players by tracking them during a round.\
-Once they track someone, Tracker can see tracked players on his minimap
-
-### Game Options
-| Name | Description | Type | Default |
-|----------|:-------------:|:------:|:------:|
-| Tracker | The percentage probability of the Tracker appearing | Percentage | 0% |
-| Track Cooldown | The cooldown on the Tracker's track button | Time | 30s |
-| Max Tracks | The number of new people they can track each round | Number | 3 |
-| Tracks Reset After Meeting | Whether tracks are removed after each meeting | Toggle | False |
-
------------------------
-
-## Trapper
-The Trapper is a Crewmate that can place traps around the map.\
-When players enter a trap they trigger the trap.\
-In the following meeting,  a trap will have display how many evil roles triggered the trap.
-
-### Game Options
-| Name | Description | Type | Default |
-|----------|:-------------:|:------:|:------:|
-| Trapper | The percentage probability of the Trapper appearing | Percentage | 0% |
-| Min Amount of Time in Trap to Register | How long a player must stay in the trap for it to trigger | Time | 1s |
-| Trap Cooldown | The cooldown on the Trapper's trap button | Time | 30s |
-| Traps Removed Each Round | Whether the Trapper's traps are removed after each meeting | Toggle | True |
-| Maximum Number of Traps Per Game | The number of traps they can place in a game | Number | 5 |
-| Trap Size | The size of each trap | Factor | 0.25x |
-| Minimum Number of Roles required to Trigger Trap | The number of players that must enter the trap for it to be triggered | Number | 3 |
-| Neutrals Shows Evil | Neutrals counts evil in trap | Toggle | False |
-| Killing Neutrals Shows Evil | Killing Neutrals counts evil in trap | Toggle | False |
 
 -----------------------
 

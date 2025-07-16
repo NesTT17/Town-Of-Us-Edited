@@ -35,13 +35,11 @@ namespace TownOfUs
         public static RoleInfo investigator = new RoleInfo("Investigator", Investigator.color, "Find the <color=#FF1919FF>Impostors</color> by examining footprints", "Examine footprints", RoleId.Investigator, FactionId.Crewmate);
         public static RoleInfo veteran = new RoleInfo("Veteran", Veteran.color, "Protect yourself from other", "Protect yourself from others", RoleId.Veteran, FactionId.Crewmate);
         public static RoleInfo seer = new RoleInfo("Seer", Seer.color, "Reveal alliances of other players to find the Impostors", "Reveal alliances of other players to find the Impostors", RoleId.Seer, FactionId.Crewmate);
-        public static RoleInfo trapper = new RoleInfo("Trapper", Trapper.color, "Place traps to find the Impostors", "Place traps to find the impostors", RoleId.Trapper, FactionId.Crewmate);
         public static RoleInfo mystic = new RoleInfo("Mystic", Mystic.color, "Know when and where kills happen", "Know when and where kills happen", RoleId.Mystic, FactionId.Crewmate);
-        public static RoleInfo tracker = new RoleInfo("Tracker", Tracker.color, "Track suspicious players", "Track suspicious players", RoleId.Tracker, FactionId.Crewmate);
         public static RoleInfo detective = new RoleInfo("Detective", Detective.color, "Examine suspicious players to find evildoers", "Examine suspicious players to find evildoers", RoleId.Detective, FactionId.Crewmate);
-        public static RoleInfo oracle = new RoleInfo("Oracle", Oracle.color, "Get another player to confess on your passing", "Get another player to confess on your passing", RoleId.Oracle, FactionId.Crewmate);
         public static RoleInfo vampireHunter = new RoleInfo("Vampire Hunter", VampireHunter.color, "Stake the Vampires", "Stake the Vampires", RoleId.VampireHunter, FactionId.Crewmate);
         public static RoleInfo timeLord = new RoleInfo("Time Lord", TimeLord.color, "Save yourself with your time power", "Save yourself with your time power", RoleId.TimeLord, FactionId.Crewmate);
+        public static RoleInfo oracle = new RoleInfo("Oracle", Oracle.color, "Make the <color=#FF1919FF>Impostors</color> confess their sins", "Get another player to confess on your passing", RoleId.Oracle, FactionId.Crewmate);
 
         // Neutral Roles
         public static RoleInfo jester = new RoleInfo("Jester", Jester.color, "Get voted out", "Get voted out", RoleId.Jester, FactionId.Neutral);
@@ -78,6 +76,8 @@ namespace TownOfUs
         public static RoleInfo venerer = new RoleInfo("Venerer", Venerer.color, "Kill players to unlock ability perks", "Kill players to unlock ability perks", RoleId.Venerer, FactionId.Impostor);
         public static RoleInfo bountyHunter = new RoleInfo("Bounty Hunter", BountyHunter.color, "Hunt your bounty down", "Hunt your bounty down", RoleId.BountyHunter, FactionId.Impostor);
         public static RoleInfo bomber = new RoleInfo("Bomber", Bomber.color, "Plant bombs to kill crewmates", "Plant bombs to kill crewmates", RoleId.Bomber, FactionId.Impostor);
+        public static RoleInfo medusa = new RoleInfo("Medusa", Medusa.color, "Petrify players", "Petrify players", RoleId.Medusa, FactionId.Impostor);
+        public static RoleInfo archer = new RoleInfo("Archer", Archer.color, "Make range kills", "Pick bow with F nand right click to shoot", RoleId.Archer, FactionId.Impostor);
 
         // Modifiers
         public static RoleInfo lover = new RoleInfo("Lover", Lovers.color, $"You are in love", $"You are in love", RoleId.Lover, FactionId.Modifier);
@@ -93,6 +93,8 @@ namespace TownOfUs
         public static RoleInfo doubleShot = new RoleInfo("Double Shot", Palette.ImpostorRed, "You have extra life while assassinating", "You have extra life while assassinating", RoleId.DoubleShot, FactionId.Modifier);
         public static RoleInfo disperser = new RoleInfo("Disperser", Palette.ImpostorRed, "Separate the Crew", "Separate the Crew", RoleId.Disperser, FactionId.Modifier);
         public static RoleInfo armored = new RoleInfo("Armored", Color.yellow, "You are protected from one murder attempt", "You are protected from one murder attempt", RoleId.Armored, FactionId.Modifier);
+        public static RoleInfo underdog = new RoleInfo("Underdog", Palette.ImpostorRed, "When you're alone, your kill cooldown is shortened", "When you're alone, your kill cooldown is shortened", RoleId.Underdog, FactionId.Modifier);
+        public static RoleInfo teamist = new RoleInfo("Teamist", Palette.ImpostorRed, "When you aren't alone, your kill cooldown is shortened", "When you aren't alone, your kill cooldown is shortened", RoleId.Teamist, FactionId.Modifier);
 
         public static RoleInfo impostor = new RoleInfo("Impostor", Palette.ImpostorRed, "Sabotage and kill everyone", "Sabotage and kill everyone", RoleId.Impostor, FactionId.Impostor);
         public static RoleInfo crewmate = new RoleInfo("Crewmate", Palette.CrewmateBlue, "Find the Impostors", "Find the Impostors", RoleId.Crewmate, FactionId.Crewmate);
@@ -113,12 +115,10 @@ namespace TownOfUs
             spy,
             swapper,
             timeLord,
-            tracker,
-            trapper,
             vampireHunter,
             veteran,
             vigilante,
-            
+
             amnesiac,
             doomsayer,
             executioner,
@@ -138,6 +138,7 @@ namespace TownOfUs
             werewolf,
 
             impostor,
+            archer,
             assassin,
             bomber,
             bountyHunter,
@@ -146,13 +147,14 @@ namespace TownOfUs
             cleaner,
             escapist,
             grenadier,
+            medusa,
             miner,
             morphling,
             phantom,
             poisoner,
             swooper,
             venerer,
-            
+
             bait,
             blind,
             indomitable,
@@ -168,6 +170,8 @@ namespace TownOfUs
 
             disperser,
             doubleShot,
+            teamist,
+            underdog,
         };
 
         public static List<RoleInfo> getRoleInfoForPlayer(PlayerControl p, bool showModifier = true) {
@@ -189,6 +193,8 @@ namespace TownOfUs
                 if (p == DoubleShot.doubleShot) infos.Add(doubleShot);
                 if (p == Disperser.disperser) infos.Add(disperser);
                 if (p == Armored.armored) infos.Add(armored);
+                if (p == Underdog.underdog) infos.Add(underdog);
+                if (p == Teamist.teamist) infos.Add(teamist);
             }
             int count = infos.Count;  // Save count after modifiers are added so that the role count can be checked
 
@@ -228,21 +234,21 @@ namespace TownOfUs
             if (p == Escapist.escapist) infos.Add(escapist);
             if (p == Miner.miner) infos.Add(miner);
             if (p == Cleaner.cleaner) infos.Add(cleaner);
-            if (p == Trapper.trapper) infos.Add(trapper);
             if (p == Phantom.phantom) infos.Add(phantom);
             if (p == Grenadier.grenadier) infos.Add(grenadier);
             if (p == Doomsayer.doomsayer) infos.Add(doomsayer);
             if (p == Mystic.mystic) infos.Add(mystic);
-            if (p == Tracker.tracker) infos.Add(tracker);
             if (p == Werewolf.werewolf) infos.Add(werewolf);
             if (p == Detective.detective) infos.Add(detective);
             if (p == Glitch.glitch) infos.Add(glitch);
             if (p == Venerer.venerer) infos.Add(venerer);
             if (p == BountyHunter.bountyHunter) infos.Add(bountyHunter);
-            if (p == Oracle.oracle) infos.Add(oracle);
             if (p == Bomber.bomber) infos.Add(bomber);
             if (p == VampireHunter.vampireHunter) infos.Add(vampireHunter);
             if (p == TimeLord.timeLord) infos.Add(timeLord);
+            if (p == Oracle.oracle) infos.Add(oracle);
+            if (p == Medusa.medusa) infos.Add(medusa);
+            if (p == Archer.archer) infos.Add(archer);
 
             // Default roles
             if (infos.Count == count) infos.Add(p.Data.Role.IsImpostor ? impostor : crewmate);

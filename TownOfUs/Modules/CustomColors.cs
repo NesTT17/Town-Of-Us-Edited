@@ -297,6 +297,13 @@ namespace TownOfUs.Modules {
                 }
             }
 
+            [HarmonyPatch(typeof(AmongUs.Data.Settings.SettingsData), nameof(AmongUs.Data.Settings.SettingsData.FileName), MethodType.Getter)]
+            public class SettingsManagerPatch {
+                public static void Postfix(ref string __result) {
+                    __result += "_TOUE";
+                }
+            }
+
             [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.CheckColor))]
             private static class PlayerControlCheckColorPatch {
                 private static bool isTaken(PlayerControl player, uint color) {

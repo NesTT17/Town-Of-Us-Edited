@@ -88,22 +88,6 @@ namespace TownOfUs.Patches {
                 RPCProcedure.unblackmailPlayer();
             }
 
-            // Trapper Remove traps
-            if (Trapper.trapper != null)
-            {
-                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.CleanTraps, SendOption.Reliable, -1);
-                AmongUsClient.Instance.FinishRpcImmediately(writer);
-                RPCProcedure.cleanTraps();
-            }
-
-            // Tracker Remove tracks
-            if (Tracker.tracker != null && Tracker.resetAfterMeeting)
-            {
-                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.TrackerResetTrack, SendOption.Reliable, -1);
-                AmongUsClient.Instance.FinishRpcImmediately(writer);
-                RPCProcedure.trackerResetTrack();
-            }
-
             // Detective reset examined
             if (Detective.detective != null)
             {
@@ -116,10 +100,16 @@ namespace TownOfUs.Patches {
             if (BountyHunter.bountyHunter != null && BountyHunter.bountyHunter == PlayerControl.LocalPlayer)
                 BountyHunter.bountyUpdateTimer = 0f;
 
+            if (VampireHunter.vampireHunter != null && !VampireHunter.vampireHunter.Data.IsDead && !VampireHunter.canStake)
+            {
+                VampireHunter.canStake = true;
+            }
+
             // Vampire Hunter promotion trigger
             if (VampireHunter.vampireHunter != null && !VampireHunter.vampireHunter.Data.IsDead)
             {
                 int aliveVampires = PlayerControl.AllPlayerControls.ToArray().Where(x => x != null && !x.Data.Disconnected && !x.Data.IsDead && (x.PlayerId == Dracula.dracula.PlayerId || x.PlayerId == Vampire.vampire.PlayerId)).Count();
+                if (aliveVampires > 0) return;
                 if (aliveVampires == 0)
                 {
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(VampireHunter.vampireHunter.NetId, (byte)CustomRPC.VampireHunterPromotes, SendOption.Reliable, -1);
@@ -129,21 +119,10 @@ namespace TownOfUs.Patches {
                 }
             }
 
-            if (VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == PlayerControl.LocalPlayer && !VampireHunter.canStake)
-            {
-                VampireHunter.canStake = true;
-            }
+            Oracle.investigated = false;
 
             if (PlayerControl.LocalPlayer.Data.IsDead && !Helpers.localPlayerCanSeeOthersRoles)
                 Helpers.localPlayerCanSeeOthersRoles = true;
-
-            if (Oracle.confessor != null && (Oracle.oracle == null || Oracle.oracle.Data.Disconnected || Oracle.oracle.Data.IsDead))
-            {
-                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(Oracle.confessor.NetId, (byte)CustomRPC.OracleConfess, SendOption.Reliable, -1);
-                writer.Write(Oracle.confessor.PlayerId);
-                AmongUsClient.Instance.FinishRpcImmediately(writer);
-                RPCProcedure.oracleConfess(Oracle.confessor.PlayerId);
-            }
         }
     }
 

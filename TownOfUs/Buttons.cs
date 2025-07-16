@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Assets.CoreScripts;
 using HarmonyLib;
@@ -47,14 +48,10 @@ namespace TownOfUs
         public static CustomButton escapistButton;
         public static CustomButton minerPlaceVentButton;
         public static CustomButton cleanerCleanButton;
-        public static CustomButton trapperButton;
-        public static TMPro.TMP_Text trapperChargesText;
         public static CustomButton buttonBarryButton;
         public static CustomButton phantomInvisButton;
         public static CustomButton grenadierFlashButton;
         public static CustomButton doomsayerObserveButton;
-        public static CustomButton trackerTrackButton;
-        public static TMPro.TMP_Text trackerTrackButtonText;
         public static CustomButton werewolfRampageButton;
         public static CustomButton werewolfKillButton;
         public static CustomButton detectiveExamineButton;
@@ -63,7 +60,6 @@ namespace TownOfUs
         public static CustomButton glichHackButton;
         public static CustomButton venererAbilityButton;
         public static CustomButton disperserDisperseButton;
-        public static CustomButton oracleConfessButton;
         public static CustomButton bomberButton;
         public static CustomButton vampireHunterStakeButton;
         public static TMPro.TMP_Text vampireHunterStakeButtonText;
@@ -71,13 +67,21 @@ namespace TownOfUs
         public static TMPro.TMP_Text vhVeteranAlertButtonText;
         public static CustomButton timeLordShieldButton;
         public static CustomButton timeLordRewindTimeButton;
+        public static CustomButton oracleConfessButton;
+        public static CustomButton medusaPetrifyButton;
+        public static CustomButton archerShowWeaponButton;
+        public static CustomButton archerKillButton;
         
-        public static void setCustomButtonCooldowns() {
-            if (!initialized) {
-                try {
+        public static void setCustomButtonCooldowns()
+        {
+            if (!initialized)
+            {
+                try
+                {
                     createButtonsPostfix(HudManager.Instance);
-                } 
-                catch {
+                }
+                catch
+                {
                     TownOfUsPlugin.Logger.LogWarning("Button cooldowns not set, either the gamemode does not require them or there's something wrong.");
                     return;
                 }
@@ -116,14 +120,12 @@ namespace TownOfUs
             escapistButton.EffectDuration = Escapist.recallDuration;
             minerPlaceVentButton.MaxTimer = Miner.placeVentCooldown;
             cleanerCleanButton.MaxTimer = Cleaner.cooldown;
-            trapperButton.MaxTimer = Trapper.cooldown;
             buttonBarryButton.MaxTimer = 0f;
             phantomInvisButton.MaxTimer = Phantom.cooldown;
             phantomInvisButton.EffectDuration = Phantom.duration;
             grenadierFlashButton.MaxTimer = Grenadier.cooldown;
             grenadierFlashButton.EffectDuration = Grenadier.duration;
             doomsayerObserveButton.MaxTimer = Doomsayer.cooldown;
-            trackerTrackButton.MaxTimer = Tracker.cooldown;
             werewolfRampageButton.MaxTimer = Werewolf.cooldown;
             werewolfRampageButton.EffectDuration = Werewolf.duration;
             werewolfKillButton.MaxTimer = Werewolf.killCooldown;
@@ -136,7 +138,6 @@ namespace TownOfUs
             venererAbilityButton.MaxTimer = Venerer.cooldown;
             venererAbilityButton.EffectDuration = Venerer.duration;
             disperserDisperseButton.MaxTimer = 0f;
-            oracleConfessButton.MaxTimer = Oracle.cooldown;
             bomberButton.MaxTimer = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown;
             bomberButton.EffectDuration = Bomber.delay;
             vampireHunterStakeButton.MaxTimer = VampireHunter.stakeCooldown;
@@ -146,6 +147,11 @@ namespace TownOfUs
             timeLordShieldButton.EffectDuration = TimeLord.shieldDuration;
             timeLordRewindTimeButton.MaxTimer = TimeLord.rewindCooldown;
             timeLordRewindTimeButton.EffectDuration = TimeLord.rewindTime;
+            oracleConfessButton.MaxTimer = Oracle.cooldown;
+            medusaPetrifyButton.MaxTimer = Medusa.cooldown;
+            medusaPetrifyButton.EffectDuration = Medusa.delay;
+            archerShowWeaponButton.MaxTimer = 10f;
+            archerKillButton.MaxTimer = Archer.cooldown;
             // Already set the timer to the max, as the button is enabled during the game and not available at the start
             zoomOutButton.MaxTimer = 0f;
         }
@@ -225,7 +231,7 @@ namespace TownOfUs
                     }
                 },
                 () => { return Morphling.morphling != null && Morphling.morphling == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return (Morphling.currentTarget || Morphling.sampledTarget) && PlayerControl.LocalPlayer.CanMove && !Helpers.isActiveCamoComms() && !Helpers.MushroomSabotageActive() && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return (Morphling.currentTarget || Morphling.sampledTarget) && PlayerControl.LocalPlayer.CanMove && !Helpers.isActiveCamoComms() && !Helpers.MushroomSabotageActive(); },
                 () => { 
                     morphlingButton.Timer = morphlingButton.MaxTimer;
                     morphlingButton.Sprite = Morphling.getSampleSprite();
@@ -256,7 +262,7 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Camouflager.camouflager);
                 },
                 () => { return Camouflager.camouflager != null && Camouflager.camouflager == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return PlayerControl.LocalPlayer.CanMove && !Helpers.isActiveCamoComms() && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return PlayerControl.LocalPlayer.CanMove && !Helpers.isActiveCamoComms(); },
                 () => {
                     camouflagerButton.Timer = camouflagerButton.MaxTimer;
                     camouflagerButton.isEffectActive = false;
@@ -302,7 +308,7 @@ namespace TownOfUs
                     foreach (PlayerTask task in PlayerControl.LocalPlayer.myTasks.GetFastEnumerator())
                         if (task.TaskType == TaskTypes.FixLights || task.TaskType == TaskTypes.RestoreOxy || task.TaskType == TaskTypes.ResetReactor || task.TaskType == TaskTypes.ResetSeismic || task.TaskType == TaskTypes.FixComms || task.TaskType == TaskTypes.StopCharles)
                             sabotageActive = true;
-                    return sabotageActive && Engineer.remainingFixes > 0 && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                    return sabotageActive && Engineer.remainingFixes > 0 && PlayerControl.LocalPlayer.CanMove;
                 },
                 () => {},
                 Engineer.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.F
@@ -324,7 +330,7 @@ namespace TownOfUs
                     engineerDoorsButton.Timer = engineerDoorsButton.MaxTimer;
                 },
                 () => { return Engineer.engineer != null && Engineer.engineer == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return PlayerControl.LocalPlayer.CanMove; },
                 () => { engineerDoorsButton.Timer = engineerDoorsButton.MaxTimer; },
                 Engineer.getDoorButtonSprite(), CustomButton.ButtonPositions.upperRowLeft, __instance, KeyCode.Q
             );
@@ -374,7 +380,7 @@ namespace TownOfUs
                     Sheriff.currentTarget = null;
                 },
                 () => { return Sheriff.sheriff != null && Sheriff.sheriff == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Sheriff.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Sheriff.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { sheriffKillButton.Timer = sheriffKillButton.MaxTimer; },
                 __instance.KillButton.graphic.sprite, CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q
             );
@@ -391,7 +397,7 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Shifter.currentTarget);
                 },
                 () => { return Shifter.shifter != null && Shifter.shifter == PlayerControl.LocalPlayer && Shifter.futureShift == null && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Shifter.currentTarget && Shifter.futureShift == null && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Shifter.currentTarget && Shifter.futureShift == null && PlayerControl.LocalPlayer.CanMove; },
                 () => { shifterShiftButton.Timer = shifterShiftButton.MaxTimer; },
                 Shifter.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F
             );
@@ -408,7 +414,7 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Medic.currentTarget);
                 },
                 () => { return Medic.medic != null && Medic.medic == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return !Medic.usedShield && Medic.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return !Medic.usedShield && Medic.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { medicShieldButton.Timer = medicShieldButton.MaxTimer; },
                 Medic.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F
             );
@@ -445,7 +451,7 @@ namespace TownOfUs
                     Dracula.currentTarget = null;
                 },
                 () => { return Dracula.dracula != null && Dracula.dracula == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Dracula.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Dracula.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { draculaButton.Timer = draculaButton.MaxTimer; },
                 Dracula.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q
             );
@@ -459,8 +465,8 @@ namespace TownOfUs
                     Vampire.currentTarget = null;
                 },
                 () => { return Vampire.vampire != null && Vampire.vampire == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Vampire.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
-                () => { draculaButton.Timer = draculaButton.MaxTimer; },
+                () => { return Vampire.currentTarget && PlayerControl.LocalPlayer.CanMove; },
+                () => { vampireButton.Timer = vampireButton.MaxTimer; },
                 Dracula.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q
             );
 
@@ -519,7 +525,7 @@ namespace TownOfUs
                     }
                 },
                 () => { return Poisoner.poisoner != null && Poisoner.poisoner == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Poisoner.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Poisoner.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => {
                     poisonerButton.Timer = poisonerButton.MaxTimer;
                     poisonerButton.isEffectActive = false;
@@ -556,7 +562,7 @@ namespace TownOfUs
                     }
                 },
                 () => { return Scavenger.scavenger != null && Scavenger.scavenger == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return __instance.ReportButton.graphic.color == Palette.EnabledColor && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return __instance.ReportButton.graphic.color == Palette.EnabledColor && PlayerControl.LocalPlayer.CanMove; },
                 () => { scavengerEatButton.Timer = scavengerEatButton.MaxTimer; },
                 Scavenger.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.F
             );
@@ -583,7 +589,7 @@ namespace TownOfUs
                 () => { return Pursuer.pursuer != null && Pursuer.pursuer == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => {
                     if (pursuerButtonBlanksText != null) pursuerButtonBlanksText.text = $"{Pursuer.blanksNumber - Pursuer.blanks}";
-                    return Pursuer.blanksNumber > Pursuer.blanks && PlayerControl.LocalPlayer.CanMove && Pursuer.target != null && !HudManager.Instance.Chat.IsOpenOrOpening;
+                    return Pursuer.blanksNumber > Pursuer.blanks && PlayerControl.LocalPlayer.CanMove && Pursuer.target != null;
                 },
                 () => { pursuerButton.Timer = pursuerButton.MaxTimer; },
                 Pursuer.getTargetSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F
@@ -606,7 +612,7 @@ namespace TownOfUs
                 () => { return GuardianAngel.guardianAngel != null && GuardianAngel.guardianAngel == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => {
                     if (guardianAngelProtectButtonText != null) guardianAngelProtectButtonText.text = $"{GuardianAngel.remainingProtects}";
-                    return GuardianAngel.remainingProtects > 0 && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                    return GuardianAngel.remainingProtects > 0 && PlayerControl.LocalPlayer.CanMove;
                 },
                 () => {
                     guardianAngelProtectButton.Timer = guardianAngelProtectButton.MaxTimer;
@@ -634,7 +640,7 @@ namespace TownOfUs
                 () => { return Survivor.survivor != null && Survivor.survivor == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => {
                     if (survivorSafeguardButtonText != null) survivorSafeguardButtonText.text = $"{Survivor.remainingSafeguards}";
-                    return Survivor.remainingSafeguards > 0 && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                    return Survivor.remainingSafeguards > 0 && PlayerControl.LocalPlayer.CanMove;
                 },
                 () => {
                     survivorSafeguardButton.Timer = survivorSafeguardButton.MaxTimer;
@@ -660,7 +666,7 @@ namespace TownOfUs
                     fallenAngelKillButton.Timer = fallenAngelKillButton.MaxTimer;
                 },
                 () => { return FallenAngel.fallenAngel != null && FallenAngel.fallenAngel == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return FallenAngel.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return FallenAngel.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { fallenAngelKillButton.Timer = fallenAngelKillButton.MaxTimer; },
                 __instance.KillButton.graphic.sprite, CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q
             );
@@ -691,7 +697,7 @@ namespace TownOfUs
                     }
                 },
                 () => { return Amnesiac.amnesiac != null && Amnesiac.amnesiac == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return __instance.ReportButton.graphic.color == Palette.EnabledColor && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return __instance.ReportButton.graphic.color == Palette.EnabledColor && PlayerControl.LocalPlayer.CanMove; },
                 () => { amnesiacRememberButton.Timer = amnesiacRememberButton.MaxTimer; },
                 Amnesiac.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.F
             );
@@ -709,7 +715,7 @@ namespace TownOfUs
                 () => { return Investigator.investigator != null && Investigator.investigator == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => {
                     if (investigatorWatchButtonText != null) investigatorWatchButtonText.text = Investigator.watching == null ? "" : $"{Investigator.watching.Data.DefaultOutfit.PlayerName}";
-                    return Investigator.currentTarget && Investigator.watching == null && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; 
+                    return Investigator.currentTarget && Investigator.watching == null && PlayerControl.LocalPlayer.CanMove; 
                 },
                 () => {
                     Investigator.watching = null;
@@ -735,7 +741,7 @@ namespace TownOfUs
                 () => { return Veteran.veteran != null && Veteran.veteran == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => {
                     if (veteranAlertButtonText != null) veteranAlertButtonText.text = $"{Veteran.remainingAlerts}";
-                    return Veteran.remainingAlerts > 0 && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                    return Veteran.remainingAlerts > 0 && PlayerControl.LocalPlayer.CanMove;
                 },
                 () => {
                     veteranAlertButton.Timer = veteranAlertButton.MaxTimer;
@@ -761,7 +767,7 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Seer.currentTarget);
                 },
                 () => { return Seer.seer != null && Seer.seer == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Seer.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Seer.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { seerRevealButton.Timer = seerRevealButton.MaxTimer; },
                 Seer.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F
             );
@@ -793,7 +799,7 @@ namespace TownOfUs
                     }
                 },
                 () => { return Juggernaut.juggernaut != null && Juggernaut.juggernaut == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Juggernaut.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Juggernaut.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { juggernautKillButton.Timer = juggernautKillButton.MaxTimer; },
                 __instance.KillButton.graphic.sprite, CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q
             );
@@ -809,7 +815,7 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Swooper.swooper);
                 },
                 () => { return Swooper.swooper != null && Swooper.swooper == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return PlayerControl.LocalPlayer.CanMove; },
                 () => {
                     swooperSwoopButton.Timer = swooperSwoopButton.MaxTimer;
                     swooperSwoopButton.isEffectActive = false;
@@ -832,7 +838,7 @@ namespace TownOfUs
                     mercenaryShieldButton.Timer = mercenaryShieldButton.MaxTimer;
                 },
                 () => { return Mercenary.mercenary != null && Mercenary.mercenary == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Mercenary.shielded == null && Mercenary.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Mercenary.shielded == null && Mercenary.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { mercenaryShieldButton.Timer = mercenaryShieldButton.MaxTimer; },
                 Mercenary.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F
             );
@@ -849,7 +855,7 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Blackmailer.currentTarget);
                 },
                 () => { return Blackmailer.blackmailer != null && Blackmailer.blackmailer == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Blackmailer.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Blackmailer.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => {
                     blackmailerButton.Timer = blackmailerButton.MaxTimer;
                 },
@@ -889,7 +895,7 @@ namespace TownOfUs
                     }
                 },
                 () => { return Escapist.escapist != null && Escapist.escapist == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return PlayerControl.LocalPlayer.CanMove; },
                 () => {
                     if (Escapist.markStaysOverMeeting) {
                         escapistButton.Timer = 10f;
@@ -961,7 +967,7 @@ namespace TownOfUs
                     minerPlaceVentButton.Timer = minerPlaceVentButton.MaxTimer;
                 },
                 () => { return Miner.miner != null && Miner.miner == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return PlayerControl.LocalPlayer.CanMove && !MinerVent.hasLimitReached() && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return PlayerControl.LocalPlayer.CanMove && !MinerVent.hasLimitReached(); },
                 () => { minerPlaceVentButton.Timer = minerPlaceVentButton.MaxTimer; },
                 Miner.getPlaceBoxButtonSprite(), CustomButton.ButtonPositions.upperRowLeft, __instance, KeyCode.F
             );
@@ -996,36 +1002,10 @@ namespace TownOfUs
                     }
                 },
                 () => { return Cleaner.cleaner != null && Cleaner.cleaner == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return __instance.ReportButton.graphic.color == Palette.EnabledColor && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return __instance.ReportButton.graphic.color == Palette.EnabledColor && PlayerControl.LocalPlayer.CanMove; },
                 () => { cleanerCleanButton.Timer = cleanerCleanButton.MaxTimer; },
                 Cleaner.getButtonSprite(), CustomButton.ButtonPositions.upperRowLeft, __instance, KeyCode.F
             );
-
-            // Trapper button
-            trapperButton = new CustomButton(
-                () => {
-                    Helpers.checkWatchFlash(Trapper.trapper);
-
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.PlaceTrap, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.placeTrap();
-
-                    trapperButton.Timer = trapperButton.MaxTimer;
-                },
-                () => { return Trapper.trapper != null && Trapper.trapper == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => {
-                    if (trapperChargesText != null) trapperChargesText.text = $"{Trapper.maxTraps}";
-                    return PlayerControl.LocalPlayer.CanMove && Trapper.maxTraps > 0 && !HudManager.Instance.Chat.IsOpenOrOpening;
-                },
-                () => { trapperButton.Timer = trapperButton.MaxTimer; },
-                Trapper.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F
-            );
-            // Trapper Charges
-            trapperChargesText = GameObject.Instantiate(trapperButton.actionButton.cooldownTimerText, trapperButton.actionButton.cooldownTimerText.transform.parent);
-            trapperChargesText.text = "";
-            trapperChargesText.enableWordWrapping = false;
-            trapperChargesText.transform.localScale = Vector3.one * 0.5f;
-            trapperChargesText.transform.localPosition += new Vector3(-0.05f, 0.7f, 0);
 
             // Button Barry
             buttonBarryButton = new CustomButton(
@@ -1040,7 +1020,7 @@ namespace TownOfUs
                     ButtonBarry.usedButton = true;
                 },
                 () => { return ButtonBarry.buttonBarry != null && ButtonBarry.buttonBarry == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return !ButtonBarry.usedButton && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;},
+                () => { return !ButtonBarry.usedButton && PlayerControl.LocalPlayer.CanMove;},
                 () => { buttonBarryButton.Timer = buttonBarryButton.MaxTimer; },
                 ButtonBarry.getButtonSprite(), new Vector3(0f, 1f, 0f), __instance, null, true
             );
@@ -1056,7 +1036,7 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Phantom.phantom);
                 },
                 () => { return Phantom.phantom != null && Phantom.phantom == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return PlayerControl.LocalPlayer.CanMove; },
                 () => {
                     phantomInvisButton.Timer = phantomInvisButton.MaxTimer;
                     phantomInvisButton.isEffectActive = false;
@@ -1082,7 +1062,7 @@ namespace TownOfUs
                         if (task.TaskType == TaskTypes.FixLights || task.TaskType == TaskTypes.RestoreOxy || task.TaskType == TaskTypes.ResetReactor || task.TaskType == TaskTypes.ResetSeismic || task.TaskType == TaskTypes.FixComms || task.TaskType == TaskTypes.StopCharles)
                             sabotageActive = true;
 
-                    return !sabotageActive && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                    return !sabotageActive && PlayerControl.LocalPlayer.CanMove;
                 },
                 () => {
                     grenadierFlashButton.Timer = grenadierFlashButton.MaxTimer;
@@ -1108,7 +1088,7 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Doomsayer.currentTarget);
                 },
                 () => { return Doomsayer.doomsayer != null && Doomsayer.doomsayer == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Doomsayer.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Doomsayer.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { doomsayerObserveButton.Timer = doomsayerObserveButton.MaxTimer; },
                 Doomsayer.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.F,
                 true, 0f, () =>
@@ -1137,37 +1117,6 @@ namespace TownOfUs
                 }
             );
 
-            // Tracker Track
-            trackerTrackButton = new CustomButton(
-                () => {
-                    if (Helpers.checkAndDoVetKill(Tracker.currentTarget)) return;
-                    if (Helpers.checkAndDoVHVetKill(Tracker.currentTarget)) return;
-
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.TrackerUseTrack, SendOption.Reliable, -1);
-                    writer.Write(Tracker.currentTarget.PlayerId);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.trackerUseTrack(Tracker.currentTarget.PlayerId);
-                    trackerTrackButton.Timer = trackerTrackButton.MaxTimer;
-
-                    Helpers.checkWatchFlash(Tracker.currentTarget);
-                },
-                () => { return Tracker.tracker != null && Tracker.tracker == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => {
-                    if (trackerTrackButtonText != null) trackerTrackButtonText.text = $"{Tracker.maxTracksPerRound - Tracker.tracksInRound}";
-                    return Tracker.currentTarget && Tracker.tracksInRound < Tracker.maxTracksPerRound && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
-                },
-                () => {
-                    trackerTrackButton.Timer = trackerTrackButton.MaxTimer;
-                },
-                Tracker.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F
-            );
-            // Tracker tracks
-            trackerTrackButtonText = GameObject.Instantiate(trackerTrackButton.actionButton.cooldownTimerText, trackerTrackButton.actionButton.cooldownTimerText.transform.parent);
-            trackerTrackButtonText.text = "";
-            trackerTrackButtonText.enableWordWrapping = false;
-            trackerTrackButtonText.transform.localScale = Vector3.one * 0.5f;
-            trackerTrackButtonText.transform.localPosition += new Vector3(-0.05f, 0.7f, 0);
-
             // Werewolf Rampage
             werewolfRampageButton = new CustomButton(
                 () => {
@@ -1178,7 +1127,7 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Werewolf.werewolf);
                 },
                 () => { return Werewolf.werewolf != null && Werewolf.werewolf == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return PlayerControl.LocalPlayer.CanMove; },
                 () => {
                     werewolfRampageButton.Timer = werewolfRampageButton.MaxTimer;
                     werewolfRampageButton.isEffectActive = false;
@@ -1197,7 +1146,7 @@ namespace TownOfUs
                     Werewolf.currentTarget = null;
                 },
                 () => { return Werewolf.werewolf != null && Werewolf.werewolf == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Werewolf.currentTarget && Werewolf.isRampageActive && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Werewolf.currentTarget && Werewolf.isRampageActive && PlayerControl.LocalPlayer.CanMove; },
                 () => { werewolfKillButton.Timer = werewolfKillButton.MaxTimer; },
                 __instance.KillButton.graphic.sprite, CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q
             );
@@ -1231,7 +1180,7 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Detective.currentTarget);
                 },
                 () => { return Detective.detective != null && Detective.detective == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Detective.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Detective.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { detectiveExamineButton.Timer = detectiveExamineButton.MaxTimer; },
                 Detective.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F
             );
@@ -1245,7 +1194,7 @@ namespace TownOfUs
                     Glitch.currentTarget = null;
                 },
                 () => { return Glitch.glitch != null && Glitch.glitch == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Glitch.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Glitch.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { glitchKillButton.Timer = glitchKillButton.MaxTimer; },
                 __instance.KillButton.graphic.sprite, CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q
             );
@@ -1285,7 +1234,7 @@ namespace TownOfUs
                     }                    
                 },
                 () => { return Glitch.glitch != null && Glitch.glitch == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead;},
-                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return PlayerControl.LocalPlayer.CanMove; },
                 () => {
                     glitchMimicButton.Timer = glitchMimicButton.MaxTimer;
                     glitchMimicButton.isEffectActive = false;
@@ -1310,7 +1259,7 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Glitch.currentTarget);
                 },
                 () => { return Glitch.glitch != null && Glitch.glitch == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Glitch.currentTarget && Glitch.hackedPlayer == null && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return Glitch.currentTarget && Glitch.hackedPlayer == null && PlayerControl.LocalPlayer.CanMove; },
                 () => {
                     glichHackButton.Timer = glichHackButton.MaxTimer;
                     glichHackButton.isEffectActive = false;
@@ -1335,7 +1284,7 @@ namespace TownOfUs
                     if (Venerer.numberOfKills == 1) venererAbilityButton.Sprite = Venerer.getcamoButton();
                     if (Venerer.numberOfKills == 2) venererAbilityButton.Sprite = Venerer.getspeedButton();
                     if (Venerer.numberOfKills >= 3) venererAbilityButton.Sprite = Venerer.getfreezeButton();
-                    return Venerer.numberOfKills > 0 && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                    return Venerer.numberOfKills > 0 && PlayerControl.LocalPlayer.CanMove;
                 },
                 () => {
                     venererAbilityButton.Timer = venererAbilityButton.MaxTimer;
@@ -1356,29 +1305,9 @@ namespace TownOfUs
                     Helpers.checkWatchFlash(Disperser.disperser);
                 },
                 () => { return Disperser.disperser != null && Disperser.disperser == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return !Disperser.isButtonUsed && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return !Disperser.isButtonUsed && PlayerControl.LocalPlayer.CanMove; },
                 () => {},
                 Disperser.getButtonSprite(), new Vector3(0, 1f, 0), __instance, null, true
-            );
-
-            // Oracle Confess
-            oracleConfessButton = new CustomButton(
-                () => {
-                    if (Helpers.checkAndDoVetKill(Oracle.currentTarget)) return;
-                    if (Helpers.checkAndDoVHVetKill(Oracle.currentTarget)) return;
-
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.OracleConfess, SendOption.Reliable, -1);
-                    writer.Write(Oracle.currentTarget.PlayerId);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.oracleSetConfessor(Oracle.currentTarget.PlayerId);
-                    oracleConfessButton.Timer = oracleConfessButton.MaxTimer;
-
-                    Helpers.checkWatchFlash(Oracle.currentTarget);
-                },
-                () => { return Oracle.oracle != null && Oracle.oracle == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return Oracle.currentTarget && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
-                () => { oracleConfessButton.Timer = oracleConfessButton.MaxTimer; },
-                Oracle.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F
             );
 
             // Bomber Bomb
@@ -1393,7 +1322,7 @@ namespace TownOfUs
                     bomberButton.Sprite = Bomber.getDetonateButtonSprite();
                 },
                 () => { return Bomber.bomber != null && Bomber.bomber == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return PlayerControl.LocalPlayer.CanMove; },
                 () => {
                     Bomber.Bomb.ClearBomb();
                     bomberButton.Sprite = Bomber.getPlantButtonSprite();
@@ -1402,18 +1331,21 @@ namespace TownOfUs
                     bomberButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
                 },
                 Bomber.getPlantButtonSprite(), CustomButton.ButtonPositions.upperRowLeft, __instance, KeyCode.F,
-                true, Bomber.delay, () => {
+                true, Bomber.delay, () =>
+                {
                     bomberButton.Sprite = Bomber.getPlantButtonSprite();
 
                     var playersToDie = Helpers.GetClosestPlayers(Bomber.DetonatePoint, Bomber.radius, false);
                     playersToDie = Helpers.Shuffle(playersToDie);
                     while (playersToDie.Count > Bomber.maxKills) playersToDie.Remove(playersToDie[playersToDie.Count - 1]);
-                    foreach (PlayerControl player in playersToDie) {
+                    foreach (PlayerControl player in playersToDie)
+                    {
                         Helpers.checkMurderAttemptAndKill(Bomber.bomber, player, showAnimation: false, ignoreIfKillerIsDead: true);
                     }
 
                     bomberButton.Timer = bomberButton.MaxTimer;
                     PlayerControl.LocalPlayer.killTimer = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown;
+                    Bomber.Bomb.ClearBomb();
                 }
             );
 
@@ -1442,7 +1374,7 @@ namespace TownOfUs
                 () => { return VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => {
                     if (vampireHunterStakeButtonText != null) vampireHunterStakeButtonText.text = $"{VampireHunter.maxFailedStakes - VampireHunter.usedStakes}";
-                    return VampireHunter.currentTarget && VampireHunter.canStake && VampireHunter.usedStakes < VampireHunter.maxFailedStakes && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                    return VampireHunter.currentTarget && VampireHunter.canStake && VampireHunter.usedStakes < VampireHunter.maxFailedStakes && PlayerControl.LocalPlayer.CanMove;
                 },
                 () => { vampireHunterStakeButton.Timer = vampireHunterStakeButton.MaxTimer; },
                 VampireHunter.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q
@@ -1465,7 +1397,7 @@ namespace TownOfUs
                 () => { return VampireHunter.veteran != null && VampireHunter.veteran == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => {
                     if (vhVeteranAlertButtonText != null) vhVeteranAlertButtonText.text = $"{VampireHunter.remainingAlerts}";
-                    return VampireHunter.remainingAlerts > 0 && PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening;
+                    return VampireHunter.remainingAlerts > 0 && PlayerControl.LocalPlayer.CanMove;
                 },
                 () => {
                     vhVeteranAlertButton.Timer = vhVeteranAlertButton.MaxTimer;
@@ -1491,7 +1423,7 @@ namespace TownOfUs
                     RPCProcedure.timeLordRewindTime();
                 },
                 () => { return TimeLord.timeLord != null && TimeLord.timeLord == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return PlayerControl.LocalPlayer.CanMove; },
                 () =>
                 {
                     timeLordRewindTimeButton.Timer = timeLordRewindTimeButton.MaxTimer;
@@ -1511,7 +1443,7 @@ namespace TownOfUs
                     RPCProcedure.timeLordShield();
                 },
                 () => { return TimeLord.timeLord != null && TimeLord.timeLord == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
-                () => { return PlayerControl.LocalPlayer.CanMove && !HudManager.Instance.Chat.IsOpenOrOpening; },
+                () => { return PlayerControl.LocalPlayer.CanMove; },
                 () =>
                 {
                     timeLordShieldButton.Timer = timeLordShieldButton.MaxTimer;
@@ -1520,6 +1452,311 @@ namespace TownOfUs
                 },
                 TimeLord.getTimeShieldButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F,
                 true, TimeLord.shieldDuration, () => { timeLordShieldButton.Timer = timeLordShieldButton.MaxTimer; }
+            );
+
+            // Oracle confess
+            oracleConfessButton = new CustomButton(
+                () =>
+                {
+                    if (Helpers.checkAndDoVetKill(Oracle.currentTarget)) return;
+                    if (Helpers.checkAndDoVHVetKill(Oracle.currentTarget)) return;
+
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.OracleConfess, Hazel.SendOption.Reliable, -1);
+                    writer.Write(Oracle.currentTarget.PlayerId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.oracleConfess(Oracle.currentTarget.PlayerId);
+
+                    Oracle.investigated = true;
+                    Oracle.currentTarget = null;
+                    oracleConfessButton.Timer = oracleConfessButton.MaxTimer;
+
+                    Helpers.checkWatchFlash(Oracle.currentTarget);
+                },
+                () => { return Oracle.oracle != null && Oracle.oracle == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return Oracle.currentTarget && !Oracle.investigated && PlayerControl.LocalPlayer.CanMove; },
+                () => { oracleConfessButton.Timer = oracleConfessButton.MaxTimer; },
+                Oracle.getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, __instance, KeyCode.F,
+                true, 0f, () => { oracleConfessButton.Timer = oracleConfessButton.MaxTimer; }
+            );
+
+            // Medusa Petrify
+            medusaPetrifyButton = new CustomButton(
+                () =>
+                {
+                    if (Medusa.currentTarget != null)
+                    {
+                        Medusa.petrified = Medusa.currentTarget;
+                        medusaPetrifyButton.HasEffect = true;
+                    }
+                },
+                () => { return Medusa.medusa != null && Medusa.medusa == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer.CanMove && Medusa.currentTarget; },
+                () =>
+                {
+                    Medusa.petrified = null;
+                    medusaPetrifyButton.isEffectActive = false;
+                    medusaPetrifyButton.Timer = medusaPetrifyButton.MaxTimer;
+                    medusaPetrifyButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
+                },
+                Medusa.getButtonSprite(), CustomButton.ButtonPositions.upperRowLeft, __instance, KeyCode.F,
+                true, Medusa.duration, () =>
+                {
+                    if (Medusa.petrified != null && !Medusa.petrified.Data.IsDead) {
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.MedusaPetrify, Hazel.SendOption.Reliable, -1);
+                        writer.Write(Medusa.petrified.PlayerId);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.medusaPetrify(Medusa.petrified.PlayerId);
+                        Medusa.petrified = null;
+                    }
+                    medusaPetrifyButton.Timer = medusaPetrifyButton.MaxTimer;
+                }
+            );
+
+            // Archer ShowWeapong
+            archerShowWeaponButton = new CustomButton(
+                () => {
+
+                    Archer.weaponDuration = 0;
+                    archerShowWeaponButton.Timer = 2f;
+                    Archer.weaponEquiped = !Archer.weaponEquiped;
+                    if (Archer.bow != null) {
+                        Archer.bow.gameObject.SetActive(Archer.weaponEquiped);
+                    }
+
+                },
+                () => { return Archer.archer != null && Archer.archer == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => {
+                    if (Archer.bow != null) {
+                        var targetPosition = Archer.archer.transform.position + new Vector3(0.8f * (float)Math.Cos(Archer.mouseArcherAngle), 0.8f * (float)Math.Sin(Archer.mouseArcherAngle));
+                        Archer.bow.transform.position += (targetPosition - Archer.bow.transform.position) * 0.4f;
+                        Archer.bow.GetComponent<SpriteRenderer>().transform.eulerAngles = new Vector3(0f, 0f, (float)(Archer.mouseArcherAngle * 360f / Math.PI / 2f));
+                        if (Math.Cos(Archer.mouseArcherAngle) < 0.0) {
+                            if (Archer.bow.GetComponent<SpriteRenderer>().transform.localScale.y > 0)
+                                Archer.bow.GetComponent<SpriteRenderer>().transform.localScale = new Vector3(1f, -1f);
+                        }
+                        else {
+                            if (Archer.bow.GetComponent<SpriteRenderer>().transform.localScale.y < 0)
+                                Archer.bow.GetComponent<SpriteRenderer>().transform.localScale = new Vector3(1f, 1f);
+                        }
+
+                        if (Archer.weaponEquiped) {
+                            archerShowWeaponButton.actionButton.graphic.sprite = Archer.getHideBowButtonSprite();
+                            if (Archer.archer.inVent)
+                                Archer.bow.active = false;
+                            else
+                                Archer.bow.active = true;
+                        }
+                        else {
+                            archerShowWeaponButton.actionButton.graphic.sprite = Archer.getPickBowButtonSprite();
+                        }
+
+                    }
+                    return PlayerControl.LocalPlayer.CanMove;
+                },
+                () => {
+                    Archer.weaponDuration = 0;
+                    Archer.weaponEquiped = false;
+                    if (Archer.bow != null) {
+                        Archer.bow.gameObject.SetActive(Archer.weaponEquiped);
+                    }
+                    archerShowWeaponButton.Timer = archerShowWeaponButton.MaxTimer;
+                },
+                Archer.getPickBowButtonSprite(),
+                new Vector3(-3f, -0.06f, 0),
+                __instance,
+                KeyCode.F
+            );
+
+            // Archer Kill
+            archerKillButton = new CustomButton(
+                () => {
+                    PlayerControl target = Archer.GetShootPlayer(Archer.shotSize * 0.2f, Archer.shotRange);
+
+                    if (target != null) {
+                        MurderAttemptResult murderAttemptResult = Helpers.checkMuderAttempt(Archer.archer, target);
+                        if (murderAttemptResult == MurderAttemptResult.BlankKill)
+                        {
+                            archerKillButton.Timer = archerKillButton.MaxTimer;
+                            target = null;
+                            return;
+                        }
+                        else if (murderAttemptResult == MurderAttemptResult.SuppressKill)
+                        {
+                            return;
+                        }
+                        else if (murderAttemptResult == MurderAttemptResult.ReverseKill)
+                        {
+                            Helpers.checkMurderAttemptAndKill(target, Archer.archer);
+                            return;
+                        }
+
+                        if (murderAttemptResult == MurderAttemptResult.PerformKill)
+                        {
+
+                            MessageWriter killWriter = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.UncheckedMurderPlayer, Hazel.SendOption.Reliable, -1);
+                            killWriter.Write(Archer.archer.Data.PlayerId);
+                            killWriter.Write(target.PlayerId);
+                            killWriter.Write(0);
+                            AmongUsClient.Instance.FinishRpcImmediately(killWriter);
+                            RPCProcedure.uncheckedMurderPlayer(Archer.archer.Data.PlayerId, target.PlayerId, 0);
+                        }
+                    }
+                    else {
+                        target = PlayerControl.LocalPlayer;
+                    }
+
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShowArcherNotification, Hazel.SendOption.Reliable, -1);
+                    writer.Write(target.PlayerId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.showArcherNotification(target.PlayerId);
+
+                    Archer.weaponDuration = 0;
+                    Archer.weaponEquiped = false;
+                    Archer.bow.gameObject.SetActive(false);
+                    archerKillButton.Timer = archerKillButton.MaxTimer;
+                    archerShowWeaponButton.Timer = archerShowWeaponButton.MaxTimer;
+                    target = null;
+                },
+                () => { return Archer.archer != null && Archer.archer == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => {
+                    if (Archer.weaponEquiped) {
+
+                        if (Archer.bow == null) {
+                            Archer.bow = new GameObject("Weapon");
+                            var renderer = Archer.bow.AddComponent<SpriteRenderer>();
+
+                            renderer.sprite = Archer.getBowSprite();
+                            renderer.transform.parent = Archer.archer.transform;
+                            renderer.color = new Color(1, 1, 1, 1);
+                            renderer.transform.position = new Vector3(0, 0, -30f);
+                        }
+
+                        if (Archer.Guides.Count == 0) {
+                            foreach (PlayerControl player in PlayerControl.AllPlayerControls) {
+                                if (player.PlayerId == PlayerControl.LocalPlayer.PlayerId) continue;
+
+                                var obj = new GameObject("WeaponGuide");
+                                var renderer = obj.AddComponent<SpriteRenderer>();
+
+                                renderer.sprite = Archer.getGuideSprite();
+                                renderer.transform.parent = HudManager.Instance.transform;
+                                renderer.color = new Color(0, 0, 0, 0);
+                                renderer.transform.position = new Vector3(0, 0, -30f);
+                                Archer.Guides[player.PlayerId] = renderer;
+
+                            }
+                        }
+
+                        Archer.weaponDuration += Time.deltaTime;
+
+                        float r = 0f, g = 0f, b = 0f, a = 0f;
+
+                        if (Archer.weaponDuration > Archer.AimAssistDelay) {
+                            float value = 1f - (Archer.weaponDuration - Archer.AimAssistDelay);
+                            if (value > 0) r = g = b = a = value;
+                            r = 0.2f + 0.8f * r;
+                            g = 0.4f + 0.6f * g;
+                            g = 0.8f + 0.2f * b;
+                            a = 0.6f + 0.4f * a;
+
+                            if (Archer.weaponDuration > Archer.AimAssistDelay + Archer.AimAssistDuration) {
+                                value = Archer.weaponDuration - Archer.AimAssistDelay - Archer.AimAssistDuration;
+                                if (value < 0) value = 0f;
+                                a *= 1f - value;
+                            }
+                        }
+
+                        Color color = new Color(r, g, b, a);
+
+                        foreach (var guide in Archer.Guides) {
+                            guide.Value.color = Color.clear;
+                        }
+
+                        foreach (PlayerControl player in PlayerControl.AllPlayerControls) {
+                            if (player.Data.IsDead) continue;
+                            if (!Archer.Guides.ContainsKey(player.PlayerId)) continue;
+
+                            if (GameOptionsManager.Instance.currentGameOptions.MapId == 5) {
+                                if ((Archer.archer.transform.position.y > 0 && player.transform.position.y > 0) || (Archer.archer.transform.position.y < 0 && player.transform.position.y < 0)) {
+                                    Archer.Guides[player.PlayerId].color = color;
+                                    Vector3 dir = player.transform.position - PlayerControl.LocalPlayer.transform.position;
+                                    float angle = Mathf.Atan2(dir.y, dir.x);
+
+                                    float oldAng = Archer.Guides[player.PlayerId].transform.eulerAngles.z * (float)Math.PI / 180f;
+                                    Vector2 newPos = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                                    Vector2 oldPos = new Vector2(Mathf.Cos(oldAng), Mathf.Sin(oldAng));
+                                    newPos = oldPos + (newPos - oldPos) * 0.15f;
+
+                                    angle = Mathf.Atan2(newPos.y, newPos.x);
+                                    Archer.Guides[player.PlayerId].transform.eulerAngles = new Vector3(0, 0, angle * 180f / (float)Math.PI);
+                                    Archer.Guides[player.PlayerId].transform.localPosition = new Vector3(Mathf.Cos(angle) * 2f, Mathf.Sin(angle) * 2f, -30f);
+                                }
+                            }
+                            else {
+                                Archer.Guides[player.PlayerId].color = color;
+                                Vector3 dir = player.transform.position - PlayerControl.LocalPlayer.transform.position;
+                                float angle = Mathf.Atan2(dir.y, dir.x);
+
+                                float oldAng = Archer.Guides[player.PlayerId].transform.eulerAngles.z * (float)Math.PI / 180f;
+                                Vector2 newPos = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                                Vector2 oldPos = new Vector2(Mathf.Cos(oldAng), Mathf.Sin(oldAng));
+                                newPos = oldPos + (newPos - oldPos) * 0.15f;
+
+                                angle = Mathf.Atan2(newPos.y, newPos.x);
+                                Archer.Guides[player.PlayerId].transform.eulerAngles = new Vector3(0, 0, angle * 180f / (float)Math.PI);
+                                Archer.Guides[player.PlayerId].transform.localPosition = new Vector3(Mathf.Cos(angle) * 2f, Mathf.Sin(angle) * 2f, -30f);
+                            }
+                        }
+
+                        foreach (var deadBody in UnityEngine.Object.FindObjectsOfType<DeadBody>()) {
+                            if (GameOptionsManager.Instance.currentGameOptions.MapId == 5) {
+                                if ((Archer.archer.transform.position.y > 0 && deadBody.transform.position.y > 0) || (Archer.archer.transform.position.y < 0 && deadBody.transform.position.y < 0)) {
+                                    Archer.Guides[deadBody.ParentId].color = color;
+                                    Vector3 dir = deadBody.transform.position - PlayerControl.LocalPlayer.transform.position;
+                                    float angle = Mathf.Atan2(dir.y, dir.x);
+
+                                    float oldAng = Archer.Guides[deadBody.ParentId].transform.eulerAngles.z * (float)Math.PI / 180f;
+                                    Vector2 newPos = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                                    Vector2 oldPos = new Vector2(Mathf.Cos(oldAng), Mathf.Sin(oldAng));
+                                    newPos = oldPos + (newPos - oldPos) * 0.15f;
+
+                                    angle = Mathf.Atan2(newPos.y, newPos.x);
+                                    Archer.Guides[deadBody.ParentId].transform.eulerAngles = new Vector3(0, 0, angle * 180f / (float)Math.PI);
+                                    Archer.Guides[deadBody.ParentId].transform.localPosition = new Vector3(Mathf.Cos(angle) * 2f, Mathf.Sin(angle) * 2f, -30f);
+                                }
+                            }
+                            else {
+                                Archer.Guides[deadBody.ParentId].color = color;
+                                Vector3 dir = deadBody.transform.position - PlayerControl.LocalPlayer.transform.position;
+                                float angle = Mathf.Atan2(dir.y, dir.x);
+
+                                float oldAng = Archer.Guides[deadBody.ParentId].transform.eulerAngles.z * (float)Math.PI / 180f;
+                                Vector2 newPos = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                                Vector2 oldPos = new Vector2(Mathf.Cos(oldAng), Mathf.Sin(oldAng));
+                                newPos = oldPos + (newPos - oldPos) * 0.15f;
+
+                                angle = Mathf.Atan2(newPos.y, newPos.x);
+                                Archer.Guides[deadBody.ParentId].transform.eulerAngles = new Vector3(0, 0, angle * 180f / (float)Math.PI);
+                                Archer.Guides[deadBody.ParentId].transform.localPosition = new Vector3(Mathf.Cos(angle) * 2f, Mathf.Sin(angle) * 2f, -30f);
+                            }
+                        }
+
+                        Vector3 mouseDirection = Input.mousePosition - new Vector3(Screen.width / 2, Screen.height / 2);
+                        Archer.mouseArcherAngle = Mathf.Atan2(mouseDirection.y, mouseDirection.x);
+
+                    }
+                    else {
+                        foreach (var guide in Archer.Guides) {
+                            guide.Value.color *= 0.7f;
+                        }
+                    }
+                    return Archer.weaponEquiped && PlayerControl.LocalPlayer.CanMove;
+                },
+                () => { archerKillButton.Timer = archerKillButton.MaxTimer; },
+                __instance.KillButton.graphic.sprite,
+                new Vector3(-1f, 1f, 0),
+                __instance,
+                KeyCode.Mouse1
             );
 
             // Zoom Button

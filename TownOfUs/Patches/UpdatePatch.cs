@@ -239,17 +239,6 @@ namespace TownOfUs.Patches {
                 }
             }
 
-            // Highlight confessor if oracle is dead
-            if (Oracle.confessor != null && (Oracle.oracle.Data.IsDead || Oracle.oracle.Data.Disconnected)) {
-                if (MeetingHud.Instance != null)
-                    foreach (PlayerVoteArea player in MeetingHud.Instance.playerStates)
-                        if (player.TargetPlayerId == Oracle.confessor.PlayerId) {
-                            if (Oracle.revealedFaction == FactionId.Crewmate) player.NameText.text = $"<color=#00FFFFFF>({Oracle.accuracy * 10}% Crew) </color>" + player.NameText.text;
-                            else if (Oracle.revealedFaction == FactionId.Impostor) player.NameText.text = $"<color=#FF0000FF>({Oracle.accuracy * 10}% Imp) </color>" + player.NameText.text;
-                            else player.NameText.text = $"<color=#808080FF>({Oracle.accuracy * 10}% Neut) </color>" + player.NameText.text;
-                        }
-            }
-
             // Display lighter / darker color for all alive players
             if (PlayerControl.LocalPlayer != null && MeetingHud.Instance != null && TOUMapOptions.showLighterDarker) {
                 foreach (PlayerVoteArea player in MeetingHud.Instance.playerStates) {
@@ -275,11 +264,30 @@ namespace TownOfUs.Patches {
             }
         }
 
-        static void timerUpdate() {
+        static void oracleUpdate(MeetingHud __instance)
+        {
+            foreach (var player in PlayerControl.AllPlayerControls)
+            {
+                foreach (var state in __instance.playerStates)
+                {
+                    if (player.PlayerId != state.TargetPlayerId) continue;
+                    if (player == Oracle.confessor)
+                    {
+                        if (Oracle.revealedFaction == FactionId.Crewmate) state.NameText.text = state.NameText.text + $" <size=60%>(<color=#00FFFFFF>{Oracle.accuracy}% Crew</color>) </size>";
+                        else if (Oracle.revealedFaction == FactionId.Impostor) state.NameText.text = state.NameText.text + $" <size=60%>(<color=#FF0000FF>{Oracle.accuracy}% Imp</color>) </size>";
+                        else state.NameText.text = state.NameText.text + $" <size=60%>(<color=#808080FF>{Oracle.accuracy}% Neut</color>) </size>";
+                    }
+                }
+            }
+        }
+
+        static void timerUpdate()
+        {
             var dt = Time.deltaTime;
             Swooper.invisibleTimer -= dt;
             Phantom.ghostTimer -= dt;
             Grenadier.flashTimer -= dt;
+            Medusa.messageTimer -= dt;
         }
 
         static void updateImpostorKillButton(HudManager __instance) {
@@ -290,6 +298,8 @@ namespace TownOfUs.Patches {
             }
             bool enabled = !PlayerControl.LocalPlayer.Data.IsDead;
             if (Poisoner.poisoner != null && Poisoner.poisoner == PlayerControl.LocalPlayer)
+                enabled = false;
+            else if (Archer.archer != null && PlayerControl.LocalPlayer == Archer.archer)
                 enabled = false;
             
             if (enabled) __instance.KillButton.Show();
@@ -333,6 +343,7 @@ namespace TownOfUs.Patches {
             updateImpostorKillButton(__instance);
             // Timer updates
             timerUpdate();
+            if (Oracle.oracle != null && Oracle.oracle.Data.IsDead && Oracle.confessor != null) oracleUpdate(MeetingHud.Instance);
 
             // Report, Use and Vent Button Disabling
             updateReportButton(__instance);

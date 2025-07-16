@@ -107,7 +107,7 @@ namespace TownOfUs.Patches {
         }
 
         static void impostorSetTarget() {
-            if (!PlayerControl.LocalPlayer.Data.Role.IsImpostor ||!PlayerControl.LocalPlayer.CanMove || PlayerControl.LocalPlayer.Data.IsDead) { // !isImpostor || !canMove || isDead
+            if (!PlayerControl.LocalPlayer.Data.Role.IsImpostor || Archer.archer != null && PlayerControl.LocalPlayer == Archer.archer ||!PlayerControl.LocalPlayer.CanMove || PlayerControl.LocalPlayer.Data.IsDead) { // !isImpostor || !canMove || isDead
                 FastDestroyableSingleton<HudManager>.Instance.KillButton.SetTarget(null);
                 return;
             }
@@ -607,12 +607,6 @@ namespace TownOfUs.Patches {
             }
         }
 
-        static void trackerSetTarget() {
-            if (Tracker.tracker == null || Tracker.tracker != PlayerControl.LocalPlayer) return;
-            Tracker.currentTarget = setTarget(untargetablePlayers: Tracker.trackedPlayers);
-            setPlayerOutline(Tracker.currentTarget, Tracker.color);
-        }
-
         static void werewolfSetTarget() {
             if (Werewolf.werewolf == null || Werewolf.werewolf != PlayerControl.LocalPlayer) return;
             Werewolf.currentTarget = setTarget();
@@ -697,12 +691,6 @@ namespace TownOfUs.Patches {
             }
         }
 
-        static void oracleSetTarget() {
-            if (Oracle.oracle == null || Oracle.oracle != PlayerControl.LocalPlayer) return;
-            Oracle.currentTarget = setTarget(untargetablePlayers: new List<PlayerControl>() { Oracle.confessor });
-            setPlayerOutline(Oracle.currentTarget, Oracle.color);
-        }
-
         static void vampireHunterSetTarget() {
             if (VampireHunter.vampireHunter == null || VampireHunter.vampireHunter != PlayerControl.LocalPlayer) return;
             VampireHunter.currentTarget = setTarget();
@@ -756,6 +744,20 @@ namespace TownOfUs.Patches {
                 while (localPlayerPositions.Count >= Mathf.Round(TimeLord.rewindTime / Time.fixedDeltaTime)) localPlayerPositions.RemoveAt(localPlayerPositions.Count - 1);
                 localPlayerPositions.Insert(0, new Tuple<Vector3, bool>(PlayerControl.LocalPlayer.transform.position, PlayerControl.LocalPlayer.CanMove)); // CanMove = CanMove
             }
+        }
+
+        static void oracleSetTarget()
+        {
+            if (Oracle.oracle == null || Oracle.oracle != PlayerControl.LocalPlayer) return;
+            Oracle.currentTarget = setTarget();
+            setPlayerOutline(Oracle.currentTarget, Oracle.color);
+        }
+
+        static void medusaSetTarget()
+        {
+            if (Medusa.medusa == null || Medusa.medusa != PlayerControl.LocalPlayer) return;
+            Medusa.currentTarget = setTarget(true, false);
+            setPlayerOutline(Medusa.currentTarget, Medusa.color);
         }
 
         public static void Postfix(PlayerControl __instance)
@@ -830,8 +832,6 @@ namespace TownOfUs.Patches {
                 doomsayerSetTarget();
                 // Mystic
                 mysticUpdate();
-                // Tracker
-                trackerSetTarget();
                 // Werewolf
                 werewolfSetTarget();
                 // Detective
@@ -840,12 +840,14 @@ namespace TownOfUs.Patches {
                 glitchSetTarget();
                 // BountyHunter
                 bountyHunterUpdate();
-                // Oracle
-                oracleSetTarget();
                 // Vampire Hunter
                 vampireHunterSetTarget();
                 // Time Lord
                 bendTimeUpdate();
+                // Oracle
+                oracleSetTarget();
+                // Medusa
+                medusaSetTarget();
 
                 // -- MODIFIER--
                 // Bait
@@ -1027,9 +1029,58 @@ namespace TownOfUs.Patches {
             if (Venerer.venerer != null && Venerer.venerer == __instance)
                 Venerer.numberOfKills++;
 
+            // Set Underdog cooldown
+            if (Underdog.underdog != null && Underdog.underdog == __instance && Underdog.underdog == PlayerControl.LocalPlayer)
+            {
+                int aliveImpostors = PlayerControl.AllPlayerControls.ToArray().Count(x => x.Data.Role.IsImpostor && !x.Data.IsDead && !x.Data.Disconnected && x != null && x.Data != null);
+                if (aliveImpostors == 1)
+                {
+                    Underdog.underdog.SetKillTimer(GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown - Underdog.cooldownAddition);
+                }
+                else
+                {
+                    if (Underdog.increaseWhenImps) Underdog.underdog.SetKillTimer(GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown + Underdog.cooldownAddition);
+                }
+            }
+
+            // Set Teamist cooldown
+            if (Teamist.teamist != null && Teamist.teamist == __instance && Teamist.teamist == PlayerControl.LocalPlayer)
+            {
+                int aliveImpostors = PlayerControl.AllPlayerControls.ToArray().Count(x => x.Data.Role.IsImpostor && !x.Data.IsDead && !x.Data.Disconnected && x != null && x.Data != null);
+                if (aliveImpostors > 1)
+                {
+                    Teamist.teamist.SetKillTimer(GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown - Teamist.cooldownAddition);
+                }
+                else
+                {
+                    if (Teamist.increaseWhenAlone) Teamist.teamist.SetKillTimer(GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown + Teamist.cooldownAddition);
+                }
+            }
+
             // Cleaner Button Sync
             if (Cleaner.cleaner != null && PlayerControl.LocalPlayer == Cleaner.cleaner && __instance == Cleaner.cleaner && HudManagerStartPatch.cleanerCleanButton != null)
                 HudManagerStartPatch.cleanerCleanButton.Timer = Cleaner.cleaner.killTimer;
+                
+            // Bomber Button Sync
+            if (Bomber.bomber != null && PlayerControl.LocalPlayer == Bomber.bomber && __instance == Bomber.bomber && HudManagerStartPatch.cleanerCleanButton != null)
+                HudManagerStartPatch.bomberButton.Timer = Bomber.bomber.killTimer;
+
+            // Archer dead
+            if (Archer.archer != null && target == Archer.archer)
+            {
+                if (Archer.Guides.Count != 0)
+                {
+                    foreach (var guide in Archer.Guides)
+                    {
+                        guide.Value.color = Color.clear;
+                    }
+                }
+                Archer.weaponEquiped = false;
+                if (Archer.bow != null)
+                {
+                    Archer.bow.gameObject.SetActive(Archer.weaponEquiped);
+                }
+            }
             
             if (Mystic.mystic != null && (Mystic.mystic == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.isFlashedByGrenadier() || Helpers.shouldShowGhostInfo()) && target != Mystic.mystic)
                 Helpers.showFlash(Mystic.color, 1f, "Mystic Info: Someone died");
@@ -1050,6 +1101,24 @@ namespace TownOfUs.Patches {
             float multiplier = 1f;
             float addition = 0f;
             if (BountyHunter.bountyHunter != null && PlayerControl.LocalPlayer == BountyHunter.bountyHunter) addition = BountyHunter.punishmentTime;
+            if (Underdog.underdog != null && Underdog.underdog == __instance)
+            {
+                int aliveImpostors = PlayerControl.AllPlayerControls.ToArray().Count(x => x.Data.Role.IsImpostor && !x.Data.IsDead && !x.Data.Disconnected && x != null && x.Data != null);
+                if (aliveImpostors == 1) addition = -Underdog.cooldownAddition;
+                else
+                {
+                    if (Underdog.increaseWhenImps) addition = Underdog.cooldownAddition;
+                }
+            }
+            if (Teamist.teamist != null && Teamist.teamist == __instance)
+            {
+                int aliveImpostors = PlayerControl.AllPlayerControls.ToArray().Count(x => x.Data.Role.IsImpostor && !x.Data.IsDead && !x.Data.Disconnected && x != null && x.Data != null);
+                if (aliveImpostors > 1) addition = -Teamist.cooldownAddition;
+                else
+                {
+                    if (Teamist.increaseWhenAlone) addition = Teamist.cooldownAddition;
+                }
+            }
 
             __instance.killTimer = Mathf.Clamp(time, 0f, GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown * multiplier + addition);
             FastDestroyableSingleton<HudManager>.Instance.KillButton.SetCoolDown(__instance.killTimer, GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown * multiplier + addition);

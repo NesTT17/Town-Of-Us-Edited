@@ -683,65 +683,6 @@ namespace TownOfUs.Patches {
                     Coroutines.Start(Helpers.BlackmailShhh());
                 }
 
-                /* Add trapped Info */
-                
-                // into Trapper chat
-                if (Trapper.trapper != null && !Trapper.trapper.Data.IsDead && Trapper.trapper == PlayerControl.LocalPlayer) {
-                    string msg = "";
-                    if (Trapper.trappedPlayers.Count == 0) msg = "No players entered any of your traps";
-                    else if (Trapper.trappedPlayers.Count < Trapper.minPlayersInTrap) msg = "Not enough players triggered your traps";
-                    else {
-                        int evilPlayers = 0;
-                        foreach (PlayerControl trapped in Trapper.trappedPlayers) {
-                            if (trapped.Data.Role.IsImpostor || trapped.isNeutral() && Trapper.neutShowsEvil || trapped.isNeutralKiller() && Trapper.kneutShowsEvil)
-                                evilPlayers++;
-                        }
-                        msg = $"{evilPlayers} evil roles was caught in your traps";
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(msg)) {
-                        if (AmongUsClient.Instance.AmClient && FastDestroyableSingleton<HudManager>.Instance)
-                        {
-                            FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(PlayerControl.LocalPlayer, msg, false);
-                            // Ghost Info
-                            MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareGhostInfo, Hazel.SendOption.Reliable, -1);
-                            writer.Write(PlayerControl.LocalPlayer.PlayerId);
-                            writer.Write((byte)RPCProcedure.GhostInfoTypes.ChatInfo);
-                            writer.Write(msg);
-                            AmongUsClient.Instance.FinishRpcImmediately(writer);
-                        }
-                        if (msg.IndexOf("who", StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            FastDestroyableSingleton<UnityTelemetry>.Instance.SendWho();
-                        }
-                    }
-                }
-
-                // into Trapped chat
-                if (Trapper.trapper != null && PlayerControl.LocalPlayer != Trapper.trapper) {
-                    string msg = "";
-                    if (Trapper.trappedPlayers.Contains(PlayerControl.LocalPlayer)) {
-                        msg = "You have been caught in trap";
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(msg)) {
-                        if (AmongUsClient.Instance.AmClient && FastDestroyableSingleton<HudManager>.Instance)
-                        {
-                            FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(PlayerControl.LocalPlayer, msg, false);
-                            // Ghost Info
-                            MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareGhostInfo, Hazel.SendOption.Reliable, -1);
-                            writer.Write(PlayerControl.LocalPlayer.PlayerId);
-                            writer.Write((byte)RPCProcedure.GhostInfoTypes.ChatInfo);
-                            writer.Write(msg);
-                            AmongUsClient.Instance.FinishRpcImmediately(writer);
-                        }
-                        if (msg.IndexOf("who", StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            FastDestroyableSingleton<UnityTelemetry>.Instance.SendWho();
-                        }
-                    }
-                }
-
                 // Add examined Info into Detective chat
                 if (Detective.detective != null && !Detective.detective.Data.IsDead && Detective.detective == PlayerControl.LocalPlayer && Detective.examined != null && !Detective.examined.Data.IsDead) {
                     string msg = Detective.GetInfo(Detective.examined);
@@ -752,28 +693,6 @@ namespace TownOfUs.Patches {
                         {
                             FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(PlayerControl.LocalPlayer, $"{msg}", false);
 
-                            // Ghost Info
-                            MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareGhostInfo, Hazel.SendOption.Reliable, -1);
-                            writer.Write(PlayerControl.LocalPlayer.PlayerId);
-                            writer.Write((byte)RPCProcedure.GhostInfoTypes.ChatInfo);
-                            writer.Write(msg);
-                            AmongUsClient.Instance.FinishRpcImmediately(writer);
-                        }
-                        if (msg.IndexOf("who", StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            FastDestroyableSingleton<UnityTelemetry>.Instance.SendWho();
-                        }
-                    }
-                }
-
-                // Add confessor Info into Oracle chat
-                if (Oracle.oracle != null && !Oracle.oracle.Data.IsDead && Oracle.confessor != null && Oracle.oracle == PlayerControl.LocalPlayer) {
-                    string msg = Oracle.GetInfo(Oracle.confessor);
-                    
-                    if (!string.IsNullOrWhiteSpace(msg)) {
-                        if (AmongUsClient.Instance.AmClient && FastDestroyableSingleton<HudManager>.Instance)
-                        {
-                            FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(PlayerControl.LocalPlayer, msg, false);
                             // Ghost Info
                             MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareGhostInfo, Hazel.SendOption.Reliable, -1);
                             writer.Write(PlayerControl.LocalPlayer.PlayerId);
