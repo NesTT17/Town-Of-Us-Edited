@@ -1,6 +1,4 @@
-using AmongUs.GameOptions;
-using HarmonyLib;
-using InnerNet;
+using System.Linq;
 using UnityEngine;
 
 namespace TownOfUs.Patches;
@@ -21,7 +19,7 @@ public static class PlayerPhysicsFixedUpdate
 {
     public static void Postfix(PlayerPhysics __instance)
     {
-        bool shouldInvert = Drunk.drunk != null && PlayerControl.LocalPlayer == Drunk.drunk;
+        bool shouldInvert = PlayerControl.LocalPlayer.hasModifier(RoleId.Drunk);
         if (__instance.AmOwner &&
             AmongUsClient.Instance &&
             AmongUsClient.Instance.GameState == InnerNetClient.GameStates.Started &&
@@ -42,10 +40,10 @@ public static class SpeedPatch {
     }
 
     static void venererUpdate(CustomNetworkTransform __instance) {
-        if (Venerer.venerer != null) {
-            if (Venerer.venerer == __instance.gameObject.GetComponent<PlayerControl>() && !__instance.AmOwner && Venerer.numberOfKills >= 2 && Venerer.morphTimer > 0f)
+        if (Venerer.exists) {
+            if (__instance.gameObject.GetComponent<PlayerControl>().isRole(RoleId.Venerer) && !__instance.AmOwner && Venerer.getRole(__instance.gameObject.GetComponent<PlayerControl>()).numberOfKills >= 2 && Venerer.getRole(__instance.gameObject.GetComponent<PlayerControl>()).morphTimer > 0f)
                 __instance.body.velocity *= Venerer.speedMultiplier;
-            if (Venerer.venerer != __instance.gameObject.GetComponent<PlayerControl>() && !__instance.AmOwner && Venerer.numberOfKills >= 3 && Venerer.morphTimer > 0f)
+            if (!__instance.gameObject.GetComponent<PlayerControl>().isRole(RoleId.Venerer) && !__instance.AmOwner && Venerer.players.Any(x => x.player && x.numberOfKills >= 3 && x.morphTimer > 0f))
                 __instance.body.velocity *= Venerer.freezeMultiplier;
         }
     }

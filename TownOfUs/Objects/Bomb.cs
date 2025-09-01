@@ -6,8 +6,10 @@ namespace TownOfUs.Objects
     public class Bomb { public Transform transform; }
 
     [HarmonyPatch]
-    public static class BombExtensions {
-        public static void ClearBomb(this Bomb b) {
+    public static class BombExtensions
+    {
+        public static void ClearBomb(this Bomb b)
+        {
             Object.Destroy(b.transform.gameObject);
             b = null;
         }

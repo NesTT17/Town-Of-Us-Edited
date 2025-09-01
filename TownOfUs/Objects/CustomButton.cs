@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace TownOfUs.Objects
 {
-    public class CustomButton {
+    public class CustomButton
+    {
         public static List<CustomButton> buttons = new List<CustomButton>();
         public ActionButton actionButton;
         public GameObject actionButtonGameObject;
@@ -30,11 +30,14 @@ namespace TownOfUs.Objects
         public bool mirror;
         public KeyCode? hotkey;
         public string buttonText;
+        public bool isHandcuffed = false;
+        public bool shakeOnEnd = true;
         public bool Locked = false;
         public GameObject lockImg;
         private static readonly int Desat = Shader.PropertyToID("_Desat");
 
-        public static class ButtonPositions {
+        public static class ButtonPositions
+        {
             public static readonly Vector3 lowerRowRight = new Vector3(-2f, -0.06f, 0);  // Not usable for imps beacuse of new button positions!
             public static readonly Vector3 lowerRowCenter = new Vector3(-3f, -0.06f, 0);
             public static readonly Vector3 lowerRowLeft = new Vector3(-4f, -0.06f, 0);
@@ -44,7 +47,7 @@ namespace TownOfUs.Objects
             public static readonly Vector3 upperRowFarLeft = new Vector3(-3f, 1f, 0f);
         }
 
-        public CustomButton(Action OnClick, Func<bool> HasButton, Func<bool> CouldUse, Action OnMeetingEnds, Sprite Sprite, Vector3 PositionOffset, HudManager hudManager, KeyCode? hotkey, bool HasEffect, float EffectDuration, Action OnEffectEnds, bool mirror = false, string buttonText = "")
+        public CustomButton(Action OnClick, Func<bool> HasButton, Func<bool> CouldUse, Action OnMeetingEnds, Sprite Sprite, Vector3 PositionOffset, HudManager hudManager, KeyCode? hotkey, bool HasEffect, float EffectDuration, Action OnEffectEnds, bool mirror = false, string buttonText = "", bool shakeOnEnd = true)
         {
             this.hudManager = hudManager;
             this.OnClick = OnClick;
@@ -59,6 +62,7 @@ namespace TownOfUs.Objects
             this.mirror = mirror;
             this.hotkey = hotkey;
             this.buttonText = buttonText;
+            this.shakeOnEnd = shakeOnEnd;
             Timer = 10f + 8.6f;
             buttons.Add(this);
             actionButton = UnityEngine.Object.Instantiate(hudManager.KillButton, hudManager.KillButton.transform.parent);
@@ -77,8 +81,8 @@ namespace TownOfUs.Objects
             setActive(false);
         }
 
-        public CustomButton(Action OnClick, Func<bool> HasButton, Func<bool> CouldUse, Action OnMeetingEnds, Sprite Sprite, Vector3 PositionOffset, HudManager hudManager, KeyCode? hotkey, bool mirror = false, string buttonText = "")
-        : this(OnClick, HasButton, CouldUse, OnMeetingEnds, Sprite, PositionOffset, hudManager, hotkey, false, 0f, () => {}, mirror, buttonText) { }
+        public CustomButton(Action OnClick, Func<bool> HasButton, Func<bool> CouldUse, Action OnMeetingEnds, Sprite Sprite, Vector3 PositionOffset, HudManager hudManager, KeyCode? hotkey, bool mirror = false, string buttonText = "", bool shakeOnEnd = true)
+        : this(OnClick, HasButton, CouldUse, OnMeetingEnds, Sprite, PositionOffset, hudManager, hotkey, false, 0f, () => { }, mirror, buttonText, shakeOnEnd) { }
 
         public void onClickEvent()
         {
@@ -87,7 +91,8 @@ namespace TownOfUs.Objects
                 actionButtonRenderer.color = new Color(1f, 1f, 1f, 0.3f);
                 this.OnClick();
 
-                if (this.HasEffect && !this.isEffectActive) {
+                if (this.HasEffect && !this.isEffectActive)
+                {
                     this.Timer = this.EffectDuration;
                     actionButton.cooldownTimerText.color = new Color(0F, 0.8F, 0F);
                     this.isEffectActive = true;
@@ -98,7 +103,7 @@ namespace TownOfUs.Objects
         public static void HudUpdate()
         {
             buttons.RemoveAll(item => item.actionButton == null);
-        
+
             for (int i = 0; i < buttons.Count; i++)
             {
                 try
@@ -107,12 +112,13 @@ namespace TownOfUs.Objects
                 }
                 catch (NullReferenceException)
                 {
-                    System.Console.WriteLine("[WARNING] NullReferenceException from HudUpdate().HasButton(), if theres only one warning its fine" + $"{buttons[i].actionButtonRenderer.sprite.name}");
+                    System.Console.WriteLine("[WARNING] NullReferenceException from HudUpdate().HasButton(), if theres only one warning its fine");
                 }
             }
         }
 
-        public static void MeetingEndedUpdate() {
+        public static void MeetingEndedUpdate()
+        {
             buttons.RemoveAll(item => item.actionButton == null);
             for (int i = 0; i < buttons.Count; i++)
             {
@@ -123,12 +129,13 @@ namespace TownOfUs.Objects
                 }
                 catch (NullReferenceException)
                 {
-                    System.Console.WriteLine("[WARNING] NullReferenceException from MeetingEndedUpdate().HasButton(), if theres only one warning its fine" + $"{buttons[i].actionButtonRenderer.sprite.name}");
+                    System.Console.WriteLine("[WARNING] NullReferenceException from MeetingEndedUpdate().HasButton(), if theres only one warning its fine");
                 }
             }
         }
 
-        public static void ResetAllCooldowns() {
+        public static void ResetAllCooldowns()
+        {
             for (int i = 0; i < buttons.Count; i++)
             {
                 try
@@ -138,16 +145,20 @@ namespace TownOfUs.Objects
                 }
                 catch (NullReferenceException)
                 {
-                    System.Console.WriteLine("[WARNING] NullReferenceException from MeetingEndedUpdate().HasButton(), if theres only one warning its fine" + $"{buttons[i].actionButtonRenderer.sprite.name}");
+                    System.Console.WriteLine("[WARNING] NullReferenceException from MeetingEndedUpdate().HasButton(), if theres only one warning its fine");
                 }
             }
         }
 
-        public void setActive(bool isActive) {
-            if (isActive) {
+        public void setActive(bool isActive)
+        {
+            if (isActive)
+            {
                 actionButtonGameObject.SetActive(true);
                 actionButtonRenderer.enabled = true;
-            } else {
+            }
+            else
+            {
                 actionButtonGameObject.SetActive(false);
                 actionButtonRenderer.enabled = false;
             }
@@ -157,21 +168,25 @@ namespace TownOfUs.Objects
         {
             var localPlayer = PlayerControl.LocalPlayer;
             var moveable = localPlayer.moveable;
-            
-            if (localPlayer.Data == null || MeetingHud.Instance || ExileController.Instance || !HasButton()) {
+
+            if (localPlayer.Data == null || MeetingHud.Instance || ExileController.Instance || !HasButton())
+            {
                 setActive(false);
                 return;
             }
             setActive(hudManager.UseButton.isActiveAndEnabled || hudManager.PetButton.isActiveAndEnabled || Locked);
 
             actionButtonRenderer.sprite = Sprite;
-            if (showButtonText && buttonText != ""){
+            if (showButtonText && buttonText != "")
+            {
                 actionButton.OverrideText(buttonText);
             }
             actionButtonLabelText.enabled = showButtonText; // Only show the text if it's a kill button
-            if (hudManager.UseButton != null) {
+            if (hudManager.UseButton != null)
+            {
                 Vector3 pos = hudManager.UseButton.transform.localPosition;
-                if (mirror) {
+                if (mirror)
+                {
                     float aspect = Camera.main.aspect;
                     float safeOrthographicSize = CameraSafeArea.GetSafeOrthographicSize(Camera.main);
                     float xpos = 0.05f - safeOrthographicSize * aspect * 1.70f;
@@ -179,27 +194,36 @@ namespace TownOfUs.Objects
                 }
                 actionButton.transform.localPosition = pos + PositionOffset;
             }
-            if (CouldUse() && !Locked) {
+            if (CouldUse() && !Locked)
+            {
                 actionButtonRenderer.color = actionButtonLabelText.color = Palette.EnabledColor;
                 actionButtonMat.SetFloat(Desat, 0f);
-            } else {
+            }
+            else
+            {
                 actionButtonRenderer.color = actionButtonLabelText.color = Palette.DisabledClear;
                 actionButtonMat.SetFloat(Desat, 1f);
             }
-        
-            if (Timer >= 0) {
+
+            if (Timer >= 0 && !RoleDraftEx.isRunning)
+            {
                 if (HasEffect && isEffectActive)
+                {
                     Timer -= Time.deltaTime;
+                    if (Timer <= 3f && Timer > 0f && shakeOnEnd)
+                        actionButton.graphic.transform.localPosition = actionButton.transform.localPosition + (Vector3)UnityEngine.Random.insideUnitCircle * 0.05f;
+                }
                 else if (!localPlayer.inVent && moveable)
                     Timer -= Time.deltaTime;
             }
-            
-            if (Timer <= 0 && HasEffect && isEffectActive) {
+
+            if (Timer <= 0 && HasEffect && isEffectActive)
+            {
                 isEffectActive = false;
                 actionButton.cooldownTimerText.color = Palette.EnabledColor;
                 OnEffectEnds();
             }
-        
+
             actionButton.SetCoolDown(Timer, (HasEffect && isEffectActive) ? EffectDuration : MaxTimer);
 
             // Trigger OnClickEvent if the hotkey is being pressed down

@@ -1,27 +1,26 @@
-using HarmonyLib;
 using UnityEngine;
 using System.Reflection;
 using System.Collections.Generic;
-using Hazel;
 using System;
 using System.Linq;
-using Reactor.Utilities.Extensions;
-using AmongUs.Data;
 
 namespace TownOfUs.Patches {
-    public class GameStartManagerPatch  {
+    public class GameStartManagerPatch {
+        public static float timer = 600f;
         private static string lobbyCodeText = "";
 
         [HarmonyPatch(typeof(AmongUsClient), nameof(AmongUsClient.OnPlayerJoined))]
         public class AmongUsClientOnPlayerJoinedPatch {
             public static void Postfix(AmongUsClient __instance) {
-                GameStartManagerUpdatePatch.sendGamemode       = true;
+                GameStartManagerUpdatePatch.sendGamemode = true;
             }
         }
 
         [HarmonyPatch(typeof(GameStartManager), nameof(GameStartManager.Start))]
         public class GameStartManagerStartPatch {
             public static void Postfix(GameStartManager __instance) {
+                // Reset lobby countdown timer
+                timer = 600f;
                 // Copy lobby code
                 string code = InnerNet.GameCode.IntToGameName(AmongUsClient.Instance.GameId);
                 GUIUtility.systemCopyBuffer = code;
@@ -44,7 +43,6 @@ namespace TownOfUs.Patches {
             }
 
             public static void Postfix(GameStartManager __instance) {
-                // Display message to the host
                 if (AmongUsClient.Instance.AmHost) {
                     __instance.GameStartText.transform.localPosition = Vector3.zero;
                     __instance.GameStartText.transform.localScale = new Vector3(1.2f, 1.2f, 1f);
@@ -55,8 +53,10 @@ namespace TownOfUs.Patches {
 
                     if (__instance.startState != GameStartManager.StartingStates.Countdown)
                         copiedStartButton?.Destroy();
+                        
                     // Make starting info available to clients:
-                    if (startingTimer <= 0 && __instance.startState == GameStartManager.StartingStates.Countdown) {
+                    if (startingTimer <= 0 && __instance.startState == GameStartManager.StartingStates.Countdown)
+                    {
                         MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.SetGameStarting, Hazel.SendOption.Reliable, -1);
                         AmongUsClient.Instance.FinishRpcImmediately(writer);
                         RPCProcedure.setGameStarting();
@@ -70,19 +70,23 @@ namespace TownOfUs.Patches {
                         startButtonText.fontSizeMax = startButtonText.fontSize;
                         startButtonText.gameObject.transform.localPosition = Vector3.zero;
                         PassiveButton startButtonPassiveButton = copiedStartButton.GetComponent<PassiveButton>();
-                        void StopStartFunc() {
+                        void StopStartFunc()
+                        {
                             __instance.ResetStartState();
+                            MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.StopStart, Hazel.SendOption.Reliable, -1);
+                            writer.Write(PlayerControl.LocalPlayer.PlayerId);
+                            AmongUsClient.Instance.FinishRpcImmediately(writer);
                             copiedStartButton.Destroy();
                             startingTimer = 0;
+                            SoundManager.Instance.StopSound(GameStartManager.Instance.gameStartSound);
                         }
                         startButtonPassiveButton.OnClick.AddListener((Action)(() => StopStartFunc()));
-                        __instance.StartCoroutine(Effects.Lerp(.1f, new System.Action<float>((p) => {
+                        __instance.StartCoroutine(Effects.Lerp(.1f, new System.Action<float>((p) =>
+                        {
                             startButtonText.text = "";
                         })));
                     }
                 }
-                
-                // Client update with handshake infos
                 else {
                     __instance.GameStartText.transform.localPosition = Vector3.zero;
                     __instance.GameStartText.transform.localScale = new Vector3(1.2f, 1.2f, 1f);
@@ -107,12 +111,13 @@ namespace TownOfUs.Patches {
                         PassiveButton startButtonPassiveButton = copiedStartButton.GetComponent<PassiveButton>();
 
                         void StopStartFunc() {
-                            MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.StopStart, Hazel.SendOption.Reliable, AmongUsClient.Instance.HostId);
+                            MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.StopStart, Hazel.SendOption.Reliable, -1);
                             writer.Write(PlayerControl.LocalPlayer.PlayerId);
                             AmongUsClient.Instance.FinishRpcImmediately(writer);
                             copiedStartButton.Destroy();
                             __instance.GameStartText.text = String.Empty;
                             startingTimer = 0;
+                            SoundManager.Instance.StopSound(GameStartManager.Instance.gameStartSound);
                         }
                         startButtonPassiveButton.OnClick.AddListener((Action)(() => StopStartFunc()));
                         __instance.StartCoroutine(Effects.Lerp(.1f, new System.Action<float>((p) => {
@@ -129,6 +134,11 @@ namespace TownOfUs.Patches {
 
                 if (update) currentText = __instance.PlayerCounter.text;
 
+                timer = Mathf.Max(0f, timer -= Time.deltaTime);
+                int minutes = (int)timer / 60;
+                int seconds = (int)timer % 60;
+                string suffix = $" ({minutes:00}:{seconds:00})";
+
                 // Show real players in lobby
                 int playerCounter = 0;
                 foreach (PlayerControl player in PlayerControl.AllPlayerControls)
@@ -137,18 +147,13 @@ namespace TownOfUs.Patches {
                 
                 __instance.PlayerCounter.text = $"{playerCounter}/{GameOptionsManager.Instance.currentNormalGameOptions.MaxPlayers}";
 
-                // Replace Lobby code
-                string initialGameRoomName = __instance.GameRoomNameCode.text;
-                if (DataManager.Settings.Gameplay.StreamerMode && AmongUsClient.Instance.NetworkMode != NetworkModes.LocalGame) __instance.GameRoomNameCode.text = "Town Of Us";
-                else __instance.GameRoomNameCode.text = initialGameRoomName;
-
                 if (!AmongUsClient.Instance) return;
 
                 if (AmongUsClient.Instance.AmHost && sendGamemode && PlayerControl.LocalPlayer != null) {
                     MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareGamemode, Hazel.SendOption.Reliable, -1);
-                    writer.Write((byte) TOUMapOptions.gameMode);
+                    writer.Write((byte)gameMode);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.shareGamemode((byte)TOUMapOptions.gameMode);
+                    RPCProcedure.shareGamemode((byte)gameMode);
                     sendGamemode = false;
                 }
             }

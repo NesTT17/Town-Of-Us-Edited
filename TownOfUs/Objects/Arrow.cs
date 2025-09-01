@@ -15,7 +15,6 @@ namespace TownOfUs.Objects {
             return sprite;
         }
 
-
         public Arrow(Color color) {
             arrow = new GameObject("Arrow");
             arrow.layer = 5;

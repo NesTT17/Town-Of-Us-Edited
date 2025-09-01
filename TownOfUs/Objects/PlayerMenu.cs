@@ -1,6 +1,3 @@
-using AmongUs.GameOptions;
-using HarmonyLib;
-using Reactor.Utilities.Extensions;
 using System;
 using System.Collections;
 using System.Collections.Generic;

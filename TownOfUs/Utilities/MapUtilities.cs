@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using HarmonyLib;
 using Il2CppSystem;
 
 namespace TownOfUs.Utilities;
@@ -48,6 +47,7 @@ public static class ShipStatus_Awake_Patch
         MapUtilities.CachedShipStatus = __instance;
     }
 }
+
 [HarmonyPatch(typeof(ShipStatus), nameof(ShipStatus.OnDestroy))]
 public static class ShipStatus_OnDestroy_Patch
 {

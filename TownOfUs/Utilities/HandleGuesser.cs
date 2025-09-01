@@ -1,45 +1,53 @@
-using TownOfUs.CustomGameModes;
 using UnityEngine;
 
 namespace TownOfUs.Utilities
 {
-    public static class HandleGuesser {
+    public static class HandleGuesser
+    {
+        private static Sprite targetSprite;
         public static bool isGuesserGm = false;
         public static bool hasMultipleShotsPerMeeting = false;
         public static bool killsThroughShield = true;
         public static bool guesserCantGuessSnitch = false;
-        
-        private static Sprite targetSprite;
+        public static bool evilGuesserCanGuessAgent = true;
+        public static int tasksToUnlock = Mathf.RoundToInt(CustomOptionHolder.guesserGamemodeCrewGuesserNumberOfTasks.getFloat());
+
         public static Sprite getTargetSprite()
-            => targetSprite ??= Helpers.loadSpriteFromResources("TownOfUs.Resources.TargetIcon.png", 150f);
-        
-        public static bool isGuesser(byte playerId) {
+        {
+            if (targetSprite) return targetSprite;
+            targetSprite = Helpers.loadSpriteFromResources("TownOfUs.Resources.TargetIcon.png", 150f);
+            return targetSprite;
+        }
+
+        public static bool isGuesser(byte playerId)
+        {
             if (isGuesserGm) return GuesserGM.isGuesser(playerId);
-            return Guesser.isGuesser(playerId);
+            return false;
         }
 
-        public static void clear(byte playerId) {
-            if (isGuesserGm) GuesserGM.clear(playerId);
-            else Guesser.clear(playerId);
-        }
-
-        public static int remainingShots(byte playerId, bool shoot = false) {
+        public static int remainingShots(byte playerId, bool shoot = false)
+        {
             if (isGuesserGm) return GuesserGM.remainingShots(playerId, shoot);
-            return Guesser.remainingShots(playerId, shoot);
+            return 0;
         }
 
         public static void clearAndReload() {
-            Guesser.clearAndReload();
             GuesserGM.clearAndReload();
-            isGuesserGm = TOUMapOptions.gameMode == CustomGamemodes.Guesser;
-            if (isGuesserGm) {
+            isGuesserGm = gameMode == CustomGamemodes.Guesser;
+            if (isGuesserGm)
+            {
                 guesserCantGuessSnitch = CustomOptionHolder.guesserGamemodeCantGuessSnitchIfTaksDone.getBool();
                 hasMultipleShotsPerMeeting = CustomOptionHolder.guesserGamemodeHasMultipleShotsPerMeeting.getBool();
                 killsThroughShield = CustomOptionHolder.guesserGamemodeKillsThroughShield.getBool();
-            } else {
-                guesserCantGuessSnitch = CustomOptionHolder.guesserCantGuessSnitchIfTaksDone.getBool();
-                hasMultipleShotsPerMeeting = CustomOptionHolder.guesserHasMultipleShotsPerMeeting.getBool();
-                killsThroughShield = CustomOptionHolder.guesserKillsThroughShield.getBool();
+                tasksToUnlock = Mathf.RoundToInt(CustomOptionHolder.guesserGamemodeCrewGuesserNumberOfTasks.getFloat());
+                evilGuesserCanGuessAgent = CustomOptionHolder.guesserGamemodeEvilCanKillAgent.getBool();
+            }
+            else
+            {
+                guesserCantGuessSnitch = false;
+                hasMultipleShotsPerMeeting = false;
+                killsThroughShield = false;
+                evilGuesserCanGuessAgent = true;
             }
         }
     }

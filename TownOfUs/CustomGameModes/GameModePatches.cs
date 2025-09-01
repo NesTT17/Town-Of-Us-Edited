@@ -1,28 +1,25 @@
-﻿using System;
-using HarmonyLib;
-using TMPro;
+using System;
 using UnityEngine;
 using static UnityEngine.UI.Button;
 using UnityEngine.Events;
-using Hazel;
 
-namespace TownOfUs.CustomGameModes {
+namespace TownOfUs.Patches
+{
     [HarmonyPatch]
-    class GameModePatches {
-        /* 
-         Creates a button in the info pane in the lobby to cycle through the game modes of TOR.
-         */
+    class GameModePatches
+    {
         [HarmonyPatch(typeof(LobbyInfoPane), nameof(LobbyInfoPane.Update))]
-        class LobbyInfoPanePatch {
-
+        class LobbyInfoPanePatch
+        {
             private static GameObject gameModeButton = null;
             public static void Postfix(LobbyInfoPane __instance) {
-                if (gameModeButton != null||  !AmongUsClient.Instance.AmHost) { return; }
+                if (gameModeButton != null ||  !AmongUsClient.Instance.AmHost)
+                    return;
 
                 var template = GameObject.Find("PRIVATE BUTTON");
                 var GameModeText = GameObject.Find("GameModeText");
                 if (template == null || GameModeText== null) { return; }
-                gameModeButton = GameObject.Instantiate(template, template.transform.parent); //, GameModeText.transform);
+                gameModeButton = GameObject.Instantiate(template, template.transform.parent);
                 gameModeButton.transform.localPosition = template.transform.localPosition + new Vector3(0f, 0.65f, -2f);
                 gameModeButton.name = "TOU GameModeButton";
 
@@ -52,7 +49,6 @@ namespace TownOfUs.CustomGameModes {
                     gameModeButton.transform.GetChild(1).gameObject.SetActive(false);
                     gameModeButton.transform.GetChild(2).gameObject.SetActive(true);
                 }));
-
             }
         }
     }

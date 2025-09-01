@@ -1,5 +1,4 @@
-﻿using HarmonyLib;
-using System.Linq;
+﻿using System.Linq;
 
 namespace TownOfUs.Patches {
     [HarmonyPatch]

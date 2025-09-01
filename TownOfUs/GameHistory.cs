@@ -2,19 +2,20 @@ using System.Collections.Generic;
 using System;
 using UnityEngine;
 
-namespace TownOfUs {
+namespace TownOfUs
+{
     public class DeadPlayer
     {
-        public enum CustomDeathReason {
+        public enum CustomDeathReason
+        {
             Exile,
             Kill,
             Disconnect,
-            SheriffMissfire,
-            Shift,
             Guess,
-            LoverSuicide,
             LawyerSuicide,
-            GuardianAngelSuicide,
+            GASuicide,
+            Shift,
+            Bomb,
         };
 
         public PlayerControl player;
@@ -23,7 +24,8 @@ namespace TownOfUs {
         public PlayerControl killerIfExisting;
         public bool wasCleaned;
 
-        public DeadPlayer(PlayerControl player, DateTime timeOfDeath, CustomDeathReason deathReason, PlayerControl killerIfExisting) {
+        public DeadPlayer(PlayerControl player, DateTime timeOfDeath, CustomDeathReason deathReason, PlayerControl killerIfExisting)
+        {
             this.player = player;
             this.timeOfDeath = timeOfDeath;
             this.deathReason = deathReason;
@@ -32,21 +34,22 @@ namespace TownOfUs {
         }
     }
 
-    static class GameHistory {
+    static class GameHistory
+    {
         public static List<Tuple<Vector3, bool>> localPlayerPositions = new List<Tuple<Vector3, bool>>();
         public static List<DeadPlayer> deadPlayers = new List<DeadPlayer>();
-        
+
         public static List<DeadPlayer> GetKilledPlayers(PlayerControl player)
         {
             List<DeadPlayer> killedPlayers = [];
             foreach (DeadPlayer deadPlayerData in deadPlayers)
             {
-                PlayerControl killer      = deadPlayerData.killerIfExisting;
+                PlayerControl killer = deadPlayerData.killerIfExisting;
                 if (!killer) continue;
-                
-                PlayerControl deadPlayer  = deadPlayerData.player;
-                bool          i_am_killer = killer     == player;
-                bool          not_suicide = deadPlayer != player;
+
+                PlayerControl deadPlayer = deadPlayerData.player;
+                bool i_am_killer = killer == player;
+                bool not_suicide = deadPlayer != player;
                 if (i_am_killer && not_suicide)
                 {
                     killedPlayers.Add(deadPlayerData);
@@ -56,7 +59,8 @@ namespace TownOfUs {
             return killedPlayers;
         }
 
-        public static void clearGameHistory() {
+        public static void clearGameHistory()
+        {
             localPlayerPositions = new List<Tuple<Vector3, bool>>();
             deadPlayers = new List<DeadPlayer>();
         }

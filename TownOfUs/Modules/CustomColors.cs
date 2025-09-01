@@ -221,9 +221,6 @@ namespace TownOfUs.Modules {
             [HarmonyPatch(typeof(ChatNotification), nameof(ChatNotification.SetUp))]
             private class ChatNotificationColorsPatch {
                 public static bool Prefix(ChatNotification __instance, PlayerControl sender, string text) {
-                    if (ShipStatus.Instance && !TOUMapOptions.showChatNotifications) {
-                        return false;
-                    }
                     __instance.timeOnScreen = 5f;
                     __instance.gameObject.SetActive(true);
                     __instance.SetCosmetics(sender.Data);
@@ -287,20 +284,20 @@ namespace TownOfUs.Modules {
             [HarmonyPatch(typeof(AmongUs.Data.Player.PlayerData), nameof(AmongUs.Data.Player.PlayerData.FileName), MethodType.Getter)]
             public class SaveManagerPatch {
                 public static void Postfix(ref string __result) {
-                    __result += "_TOUE";
+                    __result += "_TOUEd";
                 }
             }
             [HarmonyPatch(typeof(AmongUs.Data.Legacy.LegacySaveManager), nameof(AmongUs.Data.Legacy.LegacySaveManager.GetPrefsName))]
             public class LegacySaveManagerPatch {
                 public static void Postfix(ref string __result) {
-                    __result += "_TOUE";
+                    __result += "_TOUEd";
                 }
             }
 
             [HarmonyPatch(typeof(AmongUs.Data.Settings.SettingsData), nameof(AmongUs.Data.Settings.SettingsData.FileName), MethodType.Getter)]
             public class SettingsManagerPatch {
                 public static void Postfix(ref string __result) {
-                    __result += "_TOUE";
+                    __result += "_TOUEd";
                 }
             }
 

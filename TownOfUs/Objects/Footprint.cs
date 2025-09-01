@@ -1,17 +1,20 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
-namespace TownOfUs.Objects 
+namespace TownOfUs.Objects
 {
-    public class FootprintHolder : MonoBehaviour {
+    public class FootprintHolder : MonoBehaviour
+    {
         static FootprintHolder() => ClassInjector.RegisterTypeInIl2Cpp<FootprintHolder>();
 
         public FootprintHolder(IntPtr ptr) : base(ptr) { }
 
         private static FootprintHolder _instance;
-        public static FootprintHolder Instance {
+        public static FootprintHolder Instance
+        {
             get => _instance ? _instance : _instance = new GameObject("FootprintHolder").AddComponent<FootprintHolder>();
             set => _instance = value;
 
@@ -23,7 +26,8 @@ namespace TownOfUs.Objects
         private static bool AnonymousFootprints => Investigator.anonymousFootprints;
         private static float FootprintDuration => Investigator.footprintDuration;
 
-        private class Footprint {
+        private class Footprint
+        {
             public GameObject GameObject;
             public Transform Transform;
             public SpriteRenderer Renderer;
@@ -31,7 +35,8 @@ namespace TownOfUs.Objects
             public NetworkedPlayerInfo Data;
             public float Lifetime;
 
-            public Footprint() {
+            public Footprint()
+            {
                 GameObject = new("Footprint") { layer = 8 };
                 Transform = GameObject.transform;
                 Renderer = GameObject.AddComponent<SpriteRenderer>();
@@ -45,8 +50,10 @@ namespace TownOfUs.Objects
         private readonly List<Footprint> _toRemove = new();
 
         [HideFromIl2Cpp]
-        public void MakeFootprint(PlayerControl player) {
-            if (!_pool.TryTake(out var print)) {
+        public void MakeFootprint(PlayerControl player)
+        {
+            if (!_pool.TryTake(out var print))
+            {
                 print = new();
             }
 
@@ -63,32 +70,37 @@ namespace TownOfUs.Objects
 
         private static float updateDt = 0.10f;
 
-        private void Start() {
+        private void Start()
+        {
             InvokeRepeating(nameof(FootprintUpdate), updateDt, updateDt);
         }
 
-        private void FootprintUpdate() {
+        private void FootprintUpdate()
+        {
             var dt = updateDt;
             _toRemove.Clear();
-            foreach (var activeFootprint in _activeFootprints) {
+            foreach (var activeFootprint in _activeFootprints)
+            {
                 var p = activeFootprint.Lifetime / FootprintDuration;
 
-                if (activeFootprint.Lifetime <= 0) {
+                if (activeFootprint.Lifetime <= 0)
+                {
                     _toRemove.Add(activeFootprint);
                     continue;
                 }
 
                 Color color;
-                if (AnonymousFootprints || Camouflager.camouflageTimer > 0 || Helpers.MushroomSabotageActive() || Helpers.isActiveCamoComms()) {
+                if (AnonymousFootprints || Camouflager.camouflageTimer > 0 || Helpers.MushroomSabotageActive()) {
                     color = Palette.PlayerColors[6];
-                } else if (activeFootprint.Owner == Morphling.morphling && Morphling.morphTimer > 0 && Morphling.morphTarget && Morphling.morphTarget.Data != null) {
-                    color = Palette.PlayerColors[Morphling.morphTarget.Data.DefaultOutfit.ColorId];
-                } else if (activeFootprint.Owner == Glitch.glitch && Glitch.morphTimer > 0 && Glitch.morphPlayer && Glitch.morphPlayer.Data != null) {
+                }
+                else if (Morphling.players.Any(x => x.player == activeFootprint.Owner && x.morphTarget && x.morphTimer > 0 && x.morphTarget.Data != null)) {
+                    color = Palette.PlayerColors[Morphling.getRole(activeFootprint.Owner).morphTarget.Data.DefaultOutfit.ColorId];
+                }
+                else if (Glitch.players.Any(x => x.player == activeFootprint.Owner && Glitch.morphPlayer && Glitch.morphTimer > 0 && Glitch.morphPlayer.Data != null)) {
                     color = Palette.PlayerColors[Glitch.morphPlayer.Data.DefaultOutfit.ColorId];
-                } else if (activeFootprint.Owner == Swooper.swooper && Swooper.isInvisble) {
-                    color = Color.clear;
-                    color.a = 0f;
-                } else {
+                }
+                else
+                {
                     color = Palette.PlayerColors[activeFootprint.Data.DefaultOutfit.ColorId];
                 }
 
@@ -98,14 +110,16 @@ namespace TownOfUs.Objects
                 activeFootprint.Lifetime -= dt;
             }
 
-            foreach (var footprint in _toRemove) {
+            foreach (var footprint in _toRemove)
+            {
                 footprint.GameObject.SetActive(false);
                 _activeFootprints.Remove(footprint);
                 _pool.Add(footprint);
             }
         }
 
-        private void OnDestroy() {
+        private void OnDestroy()
+        {
             Instance = null;
         }
     }

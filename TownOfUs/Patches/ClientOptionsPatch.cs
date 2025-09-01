@@ -1,9 +1,6 @@
-using HarmonyLib;
 using UnityEngine;
 using System;
 using System.Collections.Generic;
-using TownOfUs.Utilities;
-using TMPro;
 using UnityEngine.Events;
 using static UnityEngine.UI.Button;
 using Object = UnityEngine.Object;
@@ -14,14 +11,13 @@ namespace TownOfUs.Patches
     public static class ClientOptionsPatch
     {
         private static readonly SelectionBehaviour[] AllOptions = {
-            // new("Debug Mode", () => TORMapOptions.enableDebugMode = TownOfUsPlugin.DebugMode.Value = !TownOfUsPlugin.DebugMode.Value, TownOfUsPlugin.DebugMode.Value),
-            new("Ghosts See Tasks & Other Info", () => TOUMapOptions.ghostsSeeInformation = TownOfUsPlugin.GhostsSeeInformation.Value = !TownOfUsPlugin.GhostsSeeInformation.Value, TownOfUsPlugin.GhostsSeeInformation.Value),
-            new("Ghosts Can See Votes", () => TOUMapOptions.ghostsSeeVotes = TownOfUsPlugin.GhostsSeeVotes.Value = !TownOfUsPlugin.GhostsSeeVotes.Value, TownOfUsPlugin.GhostsSeeVotes.Value),
-            new("Ghosts Can See Roles", () => TOUMapOptions.ghostsSeeRoles = TownOfUsPlugin.GhostsSeeRoles.Value = !TownOfUsPlugin.GhostsSeeRoles.Value, TownOfUsPlugin.GhostsSeeRoles.Value),
-            new("Ghosts Can Additionally See Modifier", () => TOUMapOptions.ghostsSeeModifier = TownOfUsPlugin.GhostsSeeModifier.Value = !TownOfUsPlugin.GhostsSeeModifier.Value, TownOfUsPlugin.GhostsSeeModifier.Value),
-            new("Show Lighter / Darker", () => TOUMapOptions.showLighterDarker = TownOfUsPlugin.ShowLighterDarker.Value = !TownOfUsPlugin.ShowLighterDarker.Value, TownOfUsPlugin.ShowLighterDarker.Value),
-            new("Show Chat Notifications", () => TOUMapOptions.showChatNotifications = TownOfUsPlugin.ShowChatNotifications.Value = !TownOfUsPlugin.ShowChatNotifications.Value, TownOfUsPlugin.ShowChatNotifications.Value),
-            new("Extended Colorblind Mode", () => TOUMapOptions.extendedColorblindMode = TownOfUsPlugin.ExtendedColorblindMode.Value = !TownOfUsPlugin.ExtendedColorblindMode.Value, TownOfUsPlugin.ExtendedColorblindMode.Value),
+            new("Ghosts Can See Roles", () => ghostsSeeRoles = TownOfUsPlugin.GhostsSeeRoles.Value = !TownOfUsPlugin.GhostsSeeRoles.Value, TownOfUsPlugin.GhostsSeeRoles.Value),
+            new("Ghosts Can Additionally See Modifier", () => ghostsSeeModifier = TownOfUsPlugin.GhostsSeeModifier.Value = !TownOfUsPlugin.GhostsSeeModifier.Value, TownOfUsPlugin.GhostsSeeModifier.Value),
+            new("Ghosts See Tasks & Other Info", () => ghostsSeeInformation = TownOfUsPlugin.GhostsSeeInformation.Value = !TownOfUsPlugin.GhostsSeeInformation.Value, TownOfUsPlugin.GhostsSeeInformation.Value),
+            new("Ghosts Can See Votes", () => ghostsSeeVotes = TownOfUsPlugin.GhostsSeeVotes.Value = !TownOfUsPlugin.GhostsSeeVotes.Value, TownOfUsPlugin.GhostsSeeVotes.Value),
+            new("Show Role Summary", () => showRoleSummary = TownOfUsPlugin.ShowRoleSummary.Value = !TownOfUsPlugin.ShowRoleSummary.Value, TownOfUsPlugin.ShowRoleSummary.Value),
+            new("Show Lighter / Darker", () => showLighterDarker = TownOfUsPlugin.ShowLighterDarker.Value = !TownOfUsPlugin.ShowLighterDarker.Value, TownOfUsPlugin.ShowLighterDarker.Value),
+            new("Show Chat Notifications", () => ShowChatNotifications = TownOfUsPlugin.ShowChatNotifications.Value = !TownOfUsPlugin.ShowChatNotifications.Value, TownOfUsPlugin.ShowChatNotifications.Value),
         };
         
         private static GameObject popUp;
@@ -188,7 +184,7 @@ namespace TownOfUs.Patches
                     button.Background.color = button.onState ? Color.green : Palette.ImpostorRed;
                 }));
                 
-                passiveButton.OnMouseOver.AddListener((Action) (() => button.Background.color = new Color32(34 ,139, 34, byte.MaxValue)));
+                passiveButton.OnMouseOver.AddListener((Action) (() => button.Background.color = button.onState ? new Color32(34 ,139, 34, byte.MaxValue): new Color32(139, 34, 34, byte.MaxValue)));
                 passiveButton.OnMouseOut.AddListener((Action) (() => button.Background.color = button.onState ? Color.green : Palette.ImpostorRed));
 
                 foreach (var spr in button.gameObject.GetComponentsInChildren<SpriteRenderer>())

@@ -1,6 +1,4 @@
 using System.Linq;
-using HarmonyLib;
-using Hazel;
 using UnityEngine;
 
 namespace TownOfUs.Patches
@@ -79,7 +77,7 @@ namespace TownOfUs.Patches
 
         private static void ApplyChanges(ShipStatus instance)
         {
-            if (instance.Type == ShipStatus.MapType.Pb && TOUMapOptions.enableBetterPolus)
+            if (instance.Type == ShipStatus.MapType.Pb && enableBetterPolus)
             {
                 FindPolusObjects();
                 AdjustPolus();
@@ -321,8 +319,8 @@ namespace TownOfUs.Patches
             var num = self & 3;
             if (self == 128 && !__instance.IsActive)
             {
-                __instance.Countdown = ShipStatus.Instance.Type == ShipStatus.MapType.Pb && TOUMapOptions.enableBetterPolus
-                    ? 30f
+                __instance.Countdown = ShipStatus.Instance.Type == ShipStatus.MapType.Pb && enableBetterPolus
+                    ? 40f
                     : __instance.ReactorDuration;
                 __instance.UserConsolePairs.Clear();
             }

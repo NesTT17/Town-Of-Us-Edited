@@ -4,45 +4,29 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using AmongUs.GameOptions;
-using HarmonyLib;
-using Hazel;
-using Reactor.Utilities;
-using Reactor.Utilities.Extensions;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace TownOfUs
 {
-    public enum MurderAttemptResult {
-        PerformKill,
-        SuppressKill,
-        BlankKill,
-        DelayPoisonerKill,
-        ReverseKill,
-    }
-
-    public enum CustomGamemodes {
-        Classic,
-        Guesser,
-    }
-
-    public enum SabatageTypes {
-        Comms,
-        O2,
-        Reactor,
-        Lights,
-        None
-    }
+    public enum MurderAttemptResult { PerformKill, SuppressKill, BlankKill, ReverseKill }
+    public enum CustomGamemodes { Classic, Guesser, AllAny }
+    public enum SabatageTypes { Comms, O2, Reactor, Lights, MushroomMixUp, None }
 
     public static class Helpers
     {
+        public static bool isMovedVentOnPolus = false;
         public static string previousEndGameSummary = "";
         public static Dictionary<string, Sprite> CachedSprites = new();
-        public static Color impAbilityTargetColor = new Color(0.3f, 0f, 0f);
-        public static List<byte> revealedTimeLords = new();
-        public static List<byte> knownTimeLordKillers = new();
-        public static bool localPlayerCanSeeOthersRoles = false;
-
+        public static bool ShowKillAnimation
+        {
+            get
+            {
+                return MeetingHud.Instance?.state is not
+                    MeetingHud.VoteStates.Animating and not MeetingHud.VoteStates.Results
+                    and not MeetingHud.VoteStates.Proceeding;
+            }
+        }
         public static Sprite loadSpriteFromResources(string path, float pixelsPerUnit, bool cache = true)
         {
             try
@@ -172,7 +156,7 @@ namespace TownOfUs
 
         public static bool shouldShowGhostInfo()
         {
-            return PlayerControl.LocalPlayer != null && localPlayerCanSeeOthersRoles && PlayerControl.LocalPlayer.Data.IsDead && TOUMapOptions.ghostsSeeInformation || AmongUsClient.Instance.GameState == InnerNet.InnerNetClient.GameStates.Ended;
+            return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.Data.IsDead && ghostsSeeInformation || AmongUsClient.Instance.GameState == InnerNet.InnerNetClient.GameStates.Ended;
         }
 
         public static void clearAllTasks(this PlayerControl player)
@@ -199,19 +183,14 @@ namespace TownOfUs
             shipStatus.RpcUpdateSystem(systemType, amount);
         }
 
-        public static bool isMira()
-        {
-            return GameOptionsManager.Instance.CurrentGameOptions.MapId == 1;
-        }
-
-        public static bool isAirship()
-        {
-            return GameOptionsManager.Instance.CurrentGameOptions.MapId == 4;
-        }
-
         public static bool isSkeld()
         {
             return GameOptionsManager.Instance.CurrentGameOptions.MapId == 0;
+        }
+
+        public static bool isMira()
+        {
+            return GameOptionsManager.Instance.CurrentGameOptions.MapId == 1;
         }
 
         public static bool isPolus()
@@ -219,14 +198,14 @@ namespace TownOfUs
             return GameOptionsManager.Instance.CurrentGameOptions.MapId == 2;
         }
 
+        public static bool isAirship()
+        {
+            return GameOptionsManager.Instance.CurrentGameOptions.MapId == 4;
+        }
+
         public static bool isFungle()
         {
             return GameOptionsManager.Instance.CurrentGameOptions.MapId == 5;
-        }
-
-        public static bool MushroomSabotageActive()
-        {
-            return PlayerControl.LocalPlayer.myTasks.ToArray().Any((x) => x.TaskType == TaskTypes.MushroomMixupSabotage);
         }
 
         public static void setSemiTransparent(this PoolablePlayer player, bool value, float alpha = 0.25f)
@@ -279,24 +258,21 @@ namespace TownOfUs
 
         public static bool hidePlayerName(PlayerControl source, PlayerControl target)
         {
-            if (Camouflager.camouflageTimer > 0f || Helpers.MushroomSabotageActive() || Helpers.isActiveCamoComms()) return true; // No names are visible
+            if (Camouflager.camouflageTimer > 0f || getActiveSabo() == SabatageTypes.MushroomMixUp) return true;
 
-            if (Swooper.isInvisble && target == Swooper.swooper) return true;
-            else if (Phantom.isInvisble && target == Phantom.phantom) return true;
-            else if (Venerer.morphTimer > 0f && target == Venerer.venerer) return true;
-            else if (!TOUMapOptions.hidePlayerNames) return false; // All names are visible
+            if (Swooper.players.Any(x => x.player.PlayerId == target.PlayerId && x.isInvisble)) return true;
+            else if (Venerer.players.Any(x => x.player.PlayerId == target.PlayerId && x.morphTimer > 0f)) return true;
+            else if (!hidePlayerNames) return false; // All names are visible
             else if (source == null || target == null) return true;
             else if (source == target) return false; // Player sees his own name
-            else if (source.Data.Role.IsImpostor && (target.Data.Role.IsImpostor || target == Vampire.vampire && Vampire.wasTeamRed || target == Dracula.dracula && Dracula.wasTeamRed)) return false; // Members of team Impostors see the names of Impostors
-            else if ((source == Lovers.lover1 || source == Lovers.lover2) && (target == Lovers.lover1 || target == Lovers.lover2)) return false; // Members of team Lovers see the names of each other
-            else if ((source == Dracula.dracula || source == Vampire.vampire) && (target == Dracula.dracula || target == Vampire.vampire || target == Dracula.fakeVampire)) return false; // Members of team Vampires see the names of each other
-            else if (source == Blackmailer.blackmailer && target == Blackmailer.blackmailed) return false; // Blackmailer can see blackmailed player
+            else if (source.Data.Role.IsImpostor && (target.Data.Role.IsImpostor || target.isRole(RoleId.Agent) || Vampire.players.Any(x => x.player == target && x.wasTeamRed) || Dracula.players.Any(x => x.player == target && x.wasTeamRed))) return false;
+            else if (Dracula.players.Any(x => x.player == source && (target == x.fakeVampire || (Dracula.getVampire(source) != null && Dracula.getVampire(source).player == target))) || Vampire.players.Any(x => x.player == source && x.dracula.player == target)) return false;
             return true;
         }
 
         public static void setDefaultLook(this PlayerControl target)
         {
-            if (Helpers.MushroomSabotageActive())
+            if (getActiveSabo() == SabatageTypes.MushroomMixUp)
             {
                 var instance = ShipStatus.Instance.CastFast<FungleShipStatus>().specialSabotage;
                 MushroomMixupSabotageSystem.CondensedOutfit condensedOutfit = instance.currentMixups[target.PlayerId];
@@ -314,7 +290,6 @@ namespace TownOfUs
             target.RawSetHat(hatId, colorId);
             target.RawSetName(hidePlayerName(PlayerControl.LocalPlayer, target) ? "" : playerName);
 
-
             SkinViewData nextSkin = null;
             try
             {
@@ -324,20 +299,19 @@ namespace TownOfUs
 
             PlayerPhysics playerPhysics = target.MyPhysics;
             AnimationClip clip = null;
+
             var spriteAnim = playerPhysics.myPlayer.cosmetics.skin.animator;
             var currentPhysicsAnim = playerPhysics.Animations.Animator.GetCurrentAnimation();
-
-
             if (currentPhysicsAnim == playerPhysics.Animations.group.RunAnim) clip = nextSkin.RunAnim;
             else if (currentPhysicsAnim == playerPhysics.Animations.group.SpawnAnim) clip = nextSkin.SpawnAnim;
             else if (currentPhysicsAnim == playerPhysics.Animations.group.EnterVentAnim) clip = nextSkin.EnterVentAnim;
             else if (currentPhysicsAnim == playerPhysics.Animations.group.ExitVentAnim) clip = nextSkin.ExitVentAnim;
             else if (currentPhysicsAnim == playerPhysics.Animations.group.IdleAnim) clip = nextSkin.IdleAnim;
             else clip = nextSkin.IdleAnim;
+
             float progress = playerPhysics.Animations.Animator.m_animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
             playerPhysics.myPlayer.cosmetics.skin.skin = nextSkin;
             playerPhysics.myPlayer.cosmetics.skin.UpdateMaterial();
-
             spriteAnim.Play(clip, 1f);
             spriteAnim.m_animator.Play("a", 0, progress % 1);
             spriteAnim.m_animator.Update(0f);
@@ -350,6 +324,7 @@ namespace TownOfUs
             if (FastDestroyableSingleton<HudManager>.Instance == null || FastDestroyableSingleton<HudManager>.Instance.FullScreen == null) return;
             FastDestroyableSingleton<HudManager>.Instance.FullScreen.gameObject.SetActive(true);
             FastDestroyableSingleton<HudManager>.Instance.FullScreen.enabled = true;
+
             // Message Text
             TMPro.TextMeshPro messageText = GameObject.Instantiate(FastDestroyableSingleton<HudManager>.Instance.KillButton.cooldownTimerText, FastDestroyableSingleton<HudManager>.Instance.transform);
             messageText.text = message;
@@ -379,45 +354,33 @@ namespace TownOfUs
         public static bool roleCanUseVents(this PlayerControl player)
         {
             bool roleCouldUse = false;
-            if (Engineer.engineer != null && Engineer.engineer == player)
-                roleCouldUse = true;
-            else if (Dracula.canUseVents && Dracula.dracula != null && Dracula.dracula == player)
-                roleCouldUse = true;
-            else if (Vampire.canUseVents && Vampire.vampire != null && Vampire.vampire == player)
-                roleCouldUse = true;
-            else if (Scavenger.canUseVents && Scavenger.scavenger != null && Scavenger.scavenger == player)
-                roleCouldUse = true;
-            else if (Juggernaut.canUseVents && Juggernaut.juggernaut != null && Juggernaut.juggernaut == player)
-                roleCouldUse = true;
-            else if (Werewolf.canVent && Werewolf.isRampageActive && Werewolf.werewolf != null && Werewolf.werewolf == player)
-                roleCouldUse = true;
-            else if (Glitch.canVent && Glitch.glitch != null && Glitch.glitch == player)
-                roleCouldUse = true;
+            if (player.isRole(RoleId.Engineer)) roleCouldUse = true;
+            else if (player.isRole(RoleId.Juggernaut) && Juggernaut.canVent) roleCouldUse = true;
+            else if (player.isRole(RoleId.Pestilence) && Pestilence.canVent) roleCouldUse = true;
+            else if (player.isRole(RoleId.Werewolf) && Werewolf.canVent && Werewolf.players.Any(x => x.player == player && x.isRampageActive)) roleCouldUse = true;
+            else if (player.isRole(RoleId.Dracula) && Dracula.canVent) roleCouldUse = true;
+            else if (player.isRole(RoleId.Vampire) && Vampire.canVent) roleCouldUse = true;
+            else if (player.isRole(RoleId.Scavenger) && Scavenger.canVent) roleCouldUse = true;
+            else if (player.isRole(RoleId.Glitch) && Glitch.canVent) roleCouldUse = true;
+            else if (player.isRole(RoleId.Arsonist) && Arsonist.canVent) roleCouldUse = true;
+            else if (player.isRole(RoleId.Agent) && Agent.canEnterVents) roleCouldUse = true;
+            else if (player.isRole(RoleId.Thief) && Thief.canUseVents) roleCouldUse = true;
             else if (player.Data?.Role != null && player.Data.Role.CanVent)
+            {
                 roleCouldUse = true;
+            }
             return roleCouldUse;
         }
 
         public static MurderAttemptResult checkMuderAttempt(PlayerControl killer, PlayerControl target, bool blockRewind = false, bool ignoreBlank = false, bool ignoreIfKillerIsDead = false, bool ignoreMedic = false)
         {
             var targetRole = RoleInfo.getRoleInfoForPlayer(target, false).FirstOrDefault();
+
             // Modified vanilla checks
             if (AmongUsClient.Instance.IsGameOver) return MurderAttemptResult.SuppressKill;
             if (killer == null || killer.Data == null || (killer.Data.IsDead && !ignoreIfKillerIsDead) || killer.Data.Disconnected) return MurderAttemptResult.SuppressKill; // Allow non Impostor kills compared to vanilla code
             if (target == null || target.Data == null || target.Data.IsDead || target.Data.Disconnected) return MurderAttemptResult.SuppressKill; // Allow killing players in vents compared to vanilla code
             if (GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek) return MurderAttemptResult.PerformKill;
-
-            // Handle first kill attempt
-            if (TOUMapOptions.shieldFirstKill && TOUMapOptions.firstKillPlayer == target) return MurderAttemptResult.SuppressKill;
-
-            // Block impostor shielded kill
-            if (!ignoreMedic && Medic.shielded != null && Medic.shielded == target)
-            {
-                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
-                AmongUsClient.Instance.FinishRpcImmediately(writer);
-                RPCProcedure.shieldedMurderAttempt();
-                return MurderAttemptResult.SuppressKill;
-            }
 
             // Handle blank shot
             if (!ignoreBlank && Pursuer.blankedList.Any(x => x.PlayerId == killer.PlayerId))
@@ -427,165 +390,219 @@ namespace TownOfUs
                 writer.Write((byte)0);
                 AmongUsClient.Instance.FinishRpcImmediately(writer);
                 RPCProcedure.setBlanked(killer.PlayerId, 0);
+
                 return MurderAttemptResult.BlankKill;
             }
 
-            // Block impostor protect kill
-            if (GuardianAngel.target != null && GuardianAngel.guardianAngel != null && GuardianAngel.protectActive && GuardianAngel.target == target)
-            {
-                return MurderAttemptResult.BlankKill;
-            }
+            // Handle first kill attempt
+            if (shieldFirstKill && firstKillPlayer == target) return MurderAttemptResult.SuppressKill;
 
-            // Block impostor safeguard kill
-            if (Survivor.survivor != null && Survivor.safeguardActive && Survivor.survivor == target)
+            // Block impostor shielded kill
+            if (Medic.isShielded(target))
             {
-                return MurderAttemptResult.BlankKill;
-            }
-
-            if (TimeLord.shieldActive && TimeLord.timeLord != null && TimeLord.timeLord == target)
-            {
-                if (!blockRewind) // Only rewind the attempt was not called because a meeting started
+                foreach (var medic in Medic.GetMedic(target))
                 {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.TimeLordRewindTime, Hazel.SendOption.Reliable, -1);
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
+                    writer.Write(medic.player.PlayerId);
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.timeLordRewindTime();
-                    revealedTimeLords.Add(target.PlayerId);
-                    knownTimeLordKillers.Add(killer.PlayerId);
+                    RPCProcedure.shieldedMurderAttempt(medic.player.PlayerId);
                 }
                 return MurderAttemptResult.SuppressKill;
             }
 
-            // Reverse veteran kill
-            if (Veteran.veteran != null && Veteran.veteran == target && Veteran.isAlertActive)
-            {
-                if (Medic.shielded != null && Medic.shielded == target)
-                {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.shieldedMurderAttempt();
-                }
-                if (Mercenary.shielded != null && Mercenary.shielded == target)
-                {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryAddMurder, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.mercenaryAddMurder();
-                }
-                if (GuardianAngel.target != null && GuardianAngel.guardianAngel != null && GuardianAngel.protectActive && GuardianAngel.target == killer)
-                {
-                    return MurderAttemptResult.BlankKill;
-                }
-                if (Medic.shielded != null && Medic.shielded == killer)
-                {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.shieldedMurderAttempt();
-                    return MurderAttemptResult.SuppressKill;
-                }
-                if (Mercenary.shielded != null && Mercenary.shielded == killer)
-                {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryAddMurder, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.mercenaryAddMurder();
-                    return MurderAttemptResult.BlankKill;
-                }
-                if (TOUMapOptions.shieldFirstKill && TOUMapOptions.firstKillPlayer == killer) return MurderAttemptResult.SuppressKill;
-                return MurderAttemptResult.ReverseKill;
-            }
+            // Block impostor safeguard kill
+            if (target.isRole(RoleId.Survivor) && Survivor.players.Any(x => x.player == target && x.isSafeguardActive)) return MurderAttemptResult.BlankKill;
 
-            // Block impostor mercenary shield kill
-            if (Mercenary.shielded != null && Mercenary.shielded == target)
+            // Block impostor protect kill
+            if (GuardianAngel.isProtected(target)) return MurderAttemptResult.BlankKill;
+
+            // Block impostor merc shielded kill
+            if (Mercenary.isShielded(target))
             {
-                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryAddMurder, SendOption.Reliable, -1);
-                AmongUsClient.Instance.FinishRpcImmediately(writer);
-                RPCProcedure.mercenaryAddMurder();
+                foreach (var mercenary in Mercenary.GetMercenary(target))
+                {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
+                    writer.Write(mercenary.shielded.PlayerId);
+                    writer.Write(mercenary.player.PlayerId);
+                    writer.Write(false);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.mercenaryShieldedMurderAttempt(mercenary.shielded.PlayerId, mercenary.player.PlayerId, false);
+                }
                 return MurderAttemptResult.BlankKill;
             }
 
-            // Block Armored with armor kill
-            if (checkArmored(target, true, killer == PlayerControl.LocalPlayer, Sheriff.sheriff == null || killer.PlayerId != Sheriff.sheriff.PlayerId || isNeutral(target) && Sheriff.canKillNeutrals || isNeutralKiller(target) && Sheriff.canKillKNeutrals || isKiller(target)))
+            // Handle veteran alert
+            if (Veteran.players.Any(x => x.player == target && x.isAlertActive))
             {
-                return MurderAttemptResult.BlankKill;
-            }
-
-            // Reverse vh kill
-            if (VampireHunter.vampireHunter != null && VampireHunter.vampireHunter == target && (killer.PlayerId == Dracula.dracula.PlayerId || killer.PlayerId == Vampire.vampire.PlayerId))
-            {
-                if (Medic.shielded != null && Medic.shielded == target)
+                if (shieldFirstKill && firstKillPlayer == killer) return MurderAttemptResult.SuppressKill;
+                if (killer.isRole(RoleId.Pestilence)) return MurderAttemptResult.SuppressKill;
+                if (Medic.isShielded(killer))
                 {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.shieldedMurderAttempt();
-                }
-                if (Mercenary.shielded != null && Mercenary.shielded == target)
-                {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryAddMurder, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.mercenaryAddMurder();
-                }
-                if (GuardianAngel.target != null && GuardianAngel.guardianAngel != null && GuardianAngel.protectActive && GuardianAngel.target == killer)
-                {
-                    return MurderAttemptResult.BlankKill;
-                }
-                if (Medic.shielded != null && Medic.shielded == killer)
-                {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.shieldedMurderAttempt();
+                    foreach (var medic in Medic.GetMedic(killer))
+                    {
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
+                        writer.Write(medic.player.PlayerId);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.shieldedMurderAttempt(medic.player.PlayerId);
+                    }
                     return MurderAttemptResult.SuppressKill;
                 }
-                if (Mercenary.shielded != null && Mercenary.shielded == killer)
+                if (Mercenary.isShielded(killer))
                 {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryAddMurder, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.mercenaryAddMurder();
-                    return MurderAttemptResult.BlankKill;
+                    foreach (var mercenary in Mercenary.GetMercenary(killer))
+                    {
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
+                        writer.Write(mercenary.shielded.PlayerId);
+                        writer.Write(mercenary.player.PlayerId);
+                        writer.Write(false);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.mercenaryShieldedMurderAttempt(mercenary.shielded.PlayerId, mercenary.player.PlayerId, false);
+                    }
+                    return MurderAttemptResult.SuppressKill;
                 }
-                if (TOUMapOptions.shieldFirstKill && TOUMapOptions.firstKillPlayer == killer) return MurderAttemptResult.SuppressKill;
+                if (GuardianAngel.isProtected(killer)) return MurderAttemptResult.SuppressKill;
                 return MurderAttemptResult.ReverseKill;
             }
 
-            // Reverse vh veteran kill
-            if (VampireHunter.veteran != null && VampireHunter.veteran == target && VampireHunter.isAlertActive)
+            // Handle mayor bodyguard
+            if (Mayor.players.Any(x => x.player == target && x.isBodyguardActive))
             {
-                if (Medic.shielded != null && Medic.shielded == target)
+                if (shieldFirstKill && firstKillPlayer == killer) return MurderAttemptResult.SuppressKill;
+                if (killer.isRole(RoleId.Pestilence)) return MurderAttemptResult.SuppressKill;
+                if (Medic.isShielded(killer))
                 {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.shieldedMurderAttempt();
-                }
-                if (Mercenary.shielded != null && Mercenary.shielded == target)
-                {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryAddMurder, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.mercenaryAddMurder();
-                }
-                if (GuardianAngel.target != null && GuardianAngel.guardianAngel != null && GuardianAngel.protectActive && GuardianAngel.target == killer)
-                {
-                    return MurderAttemptResult.BlankKill;
-                }
-                if (Medic.shielded != null && Medic.shielded == killer)
-                {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.shieldedMurderAttempt();
+                    foreach (var medic in Medic.GetMedic(killer))
+                    {
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
+                        writer.Write(medic.player.PlayerId);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.shieldedMurderAttempt(medic.player.PlayerId);
+                    }
                     return MurderAttemptResult.SuppressKill;
                 }
-                if (Mercenary.shielded != null && Mercenary.shielded == killer)
+                if (Mercenary.isShielded(killer))
                 {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryAddMurder, SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.mercenaryAddMurder();
-                    return MurderAttemptResult.BlankKill;
+                    foreach (var mercenary in Mercenary.GetMercenary(killer))
+                    {
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
+                        writer.Write(mercenary.shielded.PlayerId);
+                        writer.Write(mercenary.player.PlayerId);
+                        writer.Write(false);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.mercenaryShieldedMurderAttempt(mercenary.shielded.PlayerId, mercenary.player.PlayerId, false);
+                    }
+                    return MurderAttemptResult.SuppressKill;
                 }
-                if (TOUMapOptions.shieldFirstKill && TOUMapOptions.firstKillPlayer == killer) return MurderAttemptResult.SuppressKill;
+                if (GuardianAngel.isProtected(killer)) return MurderAttemptResult.SuppressKill;
                 return MurderAttemptResult.ReverseKill;
             }
 
-            if (TransportationToolPatches.isUsingTransportation(target) && !blockRewind && killer == Poisoner.poisoner)
+            // Handle pestilence revert kill
+            if (Pestilence.players.Any(x => x.player == target))
             {
-                return MurderAttemptResult.DelayPoisonerKill;
+                if (shieldFirstKill && firstKillPlayer == killer) return MurderAttemptResult.SuppressKill;
+                if (Medic.isShielded(killer))
+                {
+                    foreach (var medic in Medic.GetMedic(killer))
+                    {
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
+                        writer.Write(medic.player.PlayerId);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.shieldedMurderAttempt(medic.player.PlayerId);
+                    }
+                    return MurderAttemptResult.SuppressKill;
+                }
+                if (Mercenary.isShielded(killer))
+                {
+                    foreach (var mercenary in Mercenary.GetMercenary(killer))
+                    {
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
+                        writer.Write(mercenary.shielded.PlayerId);
+                        writer.Write(mercenary.player.PlayerId);
+                        writer.Write(false);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.mercenaryShieldedMurderAttempt(mercenary.shielded.PlayerId, mercenary.player.PlayerId, false);
+                    }
+                    return MurderAttemptResult.SuppressKill;
+                }
+                if (GuardianAngel.isProtected(killer)) return MurderAttemptResult.SuppressKill;
+                return MurderAttemptResult.ReverseKill;
             }
-            else if (TransportationToolPatches.isUsingTransportation(target))
+
+            // Handle mercenary armor
+            if (Mercenary.players.Any(x => x.player == target && x.isArmorActive))
+            {
+                if (shieldFirstKill && firstKillPlayer == killer) return MurderAttemptResult.SuppressKill;
+                if (killer.isRole(RoleId.Pestilence)) return MurderAttemptResult.SuppressKill;
+                if (Medic.isShielded(killer))
+                {
+                    foreach (var medic in Medic.GetMedic(killer))
+                    {
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
+                        writer.Write(medic.player.PlayerId);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.shieldedMurderAttempt(medic.player.PlayerId);
+                    }
+                    return MurderAttemptResult.SuppressKill;
+                }
+                if (Mercenary.isShielded(killer))
+                {
+                    foreach (var mercenary in Mercenary.GetMercenary(killer))
+                    {
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
+                        writer.Write(mercenary.shielded.PlayerId);
+                        writer.Write(mercenary.player.PlayerId);
+                        writer.Write(false);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.mercenaryShieldedMurderAttempt(mercenary.shielded.PlayerId, mercenary.player.PlayerId, false);
+                    }
+                    return MurderAttemptResult.SuppressKill;
+                }
+                if (GuardianAngel.isProtected(killer)) return MurderAttemptResult.SuppressKill;
+                return MurderAttemptResult.ReverseKill;
+            }
+
+            // Handle vampire hunter reverse kill
+            if (VampireHunter.players.Any(x => x.player == target) && (Dracula.players.Any(x => x.player == killer) || Vampire.players.Any(x => x.player == killer)))
+            {
+                if (shieldFirstKill && firstKillPlayer == killer) return MurderAttemptResult.SuppressKill;
+                if (Medic.isShielded(killer))
+                {
+                    foreach (var medic in Medic.GetMedic(killer))
+                    {
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.ShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
+                        writer.Write(medic.player.PlayerId);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.shieldedMurderAttempt(medic.player.PlayerId);
+                    }
+                    return MurderAttemptResult.SuppressKill;
+                }
+                if (Mercenary.isShielded(killer))
+                {
+                    foreach (var mercenary in Mercenary.GetMercenary(killer))
+                    {
+                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(killer.NetId, (byte)CustomRPC.MercenaryShieldedMurderAttempt, Hazel.SendOption.Reliable, -1);
+                        writer.Write(mercenary.shielded.PlayerId);
+                        writer.Write(mercenary.player.PlayerId);
+                        writer.Write(false);
+                        AmongUsClient.Instance.FinishRpcImmediately(writer);
+                        RPCProcedure.mercenaryShieldedMurderAttempt(mercenary.shielded.PlayerId, mercenary.player.PlayerId, false);
+                    }
+                    return MurderAttemptResult.SuppressKill;
+                }
+                if (GuardianAngel.isProtected(killer)) return MurderAttemptResult.SuppressKill;
+                return MurderAttemptResult.ReverseKill;
+            }
+
+            // Thief if hit crew only kill if setting says so, but also kill the thief.
+            if (Thief.isFailedThiefKill(target, killer, targetRole))
+            {
+                var thief = Thief.getRole(killer);
+                thief.suicideFlag = true;
+                return MurderAttemptResult.SuppressKill;
+            }
+
+            if (TransportationToolPatches.isUsingTransportation(target))
                 return MurderAttemptResult.SuppressKill;
             return MurderAttemptResult.PerformKill;
         }
@@ -598,6 +615,8 @@ namespace TownOfUs
             writer.Write(showAnimation ? Byte.MaxValue : 0);
             AmongUsClient.Instance.FinishRpcImmediately(writer);
             RPCProcedure.uncheckedMurderPlayer(killer.PlayerId, target.PlayerId, showAnimation ? Byte.MaxValue : (byte)0);
+            politicianRpcCampaign(killer, target);
+            plaguebearerRpcInfect(killer, target);
         }
 
         public static MurderAttemptResult checkMurderAttemptAndKill(PlayerControl killer, PlayerControl target, bool isMeetingStart = false, bool showAnimation = true, bool ignoreBlank = false, bool ignoreIfKillerIsDead = false)
@@ -610,57 +629,81 @@ namespace TownOfUs
             {
                 MurderPlayer(killer, target, showAnimation);
             }
-            else if (murder == MurderAttemptResult.ReverseKill)
+            if (murder == MurderAttemptResult.ReverseKill)
             {
-                checkMurderAttemptAndKill(target, killer);
-            }
-            else if (murder == MurderAttemptResult.DelayPoisonerKill)
-            {
-                HudManager.Instance.StartCoroutine(Effects.Lerp(10f, new Action<float>((p) =>
-                {
-                    if (!TransportationToolPatches.isUsingTransportation(target) && Poisoner.poisoned != null)
-                    {
-                        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.PoisonerSetPoisoned, Hazel.SendOption.Reliable, -1);
-                        writer.Write(byte.MaxValue);
-                        writer.Write(byte.MaxValue);
-                        AmongUsClient.Instance.FinishRpcImmediately(writer);
-                        RPCProcedure.poisonerSetPoisoned(byte.MaxValue, byte.MaxValue);
-                        MurderPlayer(killer, target, showAnimation);
-                    }
-                })));
+                checkMurderAttemptAndKill(target, killer, isMeetingStart);
             }
             return murder;
         }
 
-        public static bool isNeutral(this PlayerControl player)
+        public static bool checkSuspendAction(PlayerControl player, PlayerControl target)
         {
-            RoleInfo roleInfo = RoleInfo.getRoleInfoForPlayer(player, false).FirstOrDefault();
-            if (roleInfo != null)
-                return roleInfo.factionId == FactionId.Neutral;
+            if (player == null || target == null) return false;
+            if (Veteran.players.Any(x => x.player == target && x.isAlertActive))
+            {
+                checkMurderAttemptAndKill(target, player);
+                return true;
+            }
+            if (Mayor.players.Any(x => x.player == target && x.isBodyguardActive))
+            {
+                checkMurderAttemptAndKill(target, player);
+                return true;
+            }
+            if (Pestilence.players.Any(x => x.player == target))
+            {
+                checkMurderAttemptAndKill(target, player);
+                return true;
+            }
             return false;
         }
 
-        public static bool isNeutralKiller(this PlayerControl player)
+        public static bool isBenignNeutral(this PlayerControl player)
         {
             RoleInfo roleInfo = RoleInfo.getRoleInfoForPlayer(player, false).FirstOrDefault();
             if (roleInfo != null)
-                return roleInfo.factionId == FactionId.NeutralKiller;
+                return roleInfo.factionId == FactionId.BenignNeutral;
+            return false;
+        }
+
+        public static bool isEvilNeutral(this PlayerControl player)
+        {
+            RoleInfo roleInfo = RoleInfo.getRoleInfoForPlayer(player, false).FirstOrDefault();
+            if (roleInfo != null)
+                return roleInfo.factionId == FactionId.EvilNeutral;
+            return false;
+        }
+
+        public static bool isKillingNeutral(this PlayerControl player)
+        {
+            RoleInfo roleInfo = RoleInfo.getRoleInfoForPlayer(player, false).FirstOrDefault();
+            if (roleInfo != null)
+                return roleInfo.factionId == FactionId.KillingNeutral;
             return false;
         }
 
         public static bool isAnyNeutral(this PlayerControl player)
         {
-            return player.isNeutral() || player.isNeutralKiller();
+            return player.isBenignNeutral() || player.isEvilNeutral() || player.isKillingNeutral();
         }
 
         public static bool isKiller(this PlayerControl player)
         {
-            return player.Data.Role.IsImpostor || player.isNeutralKiller();
+            return player.Data.Role.IsImpostor || player.isKillingNeutral();
         }
 
         public static bool isEvil(this PlayerControl player)
         {
             return player.Data.Role.IsImpostor || player.isAnyNeutral();
+        }
+
+        public static bool canBeErased(this PlayerControl player)
+        {
+            return !player.isKillingNeutral();
+        }
+
+        public static bool MushroomSabotageActive()
+        {
+            return PlayerControl.LocalPlayer.myTasks.ToArray().Any((x) => x.TaskType == TaskTypes.MushroomMixupSabotage);
         }
 
         public static bool zoomOutStatus = false;
@@ -729,15 +772,76 @@ namespace TownOfUs
             }
         }
 
-        public static bool hasImpVision(NetworkedPlayerInfo player)
+        public static bool hasImpVision(this NetworkedPlayerInfo player)
         {
             return player.Role.IsImpostor
-                || (Jester.jester != null && Jester.jester.PlayerId == player.PlayerId && Jester.hasImpostorVision)
-                || ((Dracula.dracula != null && Dracula.dracula.PlayerId == player.PlayerId || Dracula.formerDraculas.Any(x => x.PlayerId == player.PlayerId)) && Dracula.hasImpostorVision)
-                || (Vampire.vampire != null && Vampire.vampire.PlayerId == player.PlayerId && Vampire.hasImpostorVision)
-                || (Juggernaut.juggernaut != null && Juggernaut.juggernaut.PlayerId == player.PlayerId && Juggernaut.hasImpostorVision)
-                || (Werewolf.werewolf != null && Werewolf.werewolf.PlayerId == player.PlayerId && Werewolf.isRampageActive)
-                || (Glitch.glitch != null && Glitch.glitch.PlayerId == player.PlayerId && Glitch.hasImpostorVision);
+                || (player.Object.isRole(RoleId.Jester) && Jester.hasImpostorVision)
+                || (player.Object.isRole(RoleId.Juggernaut) && Juggernaut.hasImpostorVision)
+                || (player.Object.isRole(RoleId.Pestilence) && Pestilence.hasImpostorVision)
+                || (player.Object.isRole(RoleId.Dracula) && Dracula.hasImpostorVision)
+                || (player.Object.isRole(RoleId.Vampire) && Vampire.hasImpostorVision)
+                || (player.Object.isRole(RoleId.Glitch) && Glitch.hasImpostorVision)
+                || (player.Object.isRole(RoleId.Arsonist) && Arsonist.hasImpostorVision)
+                || (player.Object.isRole(RoleId.Agent) && Agent.hasImpostorVision)
+                || (player.Object.isRole(RoleId.Thief) && Thief.hasImpostorVision);
+        }
+
+        public static PlayerControl setTarget(bool onlyCrewmates = false, bool targetPlayersInVents = false, List<PlayerControl> untargetablePlayers = null, PlayerControl targetingPlayer = null)
+        {
+            PlayerControl result = null;
+            float num = LegacyGameOptions.KillDistances[Mathf.Clamp(GameOptionsManager.Instance.currentNormalGameOptions.KillDistance, 0, 2)];
+            if (!MapUtilities.CachedShipStatus) return result;
+            if (targetingPlayer == null) targetingPlayer = PlayerControl.LocalPlayer;
+            if (targetingPlayer.Data.IsDead) return result;
+
+            Vector2 truePosition = targetingPlayer.GetTruePosition();
+            foreach (var playerInfo in GameData.Instance.AllPlayers.GetFastEnumerator())
+            {
+                if (!playerInfo.Disconnected && playerInfo.PlayerId != targetingPlayer.PlayerId && !playerInfo.IsDead && (!onlyCrewmates || !playerInfo.Role.IsImpostor))
+                {
+                    PlayerControl @object = playerInfo.Object;
+                    if (untargetablePlayers != null && untargetablePlayers.Any(x => x == @object))
+                    {
+                        // if that player is not targetable: skip check
+                        continue;
+                    }
+
+                    if (@object && (!@object.inVent || targetPlayersInVents))
+                    {
+                        Vector2 vector = @object.GetTruePosition() - truePosition;
+                        float magnitude = vector.magnitude;
+                        if (magnitude <= num && !PhysicsHelpers.AnyNonTriggersBetween(truePosition, vector.normalized, magnitude, Constants.ShipAndObjectsMask))
+                        {
+                            result = @object;
+                            num = magnitude;
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        public static void setPlayerOutline(PlayerControl target, Color color)
+        {
+            if (target == null || target.cosmetics?.currentBodySprite?.BodySprite == null) return;
+
+            target.cosmetics.currentBodySprite.BodySprite.material.SetFloat("_Outline", 1f);
+            target.cosmetics.currentBodySprite.BodySprite.material.SetColor("_OutlineColor", color);
+        }
+
+        public static void turnToImpostor(PlayerControl player)
+        {
+            player.Data.Role.TeamType = RoleTeamTypes.Impostor;
+            RoleManager.Instance.SetRole(player, RoleTypes.Impostor);
+            player.SetKillTimer(GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown);
+
+            foreach (var player2 in PlayerControl.AllPlayerControls)
+            {
+                if (player2.Data.Role.IsImpostor && PlayerControl.LocalPlayer.Data.Role.IsImpostor)
+                {
+                    player.cosmetics.nameText.color = Palette.ImpostorRed;
+                }
+            }
         }
 
         public static SabatageTypes getActiveSabo()
@@ -752,7 +856,7 @@ namespace TownOfUs
                 {
                     return SabatageTypes.O2;
                 }
-                else if (task.TaskType == TaskTypes.ResetReactor || task.TaskType == TaskTypes.StopCharles || task.TaskType == TaskTypes.StopCharles)
+                else if (task.TaskType == TaskTypes.ResetReactor || task.TaskType == TaskTypes.StopCharles || task.TaskType == TaskTypes.ResetSeismic)
                 {
                     return SabatageTypes.Reactor;
                 }
@@ -760,28 +864,12 @@ namespace TownOfUs
                 {
                     return SabatageTypes.Comms;
                 }
+                else if (task.TaskType == TaskTypes.MushroomMixupSabotage)
+                {
+                    return SabatageTypes.MushroomMixUp;
+                }
             }
             return SabatageTypes.None;
-        }
-
-        public static bool isCommsActive()
-        {
-            return getActiveSabo() == SabatageTypes.Comms;
-        }
-
-        public static bool isCamoComms()
-        {
-            return isCommsActive() && TOUMapOptions.camoComms;
-        }
-
-        public static bool isActiveCamoComms()
-        {
-            return isCamoComms() && Camouflager.camoComms;
-        }
-
-        public static bool wasActiveCamoComms()
-        {
-            return !isCamoComms() && Camouflager.camoComms;
         }
 
         public static object TryCast(this Il2CppObjectBase self, Type type)
@@ -789,56 +877,112 @@ namespace TownOfUs
             return AccessTools.Method(self.GetType(), nameof(Il2CppObjectBase.TryCast)).MakeGenericMethod(type).Invoke(self, Array.Empty<object>());
         }
 
-        public static void handlePoisonerKillOnBodyReport()
+        public static bool isSabotageTask(PlayerTask task)
         {
-            Helpers.checkMurderAttemptAndKill(Poisoner.poisoner, Poisoner.poisoned, true, false);
-            MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.PoisonerSetPoisoned, Hazel.SendOption.Reliable, -1);
-            writer.Write(byte.MaxValue);
-            writer.Write(byte.MaxValue);
+            var tt = task.TaskType;
+            return tt is (TaskTypes.FixComms or TaskTypes.ResetSeismic or TaskTypes.FixLights or TaskTypes.RestoreOxy or TaskTypes.StopCharles or TaskTypes.MushroomMixupSabotage or TaskTypes.ResetReactor);
+        }
+
+        public static bool TryAdd<T>(this List<T> list, T item)
+        {
+            if (list == null || item == null || list.Contains(item)) return false;
+            try
+            {
+                list.Add(item);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool IsWinner(this string playerName)
+        {
+            var flag = false;
+            var winners = EndGameResult.CachedWinners;
+
+            foreach (var win in winners)
+            {
+                if (win.PlayerName == playerName)
+                {
+                    flag = true;
+                    break;
+                }
+            }
+
+            return flag;
+        }
+
+        public static void politicianRpcCampaign(PlayerControl source, PlayerControl target)
+        {
+            new WaitForSeconds(1f);
+            MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.PoliticianCampaign, SendOption.Reliable, -1);
+            writer.Write(source.PlayerId);
+            writer.Write(target.PlayerId);
             AmongUsClient.Instance.FinishRpcImmediately(writer);
-            RPCProcedure.poisonerSetPoisoned(byte.MaxValue, byte.MaxValue);
+            RPCProcedure.politicianCampaign(source.PlayerId, target.PlayerId);
         }
 
-        public static void turnToImpostor(PlayerControl player)
+        public static void plaguebearerRpcInfect(PlayerControl source, PlayerControl target)
         {
-            player.Data.Role.TeamType = RoleTeamTypes.Impostor;
-            RoleManager.Instance.SetRole(player, RoleTypes.Impostor);
-            player.SetKillTimer(GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown);
-
-            foreach (var player2 in PlayerControl.AllPlayerControls)
-                if (player2.Data.Role.IsImpostor && PlayerControl.LocalPlayer.Data.Role.IsImpostor)
-                    player.cosmetics.nameText.color = Palette.ImpostorRed;
+            new WaitForSeconds(1f);
+            MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.PlaguebearerInfect, SendOption.Reliable, -1);
+            writer.Write(source.PlayerId);
+            writer.Write(target.PlayerId);
+            AmongUsClient.Instance.FinishRpcImmediately(writer);
+            RPCProcedure.plaguebearerInfect(source.PlayerId, target.PlayerId);
         }
 
-        public static void checkWatchFlash(PlayerControl target)
+        public static void handleVampireKillOnBodyReport()
         {
-            if (PlayerControl.LocalPlayer == Investigator.watching)
+            foreach (var poisoner in Poisoner.players)
             {
-                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.InvestigatorWatchFlash, SendOption.Reliable, -1);
-                writer.Write(target.PlayerId);
+                MurderAttemptResult murder = checkMuderAttempt(poisoner.player, poisoner.poisoned, true, false, true);
+                switch (murder)
+                {
+                    case MurderAttemptResult.PerformKill:
+                        MurderPlayer(poisoner.player, poisoner.poisoned, false);
+                        break;
+                    case MurderAttemptResult.SuppressKill:
+                        break;
+                    case MurderAttemptResult.BlankKill:
+                        break;
+                    case MurderAttemptResult.ReverseKill:
+                        checkMurderAttemptAndKill(poisoner.poisoned, poisoner.player, true, false);
+                        break;
+                }
+
+                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.PoisonerSetPoisoned, Hazel.SendOption.Reliable, -1);
+                writer.Write(byte.MaxValue);
+                writer.Write(byte.MaxValue);
+                writer.Write(poisoner.player.PlayerId);
                 AmongUsClient.Instance.FinishRpcImmediately(writer);
-                RPCProcedure.investigatorWatchFlash(target.PlayerId);
+                RPCProcedure.poisonerSetPoisoned(byte.MaxValue, byte.MaxValue, poisoner.player.PlayerId);
             }
         }
 
-        public static bool checkAndDoVetKill(PlayerControl target)
+        public static void Shuffle<T>(this List<T> list)
         {
-            bool shouldVetKill = Veteran.veteran == target && Veteran.isAlertActive;
-            if (shouldVetKill)
+            for (var i = list.Count - 1; i > 0; --i)
             {
-                checkMurderAttemptAndKill(Veteran.veteran, PlayerControl.LocalPlayer);
+                var j = UnityEngine.Random.Range(0, i + 1);
+                (list[i], list[j]) = (list[j], list[i]);
             }
-            return shouldVetKill;
         }
 
-        public static bool checkAndDoVHVetKill(PlayerControl target)
+        public static Il2CppSystem.Collections.Generic.List<PlayerControl> Shuffle(Il2CppSystem.Collections.Generic.List<PlayerControl> playersToDie)
         {
-            bool shouldVHVetKill = VampireHunter.veteran == target && VampireHunter.isAlertActive;
-            if (shouldVHVetKill)
+            var count = playersToDie.Count;
+            var last = count - 1;
+            for (var i = 0; i < last; ++i)
             {
-                checkMurderAttemptAndKill(VampireHunter.veteran, PlayerControl.LocalPlayer);
+                var r = UnityEngine.Random.Range(i, count);
+                var tmp = playersToDie[i];
+                playersToDie[i] = playersToDie[r];
+                playersToDie[r] = tmp;
             }
-            return shouldVHVetKill;
+            return playersToDie;
         }
 
         public static IEnumerator BlackmailShhh()
@@ -857,6 +1001,12 @@ namespace TownOfUs
             HudManager.Instance.shhhEmblem.HoldDuration = TempDuration;
             yield return HudManager.Instance.CoFadeFullScreen(new Color(0f, 0f, 0f, 0.98f), Color.clear);
             yield return null;
+        }
+
+        // Add a method to calculate weighted role probabilities based on the session's role history
+        public static Dictionary<RoleId, float> CalculateWeightedRoleProbabilities(PlayerControl player)
+        {
+            return new Dictionary<RoleId, float>();
         }
 
         public static Il2CppSystem.Collections.Generic.List<PlayerControl> getClosestPlayers(Vector2 truePosition, float radius, bool includeDead)
@@ -897,7 +1047,7 @@ namespace TownOfUs
                 if (MeetingHud.Instance)
                 {
                     renderer.enabled = false;
-                    if (PlayerControl.LocalPlayer.PlayerId == Grenadier.grenadier.PlayerId && Grenadier.flashedPlayers.Count > 0)
+                    if (PlayerControl.LocalPlayer.isRole(RoleId.Grenadier) && Grenadier.flashedPlayers.Count > 0)
                     {
                         MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.GrenadierFlash, SendOption.Reliable, -1);
                         writer.Write(true);
@@ -917,7 +1067,7 @@ namespace TownOfUs
                     var fadeOutProgress = (p - (1 - fadeFraction)) / fadeFraction;
                     if (renderer != null) renderer.color = new Color(color.r, color.g, color.b, Mathf.Clamp01((1 - fadeOutProgress) * alpha));
 
-                    if (PlayerControl.LocalPlayer.PlayerId == Grenadier.grenadier.PlayerId && Grenadier.flashedPlayers.Count > 0)
+                    if (PlayerControl.LocalPlayer.isRole(RoleId.Grenadier) && Grenadier.flashedPlayers.Count > 0)
                     {
                         MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.GrenadierFlash, SendOption.Reliable, -1);
                         writer.Write(true);
@@ -946,7 +1096,7 @@ namespace TownOfUs
 
         public static bool isFlashedByGrenadier(this PlayerControl player)
         {
-            return Grenadier.grenadier != null && Grenadier.flashTimer > 0f && Grenadier.flashedPlayers.Contains(player);
+            return Grenadier.exists && Grenadier.flashTimer > 0f && Grenadier.flashedPlayers.Contains(player);
         }
 
         public static IEnumerator Hack(PlayerControl hackPlayer)
@@ -1142,86 +1292,137 @@ namespace TownOfUs
             Glitch.hackedPlayer = null;
         }
 
-        public static bool stopGameEndForKillers()
+        public static int GetDisplayType(int players)
         {
-            bool powerCrewAlive = false;
-
-            if (CustomOptionHolder.sheriffBlockGameEnd.getBool() && Sheriff.sheriff != null && !Sheriff.sheriff.Data.IsDead) powerCrewAlive = true;
-            if (CustomOptionHolder.veteranBlockGameEnd.getBool() && Veteran.veteran != null && !Veteran.veteran.Data.IsDead) powerCrewAlive = true;
-            if (CustomOptionHolder.veteranBlockGameEnd.getBool() && VampireHunter.veteran != null && !VampireHunter.veteran.Data.IsDead) powerCrewAlive = true;
-            if (CustomOptionHolder.mayorBlockGameEnd.getBool() && Mayor.mayor != null && !Mayor.mayor.Data.IsDead) powerCrewAlive = true;
-            if (CustomOptionHolder.swapperBlockGameEnd.getBool() && Swapper.swapper != null && !Swapper.swapper.Data.IsDead) powerCrewAlive = true;
-            if (CustomOptionHolder.niceGuesserBlockGameEnd.getBool() && Guesser.niceGuesser != null && !Guesser.niceGuesser.Data.IsDead) powerCrewAlive = true;
-            if (CustomOptionHolder.vampireHunterBlockGameEnd.getBool() && VampireHunter.vampireHunter != null && !VampireHunter.vampireHunter.Data.IsDead) powerCrewAlive = true;
-
-            return powerCrewAlive;
+            if (players <= 15)
+                return 0;
+            return players > 18 ? 2 : 1;
         }
 
-        public static void randomPlayersTP()
+        public static Vector3 convertPos(int index, int arrangeType, (int x, int y)[] arrangement, Vector3 origin, Vector3[] originOffset, Vector3 contentsOffset, float[] scale, (float x, float y)[] contentAreaMultiplier)
         {
-            if (MapBehaviour.Instance)
-                MapBehaviour.Instance.Close();
-            if (Minigame.Instance)
-                Minigame.Instance.ForceClose();
-            if (PlayerControl.LocalPlayer.inVent)
-            {
-                PlayerControl.LocalPlayer.MyPhysics.RpcExitVent(Vent.currentVent.Id);
-                PlayerControl.LocalPlayer.MyPhysics.ExitAllVents();
-            }
-
-            var SpawnPositions = GameOptionsManager.Instance.currentNormalGameOptions.MapId switch
-            {
-                0 => MapData.SkeldSpawnPosition,
-                1 => MapData.MiraSpawnPosition,
-                2 => MapData.PolusSpawnPosition,
-                3 => MapData.DleksSpawnPosition,
-                4 => MapData.AirshipSpawnPosition,
-                5 => MapData.FungleSpawnPosition,
-                _ => MapData.FindVentSpawnPositions(),
-            };
-            PlayerControl.LocalPlayer.NetTransform.RpcSnapTo(SpawnPositions[TownOfUs.rnd.Next(SpawnPositions.Count)]);
+            int num1 = index % arrangement[arrangeType].x;
+            int num2 = index / arrangement[arrangeType].x;
+            return origin + originOffset[arrangeType] + new Vector3(contentsOffset.x * scale[arrangeType] * contentAreaMultiplier[arrangeType].x * num1, contentsOffset.y * scale[arrangeType] * contentAreaMultiplier[arrangeType].y * num2, (float)(-(double)num2 * 0.0099999997764825821));
         }
 
-        public static bool checkArmored(PlayerControl target, bool breakShield, bool showShield, bool additionalCondition = true)
+        public static IEnumerator TransportPlayers(byte player1, byte player2)
         {
-            if (target != null && Armored.armored != null && Armored.armored == target && !Armored.isBrokenArmor && additionalCondition)
+            var TP1 = playerById(player1);
+            var TP2 = playerById(player2);
+            var deadBodies = UnityEngine.Object.FindObjectsOfType<DeadBody>();
+            DeadBody Player1Body = null;
+            DeadBody Player2Body = null;
+            if (TP1.Data.IsDead)
             {
-                if (breakShield)
-                {
-                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.BreakArmor, Hazel.SendOption.Reliable, -1);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
-                    RPCProcedure.breakArmor();
-                }
-                if (showShield)
-                {
-                    target.ShowFailedMurder();
-                }
-                return true;
+                foreach (var body in deadBodies) if (body.ParentId == TP1.PlayerId) Player1Body = body;
+                if (Player1Body == null) yield break;
             }
-            return false;
+            if (TP2.Data.IsDead)
+            {
+                foreach (var body in deadBodies) if (body.ParentId == TP2.PlayerId) Player2Body = body;
+                if (Player2Body == null) yield break;
+            }
+
+            if (TP1.inVent && PlayerControl.LocalPlayer.PlayerId == TP1.PlayerId)
+            {
+                TP1.MyPhysics.ExitAllVents();
+            }
+            if (TP2.inVent && PlayerControl.LocalPlayer.PlayerId == TP2.PlayerId)
+            {
+                TP2.MyPhysics.ExitAllVents();
+            }
+
+            if (Player1Body == null && Player2Body == null)
+            {
+                TP1.MyPhysics.ResetMoveState();
+                TP2.MyPhysics.ResetMoveState();
+                var TP1Position = TP1.GetTruePosition();
+                TP1Position = new Vector2(TP1Position.x, TP1Position.y + 0.3636f);
+                var TP2Position = TP2.GetTruePosition();
+                TP2Position = new Vector2(TP2Position.x, TP2Position.y + 0.3636f);
+
+                TP1.transform.position = TP2Position;
+                TP1.NetTransform.SnapTo(TP2Position);
+                TP2.transform.position = TP1Position;
+                TP2.NetTransform.SnapTo(TP1Position);
+            }
+            else if (Player1Body != null && Player2Body == null)
+            {
+                TP2.MyPhysics.ResetMoveState();
+                var TP1Position = Player1Body.TruePosition;
+                TP1Position = new Vector2(TP1Position.x, TP1Position.y + 0.3636f);
+                var TP2Position = TP2.GetTruePosition();
+                TP2Position = new Vector2(TP2Position.x, TP2Position.y + 0.3636f);
+
+                Player1Body.transform.position = TP2Position;
+                TP2.transform.position = TP1Position;
+                TP2.NetTransform.SnapTo(TP1Position);
+            }
+            else if (Player1Body == null && Player2Body != null)
+            {
+                TP1.MyPhysics.ResetMoveState();
+                var TP1Position = TP1.GetTruePosition();
+                TP1Position = new Vector2(TP1Position.x, TP1Position.y + 0.3636f);
+                var TP2Position = Player2Body.TruePosition;
+                TP2Position = new Vector2(TP2Position.x, TP2Position.y + 0.3636f);
+
+                Player2Body.transform.position = TP1Position;
+                TP1.transform.position = TP2Position;
+                TP1.NetTransform.SnapTo(TP2Position);
+            }
+            else if (Player1Body != null && Player2Body != null)
+            {
+                var TempPosition = Player1Body.TruePosition;
+                Player1Body.transform.position = Player2Body.TruePosition;
+                Player2Body.transform.position = TempPosition;
+            }
+
+            if (PlayerControl.LocalPlayer.PlayerId == TP1.PlayerId || PlayerControl.LocalPlayer.PlayerId == TP2.PlayerId)
+            {
+                showFlash(Transporter.color);
+                if (Minigame.Instance) Minigame.Instance.Close();
+            }
+
+            TP1.moveable = true;
+            TP2.moveable = true;
+            TP1.Collider.enabled = true;
+            TP2.Collider.enabled = true;
+            TP1.NetTransform.enabled = true;
+            TP2.NetTransform.enabled = true;
         }
 
-        public static void Shuffle<T>(this List<T> list)
+        public static List<RoleInfo> allRoleInfos()
         {
-            for (var i = list.Count - 1; i > 0; --i)
+            var allRoleInfo = new List<RoleInfo>();
+            foreach (var role in RoleInfo.allRoleInfos)
             {
-                var j = UnityEngine.Random.Range(0, i + 1);
-                (list[i], list[j]) = (list[j], list[i]);
+                if (role.factionId is FactionId.Modifier) continue;
+                allRoleInfo.Add(role);
             }
+            return allRoleInfo;
         }
 
-        public static Il2CppSystem.Collections.Generic.List<PlayerControl> Shuffle(Il2CppSystem.Collections.Generic.List<PlayerControl> playersToDie)
+        public static List<RoleInfo> onlineRoleInfo()
         {
-            var count = playersToDie.Count;
-            var last = count - 1;
-            for (var i = 0; i < last; ++i)
+            var onlineRoleInfo = new List<RoleInfo>();
+            var roleData = RoleManagerSelectRolesPatch.getRoleAssignmentData();
+            foreach (var roleInfo in RoleInfo.allRoleInfos)
             {
-                var r = UnityEngine.Random.Range(i, count);
-                var tmp = playersToDie[i];
-                playersToDie[i] = playersToDie[r];
-                playersToDie[r] = tmp;
+                if (roleInfo.factionId is FactionId.Modifier) continue;
+                if (roleData.nonKillingNeutralSettings.ContainsKey((byte)roleInfo.roleId) && roleData.nonKillingNeutralSettings[(byte)roleInfo.roleId].rate == 0) continue;
+                else if (roleData.killingNeutralSettings.ContainsKey((byte)roleInfo.roleId) && roleData.killingNeutralSettings[(byte)roleInfo.roleId].rate == 0) continue;
+                else if (roleData.impSettings.ContainsKey((byte)roleInfo.roleId) && roleData.impSettings[(byte)roleInfo.roleId].rate == 0) continue;
+                else if (roleData.crewSettings.ContainsKey((byte)roleInfo.roleId) && roleData.crewSettings[(byte)roleInfo.roleId].rate == 0) continue;
+                else if (roleInfo.roleId == RoleId.Vampire && (!CustomOptionHolder.draculaCanCreateVampire.getBool() || CustomOptionHolder.draculaSpawnRate.getSelection() == 0)) continue;
+                else if (roleInfo.roleId == RoleId.VampireHunter && CustomOptionHolder.draculaSpawnRate.getSelection() == 0) continue;
+                else if (roleInfo.roleId == RoleId.Pursuer && CustomOptionHolder.lawyerSpawnRate.getSelection() == 0) continue;
+                else if (roleInfo.roleId == RoleId.Survivor && CustomOptionHolder.guardianAngelSpawnRate.getSelection() == 0) continue;
+                else if (roleInfo.roleId == RoleId.Pestilence && CustomOptionHolder.plaguebearerSpawnRate.getSelection() == 0) continue;
+                else if (roleInfo.roleId == RoleId.Mayor && CustomOptionHolder.politicianSpawnRate.getSelection() == 0) continue;
+                onlineRoleInfo.Add(roleInfo);
             }
-            return playersToDie;
+            return onlineRoleInfo;
         }
 
         public static Il2CppSystem.Collections.Generic.List<PlayerControl> GetClosestPlayers(Vector2 truePosition, float radius, bool includeDead)
@@ -1245,288 +1446,18 @@ namespace TownOfUs
             }
             return playerControlList;
         }
-
-        public static List<RoleInfo> allRoleInfos()
+        
+        public static bool stopGameEndForKillers()
         {
-            var allRoleInfo = new List<RoleInfo>();
-            foreach (var role in RoleInfo.allRoleInfos)
-            {
-                if (role.factionId is FactionId.Modifier) continue;
-                allRoleInfo.Add(role);
-            }
-            return allRoleInfo;
-        }
+            bool powerCrewAlive = false;
 
-        public static void DestroyAll(this IEnumerable<Component> listie)
-        {
-            foreach (var item in listie)
-            {
-                if (item == null) continue;
-                UnityEngine.Object.Destroy(item);
-                if (item.gameObject == null) return;
-                UnityEngine.Object.Destroy(item.gameObject);
-            }
-        }
+            if (CustomOptionHolder.sheriffBlockGameEnd.getBool() && Sheriff.livingPlayers.Count > 0) powerCrewAlive = true;
+            if (CustomOptionHolder.veteranBlockGameEnd.getBool() && Veteran.livingPlayers.Count > 0) powerCrewAlive = true;
+            if (CustomOptionHolder.vampireHunterBlockGameEnd.getBool() && VampireHunter.livingPlayers.Count > 0) powerCrewAlive = true;
+            if (CustomOptionHolder.mayorBlockGameEnd.getBool() && Mayor.livingPlayers.Count > 0) powerCrewAlive = true;
+            if (CustomOptionHolder.swapperBlockGameEnd.getBool() && Swapper.livingPlayers.Count > 0) powerCrewAlive = true;
 
-        public static bool IsWinner(this string playerName)
-        {
-            var flag = false;
-            var winners = EndGameResult.CachedWinners;
-
-            foreach (var win in winners)
-            {
-                if (win.PlayerName == playerName)
-                {
-                    flag = true;
-                    break;
-                }
-            }
-
-            return flag;
-        }
-    }
-
-    public class MapData
-    {
-        public static readonly List<Vector3> SkeldSpawnPosition =
-        [
-            new Vector3(-2.2f, 2.2f, 0.0f), //cafeteria. botton. top left.
-            new Vector3(0.7f, 2.2f, 0.0f), //caffeteria. button. top right.
-            new Vector3(-2.2f, -0.2f, 0.0f), //caffeteria. button. bottom left.
-            new Vector3(0.7f, -0.2f, 0.0f), //caffeteria. button. bottom right.
-            new Vector3(10.0f, 3.0f, 0.0f), //weapons top
-            new Vector3(9.0f, 1.0f, 0.0f), //weapons bottom
-            new Vector3(6.5f, -3.5f, 0.0f), //O2
-            new Vector3(11.5f, -3.5f, 0.0f), //O2-nav hall
-            new Vector3(17.0f, -3.5f, 0.0f), //navigation top
-            new Vector3(18.2f, -5.7f, 0.0f), //navigation bottom
-            new Vector3(11.5f, -6.5f, 0.0f), //nav-shields top
-            new Vector3(9.5f, -8.5f, 0.0f), //nav-shields bottom
-            new Vector3(9.2f, -12.2f, 0.0f), //shields top
-            new Vector3(8.0f, -14.3f, 0.0f), //shields bottom
-            new Vector3(2.5f, -16f, 0.0f), //coms left
-            new Vector3(4.2f, -16.4f, 0.0f), //coms middle
-            new Vector3(5.5f, -16f, 0.0f), //coms right
-            new Vector3(-1.5f, -10.0f, 0.0f), //storage top
-            new Vector3(-1.5f, -15.5f, 0.0f), //storage bottom
-            new Vector3(-4.5f, -12.5f, 0.0f), //storrage left
-            new Vector3(0.3f, -12.5f, 0.0f), //storrage right
-            new Vector3(4.5f, -7.5f, 0.0f), //admin top
-            new Vector3(4.5f, -9.5f, 0.0f), //admin bottom
-            new Vector3(-9.0f, -8.0f, 0.0f), //elec top left
-            new Vector3(-6.0f, -8.0f, 0.0f), //elec top right
-            new Vector3(-8.0f, -11.0f, 0.0f), //elec bottom
-            new Vector3(-12.0f, -13.0f, 0.0f), //elec-lower hall
-            new Vector3(-17f, -10f, 0.0f), //lower engine top
-            new Vector3(-17.0f, -13.0f, 0.0f), //lower engine bottom
-            new Vector3(-21.5f, -3.0f, 0.0f), //reactor top
-            new Vector3(-21.5f, -8.0f, 0.0f), //reactor bottom
-            new Vector3(-13.0f, -3.0f, 0.0f), //security top
-            new Vector3(-12.6f, -5.6f, 0.0f), // security bottom
-            new Vector3(-17.0f, 2.5f, 0.0f), //upper engibe top
-            new Vector3(-17.0f, -1.0f, 0.0f), //upper engine bottom
-            new Vector3(-10.5f, 1.0f, 0.0f), //upper-mad hall
-            new Vector3(-10.5f, -2.0f, 0.0f), //medbay top
-            new Vector3(-6.5f, -4.5f, 0.0f)
-        ];
-
-        public static readonly List<Vector3> MiraSpawnPosition =
-        [
-            new Vector3(-4.5f, 3.5f, 0.0f), //launchpad top
-            new Vector3(-4.5f, -1.4f, 0.0f), //launchpad bottom
-            new Vector3(8.5f, -1f, 0.0f), //launchpad- med hall
-            new Vector3(14f, -1.5f, 0.0f), //medbay
-            new Vector3(16.5f, 3f, 0.0f), // comms
-            new Vector3(10f, 5f, 0.0f), //lockers
-            new Vector3(6f, 1.5f, 0.0f), //locker room
-            new Vector3(2.5f, 13.6f, 0.0f), //reactor
-            new Vector3(6f, 12f, 0.0f), //reactor middle
-            new Vector3(9.5f, 13f, 0.0f), //lab
-            new Vector3(15f, 9f, 0.0f), //bottom left cross
-            new Vector3(17.9f, 11.5f, 0.0f), //middle cross
-            new Vector3(14f, 17.3f, 0.0f), //office
-            new Vector3(19.5f, 21f, 0.0f), //admin
-            new Vector3(14f, 24f, 0.0f), //greenhouse left
-            new Vector3(22f, 24f, 0.0f), //greenhouse right
-            new Vector3(21f, 8.5f, 0.0f), //bottom right cross
-            new Vector3(28f, 3f, 0.0f), //caf right
-            new Vector3(22f, 3f, 0.0f), //caf left
-            new Vector3(19f, 4f, 0.0f), //storage
-            new Vector3(22f, -2f, 0.0f)
-        ];
-
-        public static readonly List<Vector3> PolusSpawnPosition =
-        [
-            new Vector3(16.6f, -1f, 0.0f), //dropship top
-            new Vector3(16.6f, -5f, 0.0f), //dropship bottom
-            new Vector3(20f, -9f, 0.0f), //above storrage
-            new Vector3(22f, -7f, 0.0f), //right fuel
-            new Vector3(25.5f, -6.9f, 0.0f), //drill
-            new Vector3(29f, -9.5f, 0.0f), //lab lockers
-            new Vector3(29.5f, -8f, 0.0f), //lab weather notes
-            new Vector3(35f, -7.6f, 0.0f), //lab table
-            new Vector3(40.4f, -8f, 0.0f), //lab scan
-            new Vector3(33f, -10f, 0.0f), //lab toilet
-            new Vector3(39f, -15f, 0.0f), //specimen hall top
-            new Vector3(36.5f, -19.5f, 0.0f), //specimen top
-            new Vector3(36.5f, -21f, 0.0f), //specimen bottom
-            new Vector3(28f, -21f, 0.0f), //specimen hall bottom
-            new Vector3(24f, -20.5f, 0.0f), //admin tv
-            new Vector3(22f, -25f, 0.0f), //admin books
-            new Vector3(16.6f, -17.5f, 0.0f), //office coffe
-            new Vector3(22.5f, -16.5f, 0.0f), //office projector
-            new Vector3(24f, -17f, 0.0f), //office figure
-            new Vector3(27f, -16.5f, 0.0f), //office lifelines
-            new Vector3(32.7f, -15.7f, 0.0f), //lavapool
-            new Vector3(31.5f, -12f, 0.0f), //snowmad below lab
-            new Vector3(10f, -14f, 0.0f), //below storrage
-            new Vector3(21.5f, -12.5f, 0.0f), //storrage vent
-            new Vector3(19f, -11f, 0.0f), //storrage toolrack
-            new Vector3(12f, -7f, 0.0f), //left fuel
-            new Vector3(5f, -7.5f, 0.0f), //above elec
-            new Vector3(10f, -12f, 0.0f), //elec fence
-            new Vector3(9f, -9f, 0.0f), //elec lockers
-            new Vector3(5f, -9f, 0.0f), //elec window
-            new Vector3(4f, -11.2f, 0.0f), //elec tapes
-            new Vector3(5.5f, -16f, 0.0f), //elec-O2 hall
-            new Vector3(1.2f, -17.5f, 0.0f), //O2 tree hayball
-            new Vector3(3f, -21f, 0.0f), //O2 middle
-            new Vector3(2f, -19f, 0.0f), //O2 gas
-            new Vector3(1.4f, -24f, 0.0f), //O2 water
-            new Vector3(7f, -24f, 0.0f), //under O2
-            new Vector3(9f, -20f, 0.0f), //right outside of O2
-            new Vector3(7f, -15.8f, 0.0f), //snowman under elec
-            new Vector3(11f, -17f, 0.0f), //comms table
-            new Vector3(12.7f, -15.5f, 0.0f), //coms antenna pult
-            new Vector3(13f, -24.5f, 0.0f), //weapons window
-            new Vector3(15f, -17f, 0.0f), //between coms-office
-            new Vector3(17.5f, -25.7f, 0.0f), //snowman under office
-        ];
-
-        public static readonly List<Vector3> DleksSpawnPosition = // No Dleks
-        [
-            new Vector3(2.2f, 2.2f, 0.0f), //cafeteria. botton. top left.
-            new Vector3(-0.7f, 2.2f, 0.0f), //caffeteria. button. top right.
-            new Vector3(2.2f, -0.2f, 0.0f), //caffeteria. button. bottom left.
-            new Vector3(-0.7f, -0.2f, 0.0f), //caffeteria. button. bottom right.
-            new Vector3(-10.0f, 3.0f, 0.0f), //weapons top
-            new Vector3(-9.0f, 1.0f, 0.0f), //weapons bottom
-            new Vector3(-6.5f, -3.5f, 0.0f), //O2
-            new Vector3(-11.5f, -3.5f, 0.0f), //O2-nav hall
-            new Vector3(-17.0f, -3.5f, 0.0f), //navigation top
-            new Vector3(-18.2f, -5.7f, 0.0f), //navigation bottom
-            new Vector3(-11.5f, -6.5f, 0.0f), //nav-shields top
-            new Vector3(-9.5f, -8.5f, 0.0f), //nav-shields bottom
-            new Vector3(-9.2f, -12.2f, 0.0f), //shields top
-            new Vector3(-8.0f, -14.3f, 0.0f), //shields bottom
-            new Vector3(-2.5f, -16f, 0.0f), //coms left
-            new Vector3(-4.2f, -16.4f, 0.0f), //coms middle
-            new Vector3(-5.5f, -16f, 0.0f), //coms right
-            new Vector3(1.5f, -10.0f, 0.0f), //storage top
-            new Vector3(1.5f, -15.5f, 0.0f), //storage bottom
-            new Vector3(4.5f, -12.5f, 0.0f), //storrage left
-            new Vector3(-0.3f, -12.5f, 0.0f), //storrage right
-            new Vector3(-4.5f, -7.5f, 0.0f), //admin top
-            new Vector3(-4.5f, -9.5f, 0.0f), //admin bottom
-            new Vector3(9.0f, -8.0f, 0.0f), //elec top left
-            new Vector3(6.0f, -8.0f, 0.0f), //elec top right
-            new Vector3(8.0f, -11.0f, 0.0f), //elec bottom
-            new Vector3(12.0f, -13.0f, 0.0f), //elec-lower hall
-            new Vector3(17f, -10f, 0.0f), //lower engine top
-            new Vector3(17.0f, -13.0f, 0.0f), //lower engine bottom
-            new Vector3(21.5f, -3.0f, 0.0f), //reactor top
-            new Vector3(21.5f, -8.0f, 0.0f), //reactor bottom
-            new Vector3(13.0f, -3.0f, 0.0f), //security top
-            new Vector3(12.6f, -5.6f, 0.0f), // security bottom
-            new Vector3(17.0f, 2.5f, 0.0f), //upper engibe top
-            new Vector3(17.0f, -1.0f, 0.0f), //upper engine bottom
-            new Vector3(10.5f, 1.0f, 0.0f), //upper-mad hall
-            new Vector3(10.5f, -2.0f, 0.0f), //medbay top
-            new Vector3(6.5f, -4.5f, 0.0f)
-        ];
-
-        public static readonly List<Vector3> AirshipSpawnPosition =
-        [
-            // No Spawn Position for airships
-        ];
-
-        public static readonly List<Vector3> FungleSpawnPosition =
-        [
-            new Vector3(-10.0842f, 13.0026f, 0.013f),
-            new Vector3(0.9815f, 6.7968f, 0.0068f),
-            new Vector3(22.5621f, 3.2779f, 0.0033f),
-            new Vector3(-1.8699f, -1.3406f, -0.0013f),
-            new Vector3(12.0036f, 2.6763f, 0.0027f),
-            new Vector3(21.705f, -7.8691f, -0.0079f),
-            new Vector3(1.4485f, -1.6105f, -0.0016f),
-            new Vector3(-4.0766f, -8.7178f, -0.0087f),
-            new Vector3(2.9486f, 1.1347f, 0.0011f),
-            new Vector3(-4.2181f, -8.6795f, -0.0087f),
-            new Vector3(19.5553f, -12.5014f, -0.0125f),
-            new Vector3(15.2497f, -16.5009f, -0.0165f),
-            new Vector3(-22.7174f, -7.0523f, 0.0071f),
-            new Vector3(-16.5819f, -2.1575f, 0.0022f),
-            new Vector3(9.399f, -9.7127f, -0.0097f),
-            new Vector3(7.3723f, 1.7373f, 0.0017f),
-            new Vector3(22.0777f, -7.9315f, -0.0079f),
-            new Vector3(-15.3916f, -9.3659f, -0.0094f),
-            new Vector3(-16.1207f, -0.1746f, -0.0002f),
-            new Vector3(-23.1353f, -7.2472f, -0.0072f),
-            new Vector3(-20.0692f, -2.6245f, -0.0026f),
-            new Vector3(-4.2181f, -8.6795f, -0.0087f),
-            new Vector3(-9.9285f, 12.9848f, 0.013f),
-            new Vector3(-8.3475f, 1.6215f, 0.0016f),
-            new Vector3(-17.7614f, 6.9115f, 0.0069f),
-            new Vector3(-0.5743f, -4.7235f, -0.0047f),
-            new Vector3(-20.8897f, 2.7606f, 0.002f)
-        ];
-
-        public static List<Vector3> MapSpawnPosition()
-        {
-            return GameOptionsManager.Instance.currentNormalGameOptions.MapId switch
-            {
-                0 => SkeldSpawnPosition,
-                1 => MiraSpawnPosition,
-                2 => PolusSpawnPosition,
-                3 => DleksSpawnPosition,
-                4 => AirshipSpawnPosition,
-                5 => FungleSpawnPosition,
-                _ => FindVentSpawnPositions()
-            };
-        }
-
-        public static List<Vector3> FindVentSpawnPositions()
-        {
-            var poss = new List<Vector3>();
-            foreach (var vent in DestroyableSingleton<ShipStatus>.Instance.AllVents)
-            {
-                var Transform = vent.transform;
-                var position = Transform.position;
-                poss.Add(new Vector3(position.x, position.y + 0.3f, position.z = 0.0f));
-            }
-
-            return poss;
-        }
-
-        public static readonly Dictionary<PlayerControl, Vent> PlayerVentDic = new();
-
-        [HarmonyPatch(typeof(Vent), nameof(Vent.EnterVent))]
-        [HarmonyPostfix]
-        public static void OnEnterVent(PlayerControl pc, Vent __instance)
-        {
-            PlayerVentDic[pc] = __instance;
-        }
-
-        [HarmonyPatch(typeof(Vent._ExitVent_d__40), nameof(Vent._ExitVent_d__40.MoveNext))]
-        [HarmonyPostfix]
-        public static void OnExitVent(Vent._ExitVent_d__40 __instance)
-        {
-            if (PlayerVentDic.ContainsKey(__instance.pc)) PlayerVentDic.Remove(__instance.pc);
-        }
-
-        public static void AllPlayerExitVent()
-        {
-            foreach (var (player, vent) in PlayerVentDic) player.MyPhysics.RpcExitVent(vent.Id);
+            return powerCrewAlive;
         }
     }
 }

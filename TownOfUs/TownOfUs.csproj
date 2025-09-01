@@ -1,10 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
-        <Version>1.2.0</Version>
-        <Description>TownOfUs</Description>
-        <Authors>NesTT</Authors>
-		<LangVersion>latest</LangVersion>
+		<LangVersion>preview</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
         <PlatformTarget>AnyCPU</PlatformTarget>
@@ -21,6 +18,6 @@
     </ItemGroup>
 
     <Target Name="Copy" AfterTargets="Build">
-        <Copy SourceFiles="$(TargetPath)" DestinationFolder="E:/Among Us TOU/BepInEx/plugins/" />
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="E:/Among Us TER/BepInEx/plugins/" />
     </Target>
 </Project>
