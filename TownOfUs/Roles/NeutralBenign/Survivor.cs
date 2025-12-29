@@ -41,7 +41,7 @@ namespace TownOfUs.Roles
                     RPCProcedure.survivorSafeguard(PlayerControl.LocalPlayer.PlayerId);
                     local.remainingSafeguards--;
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Survivor) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Survivor) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () =>
                 {
                     if (survivorSafeguardButtonText != null) survivorSafeguardButtonText.text = $"{local.remainingSafeguards}";

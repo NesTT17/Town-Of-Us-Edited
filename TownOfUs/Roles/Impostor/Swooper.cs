@@ -51,7 +51,7 @@ namespace TownOfUs.Roles
                     AmongUsClient.Instance.FinishRpcImmediately(invisibleWriter);
                     RPCProcedure.swooperSwoop(local.player.PlayerId, byte.MinValue);
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Swooper) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Swooper) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return PlayerControl.LocalPlayer.CanMove; },
                 () =>
                 {

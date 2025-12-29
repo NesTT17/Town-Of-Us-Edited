@@ -13,7 +13,7 @@ namespace TownOfUs
         public string shortDescription;
         public RoleId roleId;
         public FactionId factionId;
-        public bool isImpostor => factionId == FactionId.Impostor;
+        public bool isImpostor => factionId == FactionId.Impostor && !(roleId != RoleId.Agent);
         public static Dictionary<RoleId, RoleInfo> roleInfoById = new();
 
         public RoleInfo(string name, Color color, string introDescription, string shortDescription, RoleId roleId, FactionId factionId)
@@ -73,6 +73,7 @@ namespace TownOfUs
         public static RoleInfo bomber = new RoleInfo("Bomber", Bomber.color, "Plant bombs to kill crewmates", "Plant bombs to kill crewmates", RoleId.Bomber, FactionId.Impostor);
         public static RoleInfo venerer = new RoleInfo("Venerer", Venerer.color, "Kill players to unlock ability perks", "Kill players to unlock ability perks", RoleId.Venerer, FactionId.Impostor);
         public static RoleInfo bountyHunter = new RoleInfo("Bounty Hunter", BountyHunter.color, "Hunt your bounty down", "Hunt your bounty down", RoleId.BountyHunter, FactionId.Impostor);
+        public static RoleInfo doomsayer = new RoleInfo("Doomsayer", Doomsayer.color, "Win by guessing players' roles", "Win by guessing players' roles", RoleId.Doomsayer, FactionId.EvilNeutral);
         #endregion
 
         #region Modifiers
@@ -86,6 +87,12 @@ namespace TownOfUs
         public static RoleInfo torch = new RoleInfo("Torch", Palette.CrewmateBlue, "You can see in lights sabotage", "You can see in lights sabotage", RoleId.Torch, FactionId.Modifier);
         public static RoleInfo vip = new RoleInfo("Vip", Vip.color, "You are the VIP", "Everyone knows when you due", RoleId.Vip, FactionId.Modifier);
         public static RoleInfo radar = new RoleInfo("Radar", Radar.color, "Be on high alert", "Be on high alert", RoleId.Radar, FactionId.Modifier);
+        public static RoleInfo disperser = new RoleInfo("Disperser", Disperser.color, "Separate the Crewmates", "Separate the Crewmates", RoleId.Disperser, FactionId.Modifier);
+        public static RoleInfo lover = new RoleInfo("Lover", Lovers.color, "You are in love", "You are in love", RoleId.Lover, FactionId.Modifier);
+        public static RoleInfo doubleShot = new RoleInfo("Double Shot", DoubleShot.color, "You have extra life when assassinating", "You have extra life when assassinating", RoleId.DoubleShot, FactionId.Modifier);
+        public static RoleInfo immovable = new RoleInfo("Immovable", Immovable.color, "Stay put", "Stay put", RoleId.Immovable, FactionId.Modifier);
+        public static RoleInfo tiebreaker = new RoleInfo("Tiebreaker", Tiebreaker.color, "Your vote breaks the tie", "Break the tie", RoleId.Tiebreaker, FactionId.Modifier);
+        public static RoleInfo chameleon = new RoleInfo("Chameleon", Chameleon.color, "You're hard to see when not moving", "You're hard to see when not moving", RoleId.Chameleon, FactionId.Modifier);
         #endregion
 
         #region Vanilla Roles
@@ -122,6 +129,7 @@ namespace TownOfUs
             pursuer,
             thief,
 
+            doomsayer,
             executioner,
             jester,
             mercenary,
@@ -155,9 +163,16 @@ namespace TownOfUs
             vip,
 
             buttonBarry,
+            chameleon,
             drunk,
+            immovable,
+            lover,
             radar,
             sleuth,
+            tiebreaker,
+
+            disperser,
+            doubleShot,
         };
 
         public static List<RoleInfo> getRoleInfoForPlayer(PlayerControl p, bool showModifier = true, bool onlyModifiers = false)
@@ -178,6 +193,12 @@ namespace TownOfUs
                 if (p.hasModifier(RoleId.Torch)) infos.Add(torch);
                 if (p.hasModifier(RoleId.Vip)) infos.Add(vip);
                 if (p.hasModifier(RoleId.Radar)) infos.Add(radar);
+                if (p.hasModifier(RoleId.Disperser)) infos.Add(disperser);
+                if (p.isLovers()) infos.Add(lover);
+                if (p.hasModifier(RoleId.DoubleShot)) infos.Add(doubleShot);
+                if (p.hasModifier(RoleId.Immovable)) infos.Add(immovable);
+                if (p.hasModifier(RoleId.Tiebreaker)) infos.Add(tiebreaker);
+                if (p.hasModifier(RoleId.Chameleon)) infos.Add(chameleon);
             }
             int count = infos.Count;
             if (onlyModifiers) return infos;
@@ -228,6 +249,7 @@ namespace TownOfUs
             if (p.isRole(RoleId.Bomber)) infos.Add(bomber);
             if (p.isRole(RoleId.Venerer)) infos.Add(venerer);
             if (p.isRole(RoleId.BountyHunter)) infos.Add(bountyHunter);
+            if (p.isRole(RoleId.Doomsayer)) infos.Add(doomsayer);
 
             // Vanilla Roles
             if (infos.Count == count) infos.Add(p.Data.Role.IsImpostor ? impostor : crewmate);
@@ -258,12 +280,18 @@ namespace TownOfUs
             if (!suppressGhostInfo && p != null)
             {
                 foreach (var scavenger in Scavenger.players)
-                    {
-                        if (p == scavenger.player && (PlayerControl.LocalPlayer == p || Helpers.shouldShowGhostInfo()))
-                            roleName += Helpers.cs(Scavenger.color, $" ({Scavenger.scavengerNumberToWin - scavenger.eatenBodies} left)");
-                    }
+                {
+                    if (p == scavenger.player && (PlayerControl.LocalPlayer == p || Helpers.shouldShowGhostInfo()))
+                        roleName += Helpers.cs(Scavenger.color, $" ({Scavenger.scavengerNumberToWin - scavenger.eatenBodies} left)");
+                }
+                foreach (var doomsayer in Doomsayer.players)
+                {
+                    if (p == doomsayer.player && (PlayerControl.LocalPlayer == p || Helpers.shouldShowGhostInfo()))
+                        roleName += Helpers.cs(Doomsayer.color, $" ({Doomsayer.guessesToWin - doomsayer.numOfGuesses} left)");
+                }
                 if (Helpers.shouldShowGhostInfo())
                 {
+                    if (p.isLovers()) roleName = roleName + Lovers.getIcon(p);
                     if (p.isRole(RoleId.Lawyer)) roleName += $" ({Lawyer.neededMeetings - Lawyer.meetings} meetings left)";
                     if (Pursuer.blankedList.Contains(p) && !p.Data.IsDead) roleName = Helpers.cs(Pursuer.color, "(blanked) ") + roleName;
                     if (p.isRole(RoleId.Werewolf) && Werewolf.players.Any(x => x.player == p && x.isRampageActive)) roleName = "! " + roleName;
@@ -314,6 +342,9 @@ namespace TownOfUs
                                     break;
                                 case DeadPlayer.CustomDeathReason.Bomb:
                                     deathReasonString = $" - bombed by {Helpers.cs(killerColor, deadPlayer.killerIfExisting.Data.PlayerName)}";
+                                    break;
+                                case DeadPlayer.CustomDeathReason.LoverSuicide:
+                                    deathReasonString = $" - {Helpers.cs(Lovers.color, "lover died")}";
                                     break;
                             }
                             roleName = roleName + deathReasonString;

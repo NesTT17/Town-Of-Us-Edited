@@ -48,7 +48,7 @@ namespace TownOfUs.Roles
                     local.revealedPlayers.Add(local.currentTarget);
                     seerRevealButton.Timer = seerRevealButton.MaxTimer;
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Seer) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Seer) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { seerRevealButton.Timer = seerRevealButton.MaxTimer; },
                 getRevealButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, hm, KeyCode.F

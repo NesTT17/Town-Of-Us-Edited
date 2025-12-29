@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,16 +13,29 @@ namespace TownOfUs.Roles
         private static Sprite repairButton;
 
         public int remainingFixes = 1;
+        public float rechargeTasksNumber;
+        public float rechargedTasks;
 
         public Engineer()
         {
             RoleType = roleId = RoleId.Engineer;
             remainingFixes = Mathf.RoundToInt(CustomOptionHolder.engineerNumberOfFixes.getFloat());
+            rechargeTasksNumber = Mathf.RoundToInt(CustomOptionHolder.engineerRechargeTasksNumber.getFloat());
+            rechargedTasks = Mathf.RoundToInt(CustomOptionHolder.engineerRechargeTasksNumber.getFloat());
         }
 
         public override void OnMeetingStart() { }
         public override void OnMeetingEnd() { }
-        public override void FixedUpdate() { }
+        public override void FixedUpdate()
+        {
+            if (player == null || PlayerControl.LocalPlayer != player) return;
+            var (playerCompleted, _) = TasksHandler.taskInfo(PlayerControl.LocalPlayer.Data);
+            if (playerCompleted == rechargedTasks)
+            {
+                rechargedTasks += rechargeTasksNumber;
+                remainingFixes++;
+            }
+        }
         public override void OnKill(PlayerControl target) { }
         public override void OnDeath(PlayerControl killer = null) { }
         public override void HandleDisconnect(PlayerControl player, DisconnectReasons reason) { }
@@ -69,7 +83,7 @@ namespace TownOfUs.Roles
                         }
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Engineer) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Engineer) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () =>
                 {
                     if (engineerRepairButtonText != null) engineerRepairButtonText.text = $"{local.remainingFixes}";

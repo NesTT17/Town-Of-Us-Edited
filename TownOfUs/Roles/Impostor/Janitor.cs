@@ -62,7 +62,7 @@ namespace TownOfUs.Roles
                         }
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Janitor) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Janitor) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return hm.ReportButton.graphic.color == Palette.EnabledColor && PlayerControl.LocalPlayer.CanMove; },
                 () => { janitorButton.Timer = janitorButton.MaxTimer; },
                 getButtonSprite(), CustomButton.ButtonPositions.upperRowLeft, hm, KeyCode.F

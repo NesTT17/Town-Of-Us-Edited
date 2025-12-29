@@ -20,6 +20,8 @@ namespace TownOfUs.Roles
         public PlayerControl target1;
         public PlayerControl target2;
         public int transportNumber = 5;
+        public float rechargeTasksNumber;
+        public float rechargedTasks;
         public Transporter()
         {
             RoleType = roleId = RoleId.Transporter;
@@ -27,6 +29,8 @@ namespace TownOfUs.Roles
             target2 = null;
             SwappingMenus = false;
             transportNumber = Mathf.RoundToInt(CustomOptionHolder.transporterNumberOfTransports.getFloat());
+            rechargeTasksNumber = Mathf.RoundToInt(CustomOptionHolder.transporterRechargeTasksNumber.getFloat());
+            rechargedTasks = Mathf.RoundToInt(CustomOptionHolder.transporterRechargeTasksNumber.getFloat());
         }
 
         public IEnumerator OpenSecondMenu()
@@ -80,7 +84,16 @@ namespace TownOfUs.Roles
 
         public override void OnMeetingStart() { }
         public override void OnMeetingEnd() { }
-        public override void FixedUpdate() { }
+        public override void FixedUpdate()
+        {
+            if (player == null || PlayerControl.LocalPlayer != player) return;
+            var (playerCompleted, _) = TasksHandler.taskInfo(PlayerControl.LocalPlayer.Data);
+            if (playerCompleted == rechargedTasks)
+            {
+                rechargedTasks += rechargeTasksNumber;
+                transportNumber++;
+            }
+        }
         public override void OnKill(PlayerControl target) { }
         public override void OnDeath(PlayerControl killer = null) { }
         public override void HandleDisconnect(PlayerControl player, DisconnectReasons reason) { }
@@ -117,7 +130,7 @@ namespace TownOfUs.Roles
                     });
                     Coroutines.Start(pk.Open(0f, true));
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Transporter) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Transporter) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () =>
                 {
                     if (transporterButtonText != null) transporterButtonText.text = $"{local.transportNumber}";

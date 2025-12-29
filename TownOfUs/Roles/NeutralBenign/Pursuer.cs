@@ -61,7 +61,7 @@ namespace TownOfUs.Roles
                     local.blanks++;
                     pursuerButton.Timer = pursuerButton.MaxTimer;
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Pursuer) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Pursuer) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () =>
                 {
                     if (pursuerButtonText != null) pursuerButtonText.text = $"{local.blanks}";

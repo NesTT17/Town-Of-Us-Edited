@@ -96,7 +96,7 @@ namespace TownOfUs.Roles
                         local.currentTarget = null;
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Vampire) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Vampire) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { vampireBiteButton.Timer = vampireBiteButton.MaxTimer; },
                 getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, hm, KeyCode.Q
@@ -110,6 +110,14 @@ namespace TownOfUs.Roles
         public static void Clear()
         {
             players = new List<Vampire>();
+        }
+
+        public static int countLovers()
+        {
+            int counter = 0;
+            foreach (var player in allPlayers)
+                if (player.isLovers()) counter += 1;
+            return counter;
         }
 
         public static Sprite getButtonSprite()

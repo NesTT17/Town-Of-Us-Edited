@@ -104,7 +104,7 @@ namespace TownOfUs.Roles
                         }
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Amnesiac) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Amnesiac) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return hm.ReportButton.graphic.color == Palette.EnabledColor && PlayerControl.LocalPlayer.CanMove; },
                 () => { amnesiacRememberButton.Timer = amnesiacRememberButton.MaxTimer; },
                 getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, hm, KeyCode.F

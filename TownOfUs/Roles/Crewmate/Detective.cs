@@ -125,7 +125,7 @@ namespace TownOfUs.Roles
                         }
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Detective) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Detective) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { detectiveExamineButton.Timer = detectiveExamineButton.MaxTimer; },
                 getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, hm, KeyCode.F

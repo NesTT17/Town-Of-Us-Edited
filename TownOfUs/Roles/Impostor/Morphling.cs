@@ -89,7 +89,7 @@ namespace TownOfUs.Roles
                         morphlingButton.EffectDuration = 1f;
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Morphling) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Morphling) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return (local.currentTarget || local.sampledTarget) && PlayerControl.LocalPlayer.CanMove && !Helpers.MushroomSabotageActive() && Camouflager.camouflageTimer < 0f; },
                 () =>
                 {

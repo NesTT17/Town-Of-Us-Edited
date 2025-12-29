@@ -42,7 +42,7 @@ namespace TownOfUs.Modifiers
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
                     buttonBarryButton.Timer = 1f;
                 },
-                () => { return PlayerControl.LocalPlayer.hasModifier(RoleId.ButtonBarry) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.hasModifier(RoleId.ButtonBarry) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return !local.usedButton && PlayerControl.LocalPlayer.CanMove; },
                 () => { buttonBarryButton.Timer = buttonBarryButton.MaxTimer; },
                 getButtonSprite(), new Vector3(0f, 0f, 0f), hm, null, true

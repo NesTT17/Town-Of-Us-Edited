@@ -79,7 +79,7 @@ namespace TownOfUs.Roles
                         local.currentFailedStakes++;
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.VampireHunter) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.VampireHunter) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () =>
                 {
                     if (local.currentFailedStakes == maxFailedStakes && !local.player.Data.IsDead) local.suicideFlag = true;

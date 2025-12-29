@@ -54,6 +54,7 @@ namespace TownOfUs.Roles
         Bomber,
         Venerer,
         BountyHunter,
+        Doomsayer,
         // Modifiers
         Bait,
         Shifter,
@@ -65,6 +66,12 @@ namespace TownOfUs.Roles
         Torch,
         Vip,
         Radar,
+        Disperser,
+        Lover,
+        DoubleShot,
+        Immovable,
+        Tiebreaker,
+        Chameleon,
         // Vanilla Roles
         Crewmate, Impostor,
         // don't put anything below this
@@ -106,6 +113,7 @@ namespace TownOfUs.Roles
             { RoleId.Executioner, typeof(RoleBase<Executioner>) },
             { RoleId.Scavenger, typeof(RoleBase<Scavenger>) },
             { RoleId.Mercenary, typeof(RoleBase<Mercenary>) },
+            { RoleId.Doomsayer, typeof(RoleBase<Doomsayer>) },
 
             { RoleId.Juggernaut, typeof(RoleBase<Juggernaut>) },
             { RoleId.Plaguebearer, typeof(RoleBase<Plaguebearer>) },
@@ -134,6 +142,7 @@ namespace TownOfUs.Roles
         public static List<Role> allRoles = new List<Role>();
         public PlayerControl player;
         public RoleId roleId;
+        public RoleId formerRoleId = RoleId.NoRole;
 
         public abstract void OnMeetingStart();
         public abstract void OnMeetingEnd();

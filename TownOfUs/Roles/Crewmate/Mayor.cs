@@ -44,7 +44,7 @@ namespace TownOfUs.Roles
                     RPCProcedure.mayorBodyguard(PlayerControl.LocalPlayer.PlayerId);
                     local.remainingBodyguards--;
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Mayor) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Mayor) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () =>
                 {
                     if (mayorBodyguardButtonText != null) mayorBodyguardButtonText.text = $"{local.remainingBodyguards}";

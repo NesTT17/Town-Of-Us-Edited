@@ -54,7 +54,7 @@ namespace TownOfUs
     public class TownOfUsPlugin : BasePlugin
     {
         public const string Id = "townofus.reworked";
-        public const string VersionString = "1.3.0";
+        public const string VersionString = "1.3.2";
 
         public static Version Version = Version.Parse(VersionString);
         internal static BepInEx.Logging.ManualLogSource Logger;

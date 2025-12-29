@@ -61,7 +61,7 @@ namespace TownOfUs.Roles
                     RPCProcedure.blackmailPlayer(local.currentTarget.PlayerId, PlayerControl.LocalPlayer.PlayerId);
                     blackmailerButton.Timer = blackmailerButton.MaxTimer;
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Blackmailer) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Blackmailer) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget != null && PlayerControl.LocalPlayer.CanMove; },
                 () => { blackmailerButton.Timer = blackmailerButton.MaxTimer; },
                 getBlackmailButtonSprite(), CustomButton.ButtonPositions.upperRowLeft, hm, KeyCode.F

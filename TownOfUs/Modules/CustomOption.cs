@@ -350,7 +350,7 @@ namespace TownOfUs.Modules
                 if (TownOfUsPlugin.Version > versionInfo && versionInfo < Version.Parse("1.2.1"))
                 {
                     vanillaOptionsFine = false;
-                    FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(PlayerControl.LocalPlayer, "Host Info: Pasting vanilla settings failed, TOR Options applied!", false);
+                    FastDestroyableSingleton<HudManager>.Instance.Chat.AddChat(PlayerControl.LocalPlayer, "Host Info: Pasting vanilla settings failed, TOU Options applied!", false);
                 }
                 else
                 {
@@ -744,9 +744,9 @@ namespace TownOfUs.Modules
             int next = 3;
             if (gameMode == CustomGamemodes.Classic || gameMode == CustomGamemodes.Guesser || gameMode == CustomGamemodes.AllAny)
             {
-                // create TOR settings
+                // create TOU settings
                 createCustomButton(__instance, next++, "TOUSettings", "TOU Settings", CustomOptionType.General);
-                // create TOR settings
+                // create TOU settings
                 createCustomButton(__instance, next++, "RoleOverview", "Role Overview", (CustomOptionType)99);
                 // Crew
                 createCustomButton(__instance, next++, "CrewmateSettings", "Crewmate Roles", CustomOptionType.Crewmate);
@@ -1002,7 +1002,7 @@ namespace TownOfUs.Modules
             if (gameMode == CustomGamemodes.Classic || gameMode == CustomGamemodes.Guesser || gameMode == CustomGamemodes.AllAny)
             {
 
-                // create TOR settings
+                // create TOU settings
                 createCustomButton(__instance, next++, "TOUSettings", "TOU Settings");
                 createGameOptionsMenu(__instance, CustomOptionType.General, "TOUSettings");
                 // Crew

@@ -77,7 +77,7 @@ Modded <color=#018001FF>Donners</color>, <color=#018001FF>Term</color>, <color=#
 
             static void Postfix(PingTracker __instance)
             {
-                var torLogo = new GameObject("bannerLogo_TOR");
+                var torLogo = new GameObject("bannerLogo_TOU");
                 torLogo.transform.SetParent(GameObject.Find("RightPanel").transform, false);
                 torLogo.transform.localPosition = new Vector3(-0.4f, 1f, 5f);
 
@@ -88,7 +88,7 @@ Modded <color=#018001FF>Donners</color>, <color=#018001FF>Term</color>, <color=#
                 instance = __instance;
                 loadSprites();
                 renderer.sprite = bannerSprite;
-                var credentialObject = new GameObject("credentialsTOR");
+                var credentialObject = new GameObject("credentialsTOU");
                 var credentials = credentialObject.AddComponent<TextMeshPro>();
                 credentials.SetText($"v{TownOfUsPlugin.Version.ToString()}\n<size=30f%>\n</size>{mainMenuCredentials}\n<size=30%>\n</size>{contributorsCredentials}");
                 credentials.alignment = TMPro.TextAlignmentOptions.Center;

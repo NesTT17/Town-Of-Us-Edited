@@ -74,7 +74,7 @@ namespace TownOfUs.Roles
                     arsonistDouseButton.Timer = arsonistDouseButton.MaxTimer;
                     if (local.triggerBothCooldown) arsonistIgniteButton.Timer = arsonistIgniteButton.MaxTimer;
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Arsonist) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Arsonist) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentDouseTarget && local.canDouse && PlayerControl.LocalPlayer.CanMove; },
                 () => { arsonistDouseButton.Timer = arsonistDouseButton.MaxTimer; },
                 getDouseButtonSprite(), CustomButton.ButtonPositions.upperRowCenter, hm, KeyCode.F
@@ -123,7 +123,7 @@ namespace TownOfUs.Roles
                     dousedPlayers.Clear();
                     dousedPlayers = new List<PlayerControl>();
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Arsonist) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Arsonist) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentIgniteTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { arsonistIgniteButton.Timer = arsonistIgniteButton.MaxTimer; },
                 getIgniteButtonSprite(), CustomButton.ButtonPositions.upperRowRight, hm, KeyCode.Q
@@ -139,6 +139,14 @@ namespace TownOfUs.Roles
         {
             dousedPlayers = new List<PlayerControl>();
             players = new List<Arsonist>();
+        }
+
+        public static int countLovers()
+        {
+            int counter = 0;
+            foreach (var player in allPlayers)
+                if (player.isLovers()) counter += 1;
+            return counter;
         }
 
         public static Sprite getDouseButtonSprite()

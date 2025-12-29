@@ -82,7 +82,7 @@ namespace TownOfUs.Roles
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
                     RPCProcedure.medicSetShielded(local.currentTarget.PlayerId, PlayerControl.LocalPlayer.PlayerId);
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Medic) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Medic) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && !local.usedShield && PlayerControl.LocalPlayer.CanMove; },
                 () => { medicShieldButton.Timer = medicShieldButton.MaxTimer; },
                 getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, hm, KeyCode.F

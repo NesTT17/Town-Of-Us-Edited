@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,16 +17,29 @@ namespace TownOfUs.Roles
 
         public int remainingAlerts = 0;
         public bool isAlertActive = false;
+        public float rechargeTasksNumber;
+        public float rechargedTasks;
         public Veteran()
         {
             RoleType = roleId = RoleId.Veteran;
-            remainingAlerts = Mathf.RoundToInt(CustomOptionHolder.veteranAlertNumber.getFloat());
             isAlertActive = false;
+            remainingAlerts = Mathf.RoundToInt(CustomOptionHolder.veteranAlertNumber.getFloat());
+            rechargeTasksNumber = Mathf.RoundToInt(CustomOptionHolder.veteranRechargeTasksNumber.getFloat());
+            rechargedTasks = Mathf.RoundToInt(CustomOptionHolder.veteranRechargeTasksNumber.getFloat());
         }
 
         public override void OnMeetingStart() { }
         public override void OnMeetingEnd() { }
-        public override void FixedUpdate() { }
+        public override void FixedUpdate()
+        {
+            if (player == null || PlayerControl.LocalPlayer != player) return;
+            var (playerCompleted, _) = TasksHandler.taskInfo(PlayerControl.LocalPlayer.Data);
+            if (playerCompleted == rechargedTasks)
+            {
+                rechargedTasks += rechargeTasksNumber;
+                remainingAlerts++;
+            }
+        }
         public override void OnKill(PlayerControl target) { }
         public override void OnDeath(PlayerControl killer = null) { }
         public override void HandleDisconnect(PlayerControl player, DisconnectReasons reason) { }
@@ -41,7 +55,7 @@ namespace TownOfUs.Roles
                     RPCProcedure.veteranAlert(PlayerControl.LocalPlayer.PlayerId);
                     local.remainingAlerts--;
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Veteran) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Veteran) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () =>
                 {
                     if (veteranAlertButtonText != null) veteranAlertButtonText.text = $"{local.remainingAlerts}";

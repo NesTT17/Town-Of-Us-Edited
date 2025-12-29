@@ -56,7 +56,7 @@ namespace TownOfUs.Roles
                             writer.Write(PlayerControl.LocalPlayer.PlayerId);
                             writer.Write((byte)RPCProcedure.GhostInfoTypes.DeathReasonAndKiller);
                             writer.Write(player.PlayerId);
-                            writer.Write((byte)DeadPlayer.CustomDeathReason.LawyerSuicide);
+                            writer.Write((byte)DeadPlayer.CustomDeathReason.Bomb);
                             writer.Write(PlayerControl.LocalPlayer.PlayerId);
                             AmongUsClient.Instance.FinishRpcImmediately(writer);
                             overrideDeathReasonAndKiller(player, DeadPlayer.CustomDeathReason.Bomb, PlayerControl.LocalPlayer);
@@ -78,7 +78,7 @@ namespace TownOfUs.Roles
                         placedBomb = true;
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Bomber) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Bomber) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return PlayerControl.LocalPlayer.CanMove; },
                 () =>
                 {

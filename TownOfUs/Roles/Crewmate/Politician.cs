@@ -29,16 +29,7 @@ namespace TownOfUs.Roles
         }
 
         public override void OnMeetingStart() { }
-        public override void OnMeetingEnd()
-        {
-            if (campaignedAlive >= livingPlayers.Count && !player.Data.IsDead)
-            {
-                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(player.NetId, (byte)CustomRPC.PoliticianTurnMayor, SendOption.Reliable, -1);
-                writer.Write(player.PlayerId);
-                AmongUsClient.Instance.FinishRpcImmediately(writer);
-                RPCProcedure.politicianTurnMayor(player.PlayerId);
-            }
-        }
+        public override void OnMeetingEnd() { }
         public override void FixedUpdate()
         {
             if (!campaignedPlayers.Contains(player.PlayerId)) campaignedPlayers.Add(player.PlayerId);
@@ -52,6 +43,14 @@ namespace TownOfUs.Roles
                 }
                 currentTarget = Helpers.setTarget(false, false, untargetablePlayers);
                 Helpers.setPlayerOutline(currentTarget, color);
+
+                if (campaignedPlayers.Count(x => Helpers.playerById(x) != null && Helpers.playerById(x).Data != null && !Helpers.playerById(x).Data.IsDead && !Helpers.playerById(x).Data.Disconnected) >= PlayerControl.AllPlayerControls.ToArray().Where(x => !x.Data.IsDead && !x.Data.Disconnected && x != null).Count() && !player.Data.IsDead)
+                {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(player.NetId, (byte)CustomRPC.PoliticianTurnMayor, SendOption.Reliable, -1);
+                    writer.Write(player.PlayerId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.politicianTurnMayor(player.PlayerId);
+                }
             }
         }
         public override void OnKill(PlayerControl target) { }
@@ -69,7 +68,7 @@ namespace TownOfUs.Roles
                     politicianCampaignButton.Timer = politicianCampaignButton.MaxTimer;
                     local.currentTarget = null;
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Politician) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Politician) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { politicianCampaignButton.Timer = politicianCampaignButton.MaxTimer; },
                 getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, hm, KeyCode.F

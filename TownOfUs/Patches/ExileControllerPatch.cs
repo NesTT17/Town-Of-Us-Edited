@@ -69,7 +69,7 @@ namespace TownOfUs.Patches
 
             // Custom role post-meeting functions
             OnMeetingEnd();
-            
+
             // Clear bugged dead bodies
             MessageWriter cleanWriter = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.SystemCleanBody, SendOption.Reliable, -1);
             AmongUsClient.Instance.FinishRpcImmediately(cleanWriter);
@@ -79,6 +79,25 @@ namespace TownOfUs.Patches
             {
                 RPCProcedure.systemSpreadPlayers();
             }
+
+            // Immovable set position
+            if (PlayerControl.LocalPlayer.hasModifier(RoleId.Immovable))
+            {
+                var immovableModifier = ModifierBase<Immovable>.getModifier(PlayerControl.LocalPlayer);
+                immovableModifier.setPosition();
+            }
+
+            Chameleon.local.lastMoved.Clear();
+        }
+    }
+
+    [HarmonyPatch(typeof(SpawnInMinigame), nameof(SpawnInMinigame.Close))]  // Set position of AntiTp players AFTER they have selected a spawn.
+    class AirshipSpawnInPatch
+    {
+        static void Postfix()
+        {
+            Immovable.local.setPosition();
+            Chameleon.local.lastMoved.Clear();
         }
     }
 
@@ -103,6 +122,8 @@ namespace TownOfUs.Patches
                     {
                         if (player.isRole(RoleId.Jester)) __result = "";
                     }
+                    if (Tiebreaker.isTiebreak) __result += " (Tiebreaker)";
+                    Tiebreaker.isTiebreak = false;
                 }
             }
             catch

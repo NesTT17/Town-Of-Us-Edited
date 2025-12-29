@@ -75,6 +75,29 @@ namespace TownOfUs.Patches
                     KeyValuePair<byte, int> max = self.MaxPair(out tie);
                     NetworkedPlayerInfo exiled = GameData.Instance.AllPlayers.ToArray().FirstOrDefault(v => !tie && v.PlayerId == max.Key && !v.IsDead);
 
+                    // TieBreaker 
+                    List<NetworkedPlayerInfo> potentialExiled = new List<NetworkedPlayerInfo>();
+                    bool skipIsTie = false;
+                    if (self.Count > 0)
+                    {
+                        Tiebreaker.isTiebreak = false;
+                        int maxVoteValue = self.Values.Max();
+                        PlayerVoteArea tb = null;
+                        if (Tiebreaker.exists)
+                            tb = __instance.playerStates.ToArray().FirstOrDefault(x => Helpers.playerById(x.TargetPlayerId).hasModifier(RoleId.Tiebreaker));
+                        bool isTiebreakerSkip = tb == null || tb.VotedFor == 253;
+                        if (tb != null && tb.AmDead) isTiebreakerSkip = true;
+
+                        foreach (KeyValuePair<byte, int> pair in self)
+                        {
+                            if (pair.Value != maxVoteValue || isTiebreakerSkip) continue;
+                            if (pair.Key != 253)
+                                potentialExiled.Add(GameData.Instance.AllPlayers.ToArray().FirstOrDefault(x => x.PlayerId == pair.Key));
+                            else
+                                skipIsTie = true;
+                        }
+                    }
+
                     MeetingHud.VoterState[] array = new MeetingHud.VoterState[__instance.playerStates.Length];
                     for (int i = 0; i < __instance.playerStates.Length; i++)
                     {
@@ -84,6 +107,25 @@ namespace TownOfUs.Patches
                             VoterId = playerVoteArea.TargetPlayerId,
                             VotedForId = playerVoteArea.VotedFor
                         };
+
+                        if (!Tiebreaker.exists || !Helpers.playerById(playerVoteArea.TargetPlayerId).hasModifier(RoleId.Tiebreaker)) continue;
+
+                        byte tiebreakerVote = playerVoteArea.VotedFor;
+                        if (swapped1 != null && swapped2 != null)
+                        {
+                            if (tiebreakerVote == swapped1.TargetPlayerId) tiebreakerVote = swapped2.TargetPlayerId;
+                            else if (tiebreakerVote == swapped2.TargetPlayerId) tiebreakerVote = swapped1.TargetPlayerId;
+                        }
+
+                        if (potentialExiled.FindAll(x => x != null && x.PlayerId == tiebreakerVote).Count > 0 && (potentialExiled.Count > 1 || skipIsTie))
+                        {
+                            exiled = potentialExiled.ToArray().FirstOrDefault(v => v.PlayerId == tiebreakerVote);
+                            tie = false;
+
+                            MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.SetTiebreak, Hazel.SendOption.Reliable, -1);
+                            AmongUsClient.Instance.FinishRpcImmediately(writer);
+                            RPCProcedure.setTiebreak();
+                        }
                     }
 
                     // RPCVotingComplete
@@ -241,10 +283,15 @@ namespace TownOfUs.Patches
 
                 foreach (var pursuer in Pursuer.players)
                     pursuer.notAckedExiled = false;
+                foreach (var couple in Lovers.couples)
+                    couple.notAckedExiledIsLover = false;
                 if (exiled != null)
                 {
                     foreach (var pursuer in Pursuer.players)
                         pursuer.notAckedExiled = pursuer.player != null && pursuer.player.PlayerId == exiled.PlayerId;
+                    
+                    var couple = Lovers.getCouple(exiled.Object);
+                    if (couple != null) couple.notAckedExiledIsLover = true;
                 }
             }
         }
@@ -565,7 +612,28 @@ namespace TownOfUs.Patches
                             var mainRoleInfo = RoleInfo.getRoleInfoForPlayer(focusedTarget, false).FirstOrDefault();
                             if (mainRoleInfo == null) return;
 
-                            PlayerControl dyingTarget = ((mainRoleInfo == roleInfo)) ? focusedTarget : PlayerControl.LocalPlayer;
+                            PlayerControl dyingTarget = (mainRoleInfo == roleInfo) ? focusedTarget : PlayerControl.LocalPlayer;
+
+                            if (DoubleShot.players.Any(x => x.player == PlayerControl.LocalPlayer && !x.usedExtraLife && dyingTarget == x.player))
+                            {
+                                dyingTarget = null;
+                                __instance.playerStates.ToList().ForEach(x => x.gameObject.SetActive(true));
+                                UnityEngine.Object.Destroy(container.gameObject);
+                                __instance.playerStates.ToList().ForEach(x => { if (x.TargetPlayerId == focusedTarget.PlayerId && x.transform.FindChild("ShootButton") != null) UnityEngine.Object.Destroy(x.transform.FindChild("ShootButton").gameObject); });
+                                DoubleShot.players.DoIf(x => x.player == PlayerControl.LocalPlayer, x => x.usedExtraLife = true);
+                                Helpers.showFlash(Palette.ImpostorRed);
+                                return;
+                            }
+
+                            if (PlayerControl.LocalPlayer.isRole(RoleId.Doomsayer) && PlayerControl.LocalPlayer == dyingTarget)
+                            {
+                                dyingTarget = null;
+                                __instance.playerStates.ToList().ForEach(x => x.gameObject.SetActive(true));
+                                UnityEngine.Object.Destroy(container.gameObject);
+                                __instance.playerStates.ToList().ForEach(x => { if (x.transform.FindChild("ShootButton") != null) UnityEngine.Object.Destroy(x.transform.FindChild("ShootButton").gameObject); });
+                                Helpers.showFlash(Doomsayer.color);
+                                return;
+                            }
 
                             // Reset the GUI
                             __instance.playerStates.ToList().ForEach(x => x.gameObject.SetActive(true));

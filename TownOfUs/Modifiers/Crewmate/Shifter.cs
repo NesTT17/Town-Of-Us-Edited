@@ -49,7 +49,7 @@ namespace TownOfUs.Modifiers
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
                     RPCProcedure.setFutureShifted(local.currentTarget.PlayerId);
                 },
-                () => { return PlayerControl.LocalPlayer.hasModifier(RoleId.Shifter) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.hasModifier(RoleId.Shifter) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && futureShift == null && PlayerControl.LocalPlayer.CanMove; },
                 () => { shifterButton.Timer = shifterButton.MaxTimer; },
                 getButtonSprite(), new Vector3(0f, 1f, 0f), hm, null, true

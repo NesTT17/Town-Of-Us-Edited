@@ -86,7 +86,7 @@ namespace TownOfUs.Roles
                     RPCProcedure.guardianAngelProtect(PlayerControl.LocalPlayer.PlayerId);
                     local.remainingProtects--;
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.GuardianAngel) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.GuardianAngel) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () =>
                 {
                     if (guardianAngelProtectButtonText != null) guardianAngelProtectButtonText.text = $"{local.remainingProtects}";

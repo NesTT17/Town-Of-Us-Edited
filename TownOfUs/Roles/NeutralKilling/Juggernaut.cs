@@ -74,7 +74,7 @@ namespace TownOfUs.Roles
                         local.currentTarget = null;
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Juggernaut) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Juggernaut) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () =>
                 {
@@ -92,6 +92,14 @@ namespace TownOfUs.Roles
         public static void Clear()
         {
             players = new List<Juggernaut>();
+        }
+
+        public static int countLovers()
+        {
+            int counter = 0;
+            foreach (var player in allPlayers)
+                if (player.isLovers()) counter += 1;
+            return counter;
         }
     }
 }

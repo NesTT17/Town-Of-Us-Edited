@@ -4,7 +4,8 @@ using System.Linq;
 using System;
 using System.Text;
 
-namespace TownOfUs.Patches {
+namespace TownOfUs.Patches
+{
     enum CustomGameOverReason
     {
         ImpostorWin = 10,
@@ -23,6 +24,9 @@ namespace TownOfUs.Patches {
         MercenaryWin = 23,
         GlitchWin = 24,
         ArsonistWin = 25,
+        WerewolfWin = 26,
+        LoversWin = 27,
+        DoomsayerWin = 28,
     }
 
     enum WinCondition
@@ -44,6 +48,10 @@ namespace TownOfUs.Patches {
         MercenaryWin,
         GlitchWin,
         ArsonistWin,
+        WerewolfWin,
+        LoversTeamWin,
+        LoversSoloWin,
+        DoomsayerWin,
         AdditionalLawyerBonusWin,
         AdditionalLawyerStolenWin,
         AdditionalAlivePursuerWin,
@@ -51,21 +59,24 @@ namespace TownOfUs.Patches {
         AdditionalGABonusWin,
     }
 
-    static class AdditionalTempData {
+    static class AdditionalTempData
+    {
         // Should be implemented using a proper GameOverReason in the future
         public static WinCondition winCondition = WinCondition.Default;
         public static List<WinCondition> additionalWinConditions = new List<WinCondition>();
         public static List<PlayerRoleInfo> playerRoles = new List<PlayerRoleInfo>();
         public static float timer = 0;
 
-        public static void clear() {
+        public static void clear()
+        {
             playerRoles.Clear();
             additionalWinConditions.Clear();
             winCondition = WinCondition.Default;
             timer = 0;
         }
 
-        internal class PlayerRoleInfo {
+        internal class PlayerRoleInfo
+        {
             private string mDeathReason = "";
             public string PlayerName { get; set; }
             public bool isGATarget { get; set; }
@@ -86,10 +97,10 @@ namespace TownOfUs.Patches {
 
             public List<RoleInfo> Roles { get; set; }
             public List<RoleInfo> Modifiers { get; set; }
-            public int TasksCompleted  {get;set;}
-            public int TasksTotal  {get;set;}
-            public int? Kills {get; set;}
-            public bool IsGuesser {get; set;}
+            public int TasksCompleted { get; set; }
+            public int TasksTotal { get; set; }
+            public int? Kills { get; set; }
+            public bool IsGuesser { get; set; }
             public bool IsAlive { get; set; }
         }
     }
@@ -127,22 +138,35 @@ namespace TownOfUs.Patches {
     }
 
     [HarmonyPatch(typeof(AmongUsClient), nameof(AmongUsClient.OnGameEnd))]
-    public static class OnGameEndPatch {
-        public static GameOverReason gameOverReason = GameOverReason.CrewmatesByTask;        
-        public static void Prefix(AmongUsClient __instance, [HarmonyArgument(0)]ref EndGameResult endGameResult) {
+    public static class OnGameEndPatch
+    {
+        public static GameOverReason gameOverReason = GameOverReason.CrewmatesByTask;
+        public static void Prefix(AmongUsClient __instance, [HarmonyArgument(0)] ref EndGameResult endGameResult)
+        {
             gameOverReason = endGameResult.GameOverReason;
             if ((int)endGameResult.GameOverReason >= 10) endGameResult.GameOverReason = GameOverReason.ImpostorsByKill;
 
             // Reset zoomed out ghosts
             Helpers.toggleZoom(reset: true);
         }
-        
+
         public static void Postfix(AmongUsClient __instance, [HarmonyArgument(0)] ref EndGameResult endGameResult)
         {
             AdditionalTempData.clear();
 
             foreach (PlayerControl player in PlayerControl.AllPlayerControls)
             {
+                var roles1 = RoleInfo.getRoleInfoForPlayer(player, true, true);
+                var colors = new List<Color>();
+                foreach (var role in roles1)
+                {
+                    if (role.roleId == RoleId.Lover)
+                    {
+                        colors.Add(Lovers.getColor(player));
+                        continue;
+                    }
+                    colors.Add(role.color);
+                }
                 List<RoleInfo> roles = PlayerGameInfo.getRoles(player);
                 (int tasksCompleted, int tasksTotal) = TasksHandler.taskInfo(player.Data);
                 List<DeadPlayer> killedPlayers = GetKilledPlayers(player);
@@ -186,6 +210,8 @@ namespace TownOfUs.Patches {
                 .. Glitch.allPlayers,
                 .. Arsonist.allPlayers,
                 .. Thief.allPlayers,
+                .. Werewolf.allPlayers,
+                .. Doomsayer.allPlayers,
             ];
 
             List<CachedPlayerData> winnersToRemove = new List<CachedPlayerData>();
@@ -210,6 +236,9 @@ namespace TownOfUs.Patches {
             bool mercenaryWin = Mercenary.exists && gameOverReason == (GameOverReason)CustomGameOverReason.MercenaryWin;
             bool glitchWin = gameOverReason == (GameOverReason)CustomGameOverReason.GlitchWin;
             bool arsonistWin = gameOverReason == (GameOverReason)CustomGameOverReason.ArsonistWin;
+            bool werewolfWin = gameOverReason == (GameOverReason)CustomGameOverReason.WerewolfWin;
+            bool loversWin = Lovers.anyAlive() && (gameOverReason == (GameOverReason)CustomGameOverReason.LoversWin || (GameManager.Instance.DidHumansWin(gameOverReason) && Lovers.anyNonKillingCouples())); // Either they win if they are among the last 3 players, or they win if they are both Crewmates and both alive and the Crew wins (Team Imp/Jackal Lovers can only win solo wins)
+            bool doomsayerWin = Doomsayer.exists && gameOverReason == (GameOverReason)CustomGameOverReason.DoomsayerWin;
 
             // Impostor win
             if (impostorWin)
@@ -422,6 +451,66 @@ namespace TownOfUs.Patches {
                     }
                 }
             }
+            // Werewolf win
+            else if (werewolfWin)
+            {
+                AdditionalTempData.winCondition = WinCondition.WerewolfWin;
+                EndGameResult.CachedWinners = new Il2CppSystem.Collections.Generic.List<CachedPlayerData>();
+                if (Werewolf.exists)
+                {
+                    foreach (var werewolf in Werewolf.allPlayers)
+                    {
+                        CachedPlayerData wpd = new(werewolf.Data)
+                        {
+                            IsImpostor = false
+                        };
+                        EndGameResult.CachedWinners.Add(wpd);
+                    }
+                }
+            }
+            // Lovers win conditions
+            else if (loversWin)
+            {
+                // Double win for lovers, crewmates also win
+                if (GameManager.Instance.DidHumansWin(gameOverReason) && Lovers.anyNonKillingCouples())
+                {
+                    AdditionalTempData.winCondition = WinCondition.LoversTeamWin;
+                    EndGameResult.CachedWinners = new Il2CppSystem.Collections.Generic.List<CachedPlayerData>();
+                    foreach (PlayerControl p in PlayerControl.AllPlayerControls)
+                    {
+                        if (p == null) continue;
+                        if (p.isLovers() && !Lovers.existingWithKiller(p))
+                            EndGameResult.CachedWinners.Add(new CachedPlayerData(p.Data));
+                        else if (!p.isEvil())
+                            EndGameResult.CachedWinners.Add(new CachedPlayerData(p.Data));
+                    }
+                }
+                // Lovers solo win
+                else
+                {
+                    AdditionalTempData.winCondition = WinCondition.LoversSoloWin;
+                    EndGameResult.CachedWinners = new Il2CppSystem.Collections.Generic.List<CachedPlayerData>();
+                    foreach (var couple in Lovers.couples)
+                    {
+                        if (couple.existingAndAlive)
+                        {
+                            EndGameResult.CachedWinners.Add(new CachedPlayerData(couple.lover1.Data));
+                            EndGameResult.CachedWinners.Add(new CachedPlayerData(couple.lover2.Data));
+                        }
+                    }
+                }
+            }
+            // Doomsayer win
+            else if (doomsayerWin)
+            {
+                EndGameResult.CachedWinners = new Il2CppSystem.Collections.Generic.List<CachedPlayerData>();
+                foreach (var p in Doomsayer.allPlayers)
+                {
+                    CachedPlayerData wpd = new(p.Data);
+                    EndGameResult.CachedWinners.Add(wpd);
+                }
+                AdditionalTempData.winCondition = WinCondition.DoomsayerWin;
+            }
 
             // Possible Additional winner: Lawyer
             if (Lawyer.target != null && (!Lawyer.target.Data.IsDead || Lawyer.target.isRole(RoleId.Jester)))
@@ -517,46 +606,51 @@ namespace TownOfUs.Patches {
             RPCProcedure.resetVariables();
         }
 
-        public static string getDeathReasonString(this PlayerControl p) {
+        public static string getDeathReasonString(this PlayerControl p)
+        {
             if (!p.Data.IsDead) return "";
-            
-            DeadPlayer deadPlayer = GameHistory.deadPlayers.Find(x => x.player.PlayerId == p.PlayerId);
-            if(deadPlayer == null) return "";
 
-            Color  killerColor = default;
+            DeadPlayer deadPlayer = GameHistory.deadPlayers.Find(x => x.player.PlayerId == p.PlayerId);
+            if (deadPlayer == null) return "";
+
+            Color killerColor = default;
             string killerName = "";
             if (deadPlayer.killerIfExisting)
             {
-                RoleInfo roleInfo    = RoleInfo.getRoleInfoForPlayer(deadPlayer.killerIfExisting, false).FirstOrDefault();
+                RoleInfo roleInfo = RoleInfo.getRoleInfoForPlayer(deadPlayer.killerIfExisting, false).FirstOrDefault();
                 killerColor = roleInfo?.color ?? default(Color);
-                killerName  = deadPlayer.killerIfExisting.Data.PlayerName;
+                killerName = deadPlayer.killerIfExisting.Data.PlayerName;
 
             }
 
             return deadPlayer.deathReason switch
             {
                 DeadPlayer.CustomDeathReason.Disconnect => $"{Helpers.cs(Color.red, $" - disconnected")}",
-                DeadPlayer.CustomDeathReason.Exile      => $" - voted out",
+                DeadPlayer.CustomDeathReason.Exile => $" - voted out",
                 DeadPlayer.CustomDeathReason.Kill => $" - killed by {Helpers.cs(killerColor, killerName)}",
                 DeadPlayer.CustomDeathReason.Guess => (deadPlayer.killerIfExisting.Data.PlayerName == p.Data.PlayerName) ? " - failed guess" : $" - guessed by {Helpers.cs(killerColor, deadPlayer.killerIfExisting.Data.PlayerName)}",
                 DeadPlayer.CustomDeathReason.LawyerSuicide => $" - {Helpers.cs(Lawyer.color, "bad Lawyer")}",
                 DeadPlayer.CustomDeathReason.GASuicide => $" - {Helpers.cs(GuardianAngel.color, "bad Guardian Angel")}",
                 DeadPlayer.CustomDeathReason.Shift => $" - shifted {Helpers.cs(killerColor, killerName)}",
                 DeadPlayer.CustomDeathReason.Bomb => $" - bombed by {Helpers.cs(killerColor, deadPlayer.killerIfExisting.Data.PlayerName)}",
+                DeadPlayer.CustomDeathReason.LoverSuicide => $" - {Helpers.cs(Lovers.color, "lover died")}",
                 _ => "",
             };
         }
     }
 
     [HarmonyPatch(typeof(EndGameManager), nameof(EndGameManager.SetEverythingUp))]
-    public class EndGameManagerSetUpPatch {
-        public static void Postfix(EndGameManager __instance) {
+    public class EndGameManagerSetUpPatch
+    {
+        public static void Postfix(EndGameManager __instance)
+        {
             // Delete and readd PoolablePlayers always showing the name and role of the player
-            foreach (PoolablePlayer pb in __instance.transform.GetComponentsInChildren<PoolablePlayer>()) {
+            foreach (PoolablePlayer pb in __instance.transform.GetComponentsInChildren<PoolablePlayer>())
+            {
                 UnityEngine.Object.Destroy(pb.gameObject);
             }
             int num = Mathf.CeilToInt(7.5f);
-            List<CachedPlayerData> list = EndGameResult.CachedWinners.ToArray().ToList().OrderBy(delegate(CachedPlayerData b)
+            List<CachedPlayerData> list = EndGameResult.CachedWinners.ToArray().ToList().OrderBy(delegate (CachedPlayerData b)
             {
                 if (!b.IsYou)
                 {
@@ -564,7 +658,8 @@ namespace TownOfUs.Patches {
                 }
                 return -1;
             }).ToList<CachedPlayerData>();
-            for (int i = 0; i < list.Count; i++) {
+            for (int i = 0; i < list.Count; i++)
+            {
                 CachedPlayerData CachedPlayerData2 = list[i];
                 int num2 = (i % 2 == 0) ? -1 : 1;
                 int num3 = (i + 1) / 2;
@@ -576,10 +671,13 @@ namespace TownOfUs.Patches {
                 float num7 = Mathf.Lerp(1f, 0.65f, num4) * 0.9f;
                 Vector3 vector = new Vector3(num7, num7, 1f);
                 poolablePlayer.transform.localScale = vector;
-                if (CachedPlayerData2.IsDead) {
+                if (CachedPlayerData2.IsDead)
+                {
                     poolablePlayer.SetBodyAsGhost();
                     poolablePlayer.SetDeadFlipX(i % 2 == 0);
-                } else {
+                }
+                else
+                {
                     poolablePlayer.SetFlipX(i % 2 == 0);
                 }
                 poolablePlayer.UpdateFromPlayerOutfit(CachedPlayerData2.Outfit, PlayerMaterial.MaskType.None, CachedPlayerData2.IsDead, true);
@@ -698,6 +796,30 @@ namespace TownOfUs.Patches {
                 textRenderer.color = Arsonist.color;
                 __instance.BackgroundBar.material.SetColor("_Color", Arsonist.color);
             }
+            else if (AdditionalTempData.winCondition == WinCondition.WerewolfWin)
+            {
+                textRenderer.text = "Werewolf Wins";
+                textRenderer.color = Werewolf.color;
+                __instance.BackgroundBar.material.SetColor("_Color", Werewolf.color);
+            }
+            else if (AdditionalTempData.winCondition == WinCondition.LoversTeamWin)
+            {
+                textRenderer.text = "Lovers And Crewmates Wins";
+                textRenderer.color = Lovers.color;
+                __instance.BackgroundBar.material.SetColor("_Color", Lovers.color);
+            }
+            else if (AdditionalTempData.winCondition is WinCondition.LoversSoloWin)
+            {
+                textRenderer.text = "Lovers Wins";
+                textRenderer.color = Lovers.color;
+                __instance.BackgroundBar.material.SetColor("_Color", Lovers.color);
+            }
+            else if (AdditionalTempData.winCondition == WinCondition.DoomsayerWin)
+            {
+                textRenderer.text = "Doomsayer Wins";
+                textRenderer.color = Doomsayer.color;
+                __instance.BackgroundBar.material.SetColor("_Color", Doomsayer.color);
+            }
 
             foreach (WinCondition cond in AdditionalTempData.additionalWinConditions)
             {
@@ -721,10 +843,11 @@ namespace TownOfUs.Patches {
                 }
             }
 
-            if (showRoleSummary) {
+            if (showRoleSummary)
+            {
                 var position = Camera.main.ViewportToWorldPoint(new Vector3(0f, 1f, Camera.main.nearClipPlane));
                 GameObject roleSummary = UnityEngine.Object.Instantiate(__instance.WinText.gameObject);
-                roleSummary.transform.position = new Vector3(__instance.Navigation.ExitButton.transform.position.x + 0.1f, position.y - 0.1f, -214f); 
+                roleSummary.transform.position = new Vector3(__instance.Navigation.ExitButton.transform.position.x + 0.1f, position.y - 0.1f, -214f);
                 roleSummary.transform.localScale = new Vector3(1f, 1f, 1f);
 
                 var roleSummaryText = new StringBuilder();
@@ -741,7 +864,8 @@ namespace TownOfUs.Patches {
                 winnersText.AppendLine("<size=105%><color=#00FF00FF><b>★ - Winners List - ★</b></color></size>");
                 losersText.AppendLine("<size=105%><color=#FF0000FF><b>◆ - Losers List - ◆</b></color></size>");
 
-                foreach (AdditionalTempData.PlayerRoleInfo data in AdditionalTempData.playerRoles) {
+                foreach (AdditionalTempData.PlayerRoleInfo data in AdditionalTempData.playerRoles)
+                {
                     var summaryText = new List<string>();
 
                     string name = Helpers.cs(data.IsAlive ? Color.white : new Color(.7f, .7f, .7f), data.PlayerName);
@@ -781,7 +905,7 @@ namespace TownOfUs.Patches {
                 roleSummaryTextMesh.fontSizeMin = 1.5f;
                 roleSummaryTextMesh.fontSizeMax = 1.5f;
                 roleSummaryTextMesh.fontSize = 1.5f;
-                    
+
                 var roleSummaryTextMeshRectTransform = roleSummaryTextMesh.GetComponent<RectTransform>();
                 roleSummaryTextMeshRectTransform.anchoredPosition = new Vector2(position.x + 3.5f, position.y - 0.1f);
                 roleSummaryTextMesh.text = roleSummaryText.ToString();
@@ -793,9 +917,11 @@ namespace TownOfUs.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(LogicGameFlowNormal), nameof(LogicGameFlowNormal.CheckEndCriteria))] 
-    class CheckEndCriteriaPatch {
-        public static bool Prefix(ShipStatus __instance) {
+    [HarmonyPatch(typeof(LogicGameFlowNormal), nameof(LogicGameFlowNormal.CheckEndCriteria))]
+    class CheckEndCriteriaPatch
+    {
+        public static bool Prefix(ShipStatus __instance)
+        {
             if (!GameData.Instance) return false;
             if (DestroyableSingleton<TutorialManager>.InstanceExists) // InstanceExists | Don't check Custom Criteria when in Tutorial
                 return true;
@@ -807,7 +933,9 @@ namespace TownOfUs.Patches {
             if (CheckAndEndGameForLawyerMeetingWin(__instance)) return false;
             if (CheckAndEndGameForScavengerWin(__instance)) return false;
             if (CheckAndEndGameForMercenaryWin(__instance)) return false;
+            if (CheckAndEndGameForDoomsayerWin(__instance)) return false;
 
+            if (CheckAndEndGameForLoverWin(__instance, statistics)) return false;
             if (CheckAndEndGameForCrewmateWin(__instance, statistics)) return false;
             if (CheckAndEndGameForImpostorWin(__instance, statistics)) return false;
             if (CheckAndEndGameForPlaguebearerWin(__instance, statistics)) return false;
@@ -816,6 +944,7 @@ namespace TownOfUs.Patches {
             if (CheckAndEndGameForTeamVampiresWin(__instance, statistics)) return false;
             if (CheckAndEndGameForGlitchWin(__instance, statistics)) return false;
             if (CheckAndEndGameForJuggernautWin(__instance, statistics)) return false;
+            if (CheckAndEndGameForWerewolfWin(__instance, statistics)) return false;
             return false;
         }
 
@@ -869,6 +998,16 @@ namespace TownOfUs.Patches {
             return false;
         }
 
+        private static bool CheckAndEndGameForDoomsayerWin(ShipStatus __instance)
+        {
+            if (Doomsayer.triggerDoomsayerWin)
+            {
+                GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.DoomsayerWin, false);
+                return true;
+            }
+            return false;
+        }
+
         private static bool CheckAndEndGameForSabotageWin(ShipStatus __instance)
         {
             if (MapUtilities.Systems == null) return false;
@@ -901,9 +1040,21 @@ namespace TownOfUs.Patches {
             return false;
         }
 
-        private static bool CheckAndEndGameForTaskWin(ShipStatus __instance) {
-            if (GameData.Instance.TotalTasks > 0 && GameData.Instance.TotalTasks <= GameData.Instance.CompletedTasks) {
+        private static bool CheckAndEndGameForTaskWin(ShipStatus __instance)
+        {
+            if (GameData.Instance.TotalTasks > 0 && GameData.Instance.TotalTasks <= GameData.Instance.CompletedTasks)
+            {
                 GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.TaskWin, false);
+                return true;
+            }
+            return false;
+        }
+
+        private static bool CheckAndEndGameForLoverWin(ShipStatus __instance, PlayerStatistics statistics)
+        {
+            if (statistics.CouplesAlive == 1 && statistics.TotalAlive <= 3)
+            {
+                GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.LoversWin, false);
                 return true;
             }
             return false;
@@ -911,7 +1062,7 @@ namespace TownOfUs.Patches {
 
         private static bool CheckAndEndGameForArsonistWin(ShipStatus __instance, PlayerStatistics statistics)
         {
-            if (statistics.TeamArsonistAlive >= statistics.TotalAlive - statistics.TeamArsonistAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamJuggernautAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && !Helpers.stopGameEndForKillers())
+            if (statistics.TeamArsonistAlive >= statistics.TotalAlive - statistics.TeamArsonistAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamJuggernautAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamWerewolfAlive == 0 && !Helpers.stopGameEndForKillers() && (statistics.TeamArsonistLovers == 0 || statistics.TeamArsonistLovers >= statistics.CouplesAlive * 2))
             {
                 GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.ArsonistWin, false);
                 return true;
@@ -921,7 +1072,7 @@ namespace TownOfUs.Patches {
 
         private static bool CheckAndEndGameForGlitchWin(ShipStatus __instance, PlayerStatistics statistics)
         {
-            if (statistics.TeamGlitchAlive >= statistics.TotalAlive - statistics.TeamGlitchAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamJuggernautAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamArsonistAlive == 0 && !Helpers.stopGameEndForKillers())
+            if (statistics.TeamGlitchAlive >= statistics.TotalAlive - statistics.TeamGlitchAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamJuggernautAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamArsonistAlive == 0 && statistics.TeamWerewolfAlive == 0 && !Helpers.stopGameEndForKillers() && (statistics.TeamGlitchLovers == 0 || statistics.TeamGlitchLovers >= statistics.CouplesAlive * 2))
             {
                 GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.GlitchWin, false);
                 return true;
@@ -931,7 +1082,7 @@ namespace TownOfUs.Patches {
 
         private static bool CheckAndEndGameForTeamVampiresWin(ShipStatus __instance, PlayerStatistics statistics)
         {
-            if (statistics.TeamVampiresAlive >= statistics.TotalAlive - statistics.TeamVampiresAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamJuggernautAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0 && !Helpers.stopGameEndForKillers())
+            if (statistics.TeamVampiresAlive >= statistics.TotalAlive - statistics.TeamVampiresAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamJuggernautAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0 && statistics.TeamWerewolfAlive == 0 && !Helpers.stopGameEndForKillers() && (statistics.TeamVampiresLovers == 0 || statistics.TeamVampiresLovers >= statistics.CouplesAlive * 2))
             {
                 GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.TeamVampiresWin, false);
                 return true;
@@ -941,7 +1092,7 @@ namespace TownOfUs.Patches {
 
         private static bool CheckAndEndGameForPestilenceWin(ShipStatus __instance, PlayerStatistics statistics)
         {
-            if (statistics.TeamPestilenceAlive >= statistics.TotalAlive - statistics.TeamPestilenceAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamJuggernautAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0 && !Helpers.stopGameEndForKillers())
+            if (statistics.TeamPestilenceAlive >= statistics.TotalAlive - statistics.TeamPestilenceAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamJuggernautAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0 && statistics.TeamWerewolfAlive == 0 && !Helpers.stopGameEndForKillers() && (statistics.TeamPestilenceLovers == 0 || statistics.TeamPestilenceLovers >= statistics.CouplesAlive * 2))
             {
                 GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.PestilenceWin, false);
                 return true;
@@ -951,7 +1102,7 @@ namespace TownOfUs.Patches {
 
         private static bool CheckAndEndGameForPlaguebearerWin(ShipStatus __instance, PlayerStatistics statistics)
         {
-            if (statistics.TeamPlaguebearerAlive >= statistics.TotalAlive - statistics.TeamPlaguebearerAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamJuggernautAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0 && !Helpers.stopGameEndForKillers())
+            if (statistics.TeamPlaguebearerAlive >= statistics.TotalAlive - statistics.TeamPlaguebearerAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamJuggernautAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0 && statistics.TeamWerewolfAlive == 0 && !Helpers.stopGameEndForKillers() && (statistics.TeamPlaguebearerLovers == 0 || statistics.TeamPlaguebearerLovers >= statistics.CouplesAlive * 2))
             {
                 GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.PlaguebearerWin, false);
                 return true;
@@ -961,7 +1112,7 @@ namespace TownOfUs.Patches {
 
         private static bool CheckAndEndGameForJuggernautWin(ShipStatus __instance, PlayerStatistics statistics)
         {
-            if (statistics.TeamJuggernautAlive >= statistics.TotalAlive - statistics.TeamJuggernautAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0 && !Helpers.stopGameEndForKillers())
+            if (statistics.TeamJuggernautAlive >= statistics.TotalAlive - statistics.TeamJuggernautAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0 && statistics.TeamWerewolfAlive == 0 && !Helpers.stopGameEndForKillers() && (statistics.TeamJuggernautLovers == 0 || statistics.TeamJuggernautLovers >= statistics.CouplesAlive * 2))
             {
                 GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.JuggernautWin, false);
                 return true;
@@ -969,9 +1120,19 @@ namespace TownOfUs.Patches {
             return false;
         }
 
+        private static bool CheckAndEndGameForWerewolfWin(ShipStatus __instance, PlayerStatistics statistics)
+        {
+            if (statistics.TeamWerewolfAlive >= statistics.TotalAlive - statistics.TeamWerewolfAlive && statistics.TeamImpostorsAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0 && statistics.TeamJuggernautAlive == 0 && !Helpers.stopGameEndForKillers() && (statistics.TeamWerewolfLovers == 0 || statistics.TeamWerewolfLovers >= statistics.CouplesAlive * 2))
+            {
+                GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.WerewolfWin, false);
+                return true;
+            }
+            return false;
+        }
+
         private static bool CheckAndEndGameForImpostorWin(ShipStatus __instance, PlayerStatistics statistics)
         {
-            if (statistics.TeamImpostorsAlive >= statistics.TotalAlive - statistics.TeamImpostorsAlive && statistics.TeamJuggernautAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0 && !Helpers.stopGameEndForKillers())
+            if (statistics.TeamImpostorsAlive >= statistics.TotalAlive - statistics.TeamImpostorsAlive && statistics.TeamJuggernautAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0 && statistics.TeamWerewolfAlive == 0 && !Helpers.stopGameEndForKillers() && (statistics.TeamImpostorsLovers == 0 || statistics.TeamImpostorsLovers >= statistics.CouplesAlive * 2))
             {
                 GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.ImpostorWin, false);
                 return true;
@@ -979,48 +1140,78 @@ namespace TownOfUs.Patches {
             return false;
         }
 
-        private static bool CheckAndEndGameForCrewmateWin(ShipStatus __instance, PlayerStatistics statistics) {
-            if (statistics.TeamImpostorsAlive == 0 && statistics.TeamJuggernautAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0) {
+        private static bool CheckAndEndGameForCrewmateWin(ShipStatus __instance, PlayerStatistics statistics)
+        {
+            if (statistics.TeamImpostorsAlive == 0 && statistics.TeamJuggernautAlive == 0 && statistics.TeamPlaguebearerAlive == 0 && statistics.TeamPestilenceAlive == 0 && statistics.TeamVampiresAlive == 0 && statistics.TeamGlitchAlive == 0 && statistics.TeamArsonistAlive == 0 && statistics.TeamWerewolfAlive == 0)
+            {
                 GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.CrewmateWin, false);
                 return true;
             }
             return false;
         }
 
-        private static void EndGameForOxygenSabotage(ShipStatus __instance) {
+        private static void EndGameForOxygenSabotage(ShipStatus __instance)
+        {
             GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.OxygenWin, false);
             return;
         }
 
-        private static void EndGameForReactorSabotage(ShipStatus __instance) {
+        private static void EndGameForReactorSabotage(ShipStatus __instance)
+        {
             GameManager.Instance.RpcEndGame((GameOverReason)CustomGameOverReason.ReactorWin, false);
             return;
         }
     }
 
-    internal class PlayerStatistics {
+    internal class PlayerStatistics
+    {
         public int TeamArsonistAlive { get; set; }
         public int TeamGlitchAlive { get; set; }
         public int TeamVampiresAlive { get; set; }
         public int TeamPestilenceAlive { get; set; }
-        public int TeamPlaguebearerAlive {get;set;}
-        public int TeamJuggernautAlive {get;set;}
-        public int TeamImpostorsAlive {get;set;}
-        public int TotalAlive {get;set;}
+        public int TeamPlaguebearerAlive { get; set; }
+        public int TeamJuggernautAlive { get; set; }
+        public int TeamWerewolfAlive { get; set; }
+        public int TeamImpostorsAlive { get; set; }
+        public int TotalAlive { get; set; }
+        public int CouplesAlive { get; set; }
+        public int TeamArsonistLovers { get; set; }
+        public int TeamGlitchLovers { get; set; }
+        public int TeamVampiresLovers { get; set; }
+        public int TeamPestilenceLovers { get; set; }
+        public int TeamPlaguebearerLovers { get; set; }
+        public int TeamJuggernautLovers { get; set; }
+        public int TeamWerewolfLovers { get; set; }
+        public int TeamImpostorsLovers { get; set; }
+        
 
-        public PlayerStatistics(ShipStatus __instance) {
+        public PlayerStatistics(ShipStatus __instance)
+        {
             GetPlayerCounts();
         }
 
-        private void GetPlayerCounts() {
+        private bool isLover(NetworkedPlayerInfo p)
+        {
+            foreach (var couple in Lovers.couples)
+            {
+                if (p.PlayerId == couple.lover1.PlayerId || p.PlayerId == couple.lover2.PlayerId) return true;
+            }
+            return false;
+        }
+
+        private void GetPlayerCounts()
+        {
             int numArsonistAlive = Arsonist.livingPlayers.Count;
             int numGlitchAlive = Glitch.livingPlayers.Count;
             int numVampiresAlive = Dracula.livingPlayers.Count + Vampire.livingPlayers.Count;
             int numPestilenceAlive = Pestilence.livingPlayers.Count;
             int numPlaguebearerAlive = Plaguebearer.livingPlayers.Count;
             int numJuggernautAlive = Juggernaut.livingPlayers.Count;
+            int numWerewolfAlive = Werewolf.livingPlayers.Count;
             int numImpostorsAlive = 0;
             int numTotalAlive = 0;
+            int numCouplesAlive = 0;
+            int numImpostorsLovers = 0;
 
             foreach (var playerInfo in GameData.Instance.AllPlayers.GetFastEnumerator())
             {
@@ -1030,13 +1221,23 @@ namespace TownOfUs.Patches {
                     {
                         numTotalAlive++;
 
-                        if (playerInfo.Role.IsImpostor) {
+                        bool lover = isLover(playerInfo);
+
+                        if (playerInfo.Role.IsImpostor)
+                        {
                             numImpostorsAlive++;
+                            if (lover) numImpostorsLovers++;
                         }
                     }
                 }
             }
 
+            foreach (var couple in Lovers.couples)
+            {
+                if (couple.alive) numCouplesAlive++;
+            }
+
+            TeamWerewolfAlive = numWerewolfAlive;
             TeamArsonistAlive = numArsonistAlive;
             TeamGlitchAlive = numGlitchAlive;
             TeamVampiresAlive = numVampiresAlive;
@@ -1045,6 +1246,14 @@ namespace TownOfUs.Patches {
             TeamJuggernautAlive = numJuggernautAlive;
             TeamImpostorsAlive = numImpostorsAlive;
             TotalAlive = numTotalAlive;
+            TeamArsonistLovers = Arsonist.countLovers();
+            TeamGlitchLovers = Glitch.countLovers();
+            TeamVampiresLovers = Dracula.countLovers() + Vampire.countLovers();
+            TeamPestilenceLovers = Pestilence.countLovers();
+            TeamPlaguebearerLovers = Plaguebearer.countLovers();
+            TeamJuggernautLovers = Juggernaut.countLovers();
+            TeamWerewolfLovers = Werewolf.countLovers();
+            TeamImpostorsLovers = numImpostorsLovers;
         }
     }
 }

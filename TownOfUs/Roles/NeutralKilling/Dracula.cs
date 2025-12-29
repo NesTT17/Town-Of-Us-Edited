@@ -136,7 +136,7 @@ namespace TownOfUs.Roles
                         }
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Dracula) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Dracula) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { draculaBiteButton.Timer = draculaBiteButton.MaxTimer; },
                 getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, hm, KeyCode.Q
@@ -152,6 +152,14 @@ namespace TownOfUs.Roles
             convertedVampires = 0;
             canCreateVampire = CustomOptionHolder.draculaCanCreateVampire.getBool();
             players = new List<Dracula>();
+        }
+
+        public static int countLovers()
+        {
+            int counter = 0;
+            foreach (var player in allPlayers)
+                if (player.isLovers()) counter += 1;
+            return counter;
         }
         
         public static Sprite getButtonSprite()

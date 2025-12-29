@@ -17,7 +17,6 @@ namespace TownOfUs.Objects
         {
             get => _instance ? _instance : _instance = new GameObject("FootprintHolder").AddComponent<FootprintHolder>();
             set => _instance = value;
-
         }
 
         private static Sprite _footprintSprite;

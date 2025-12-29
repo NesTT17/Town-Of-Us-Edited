@@ -85,7 +85,7 @@ namespace TownOfUs.Roles
                         Helpers.MurderPlayer(thief, target, true);
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Thief) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Thief) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget != null && PlayerControl.LocalPlayer.CanMove; },
                 () => { thiefKillButton.Timer = thiefKillButton.MaxTimer; },
                 hm.KillButton.graphic.sprite, CustomButton.ButtonPositions.upperRowRight, hm, KeyCode.Q

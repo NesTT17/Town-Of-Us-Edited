@@ -267,6 +267,7 @@ namespace TownOfUs
             else if (source == target) return false; // Player sees his own name
             else if (source.Data.Role.IsImpostor && (target.Data.Role.IsImpostor || target.isRole(RoleId.Agent) || Vampire.players.Any(x => x.player == target && x.wasTeamRed) || Dracula.players.Any(x => x.player == target && x.wasTeamRed))) return false;
             else if (Dracula.players.Any(x => x.player == source && (target == x.fakeVampire || (Dracula.getVampire(source) != null && Dracula.getVampire(source).player == target))) || Vampire.players.Any(x => x.player == source && x.dracula.player == target)) return false;
+            else if (source.getPartner() == target) return false;
             return true;
         }
 
@@ -317,6 +318,8 @@ namespace TownOfUs
             spriteAnim.m_animator.Update(0f);
 
             target.RawSetPet(petId, colorId);
+
+            Chameleon.local.update();
         }
 
         public static void showFlash(Color color, float duration = 1f, string message = "")
@@ -824,6 +827,8 @@ namespace TownOfUs
         public static void setPlayerOutline(PlayerControl target, Color color)
         {
             if (target == null || target.cosmetics?.currentBodySprite?.BodySprite == null) return;
+
+            color = color.SetAlpha(Chameleon.local.visibility(target.PlayerId));
 
             target.cosmetics.currentBodySprite.BodySprite.material.SetFloat("_Outline", 1f);
             target.cosmetics.currentBodySprite.BodySprite.material.SetColor("_OutlineColor", color);
@@ -1446,7 +1451,7 @@ namespace TownOfUs
             }
             return playerControlList;
         }
-        
+
         public static bool stopGameEndForKillers()
         {
             bool powerCrewAlive = false;
@@ -1458,6 +1463,24 @@ namespace TownOfUs
             if (CustomOptionHolder.swapperBlockGameEnd.getBool() && Swapper.livingPlayers.Count > 0) powerCrewAlive = true;
 
             return powerCrewAlive;
+        }
+
+        public static bool isLovers(this PlayerControl player)
+        {
+            return player != null && Lovers.isLovers(player);
+        }
+
+        public static PlayerControl getPartner(this PlayerControl player)
+        {
+            return Lovers.getPartner(player);
+        }
+
+        internal static bool Check(int probability)
+        {
+            if (probability == 0) return false;
+            if (probability == 100) return true;
+            var num = UnityEngine.Random.RandomRangeInt(1, 101);
+            return num <= probability;
         }
     }
 }

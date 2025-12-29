@@ -29,16 +29,7 @@ namespace TownOfUs.Roles
         }
 
         public override void OnMeetingStart() { }
-        public override void OnMeetingEnd()
-        { 
-            if (infectedAlive >= livingPlayers.Count && !player.Data.IsDead)
-            {
-                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(player.NetId, (byte)CustomRPC.PlaguebearerTurnPestilence, SendOption.Reliable, -1);
-                writer.Write(player.PlayerId);
-                AmongUsClient.Instance.FinishRpcImmediately(writer);
-                RPCProcedure.plaguebearerTurnPestilence(player.PlayerId);
-            }
-        }
+        public override void OnMeetingEnd() { }
         public override void FixedUpdate()
         {
             if (!infectedPlayers.Contains(player.PlayerId)) infectedPlayers.Add(player.PlayerId);
@@ -52,6 +43,14 @@ namespace TownOfUs.Roles
                 }
                 currentTarget = Helpers.setTarget(false, false, untargetablePlayers);
                 Helpers.setPlayerOutline(currentTarget, color);
+
+                if (infectedPlayers.Count(x => Helpers.playerById(x) != null && Helpers.playerById(x).Data != null && !Helpers.playerById(x).Data.IsDead && !Helpers.playerById(x).Data.Disconnected) >= PlayerControl.AllPlayerControls.ToArray().Where(x => !x.Data.IsDead && !x.Data.Disconnected && x != null).Count() && !player.Data.IsDead)
+                {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(player.NetId, (byte)CustomRPC.PlaguebearerTurnPestilence, SendOption.Reliable, -1);
+                    writer.Write(player.PlayerId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.plaguebearerTurnPestilence(player.PlayerId);
+                }
             }
         }
         public override void OnKill(PlayerControl target) { }
@@ -69,7 +68,7 @@ namespace TownOfUs.Roles
                     plaguebearerInfectButton.Timer = plaguebearerInfectButton.MaxTimer;
                     local.currentTarget = null;
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Plaguebearer) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Plaguebearer) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { plaguebearerInfectButton.Timer = plaguebearerInfectButton.MaxTimer; },
                 getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, hm, KeyCode.F
@@ -84,6 +83,14 @@ namespace TownOfUs.Roles
         {
             infectedPlayers = new List<byte>();
             players = new List<Plaguebearer>();
+        }
+
+        public static int countLovers()
+        {
+            int counter = 0;
+            foreach (var player in allPlayers)
+                if (player.isLovers()) counter += 1;
+            return counter;
         }
         
         public static Sprite getButtonSprite()

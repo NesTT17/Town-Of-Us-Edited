@@ -57,7 +57,7 @@ namespace TownOfUs.Roles
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
                     RPCProcedure.venererCamo(PlayerControl.LocalPlayer.PlayerId);
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Venerer) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Venerer) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => {
                     if (local.numberOfKills == 1) venererAbilityButton.Sprite = getcamoButton();
                     if (local.numberOfKills == 2) venererAbilityButton.Sprite = getspeedButton();

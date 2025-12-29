@@ -48,7 +48,7 @@ namespace TownOfUs.Roles
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
                     RPCProcedure.werewolfRampage(PlayerControl.LocalPlayer.PlayerId);
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Werewolf) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Werewolf) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return PlayerControl.LocalPlayer.CanMove; },
                 () =>
                 {
@@ -91,7 +91,7 @@ namespace TownOfUs.Roles
                         local.currentTarget = null;
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Werewolf) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Werewolf) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget != null && local.isRampageActive && PlayerControl.LocalPlayer.CanMove; },
                 () => { werewolfKillButton.Timer = werewolfKillButton.MaxTimer; },
                 hm.KillButton.graphic.sprite, CustomButton.ButtonPositions.upperRowRight, hm, KeyCode.Q
@@ -107,6 +107,14 @@ namespace TownOfUs.Roles
         public static void Clear()
         {
             players = new List<Werewolf>();
+        }
+
+        public static int countLovers()
+        {
+            int counter = 0;
+            foreach (var player in allPlayers)
+                if (player.isLovers()) counter += 1;
+            return counter;
         }
         
         public static Sprite getButtonSprite()

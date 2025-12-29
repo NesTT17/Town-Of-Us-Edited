@@ -21,12 +21,14 @@ namespace TownOfUs.Utilities
 
         public static bool isGuesser(byte playerId)
         {
+            if (Helpers.playerById(playerId).isRole(RoleId.Doomsayer)) return true;
             if (isGuesserGm) return GuesserGM.isGuesser(playerId);
             return false;
         }
 
         public static int remainingShots(byte playerId, bool shoot = false)
         {
+            if (Helpers.playerById(playerId).isRole(RoleId.Doomsayer)) return 15;
             if (isGuesserGm) return GuesserGM.remainingShots(playerId, shoot);
             return 0;
         }

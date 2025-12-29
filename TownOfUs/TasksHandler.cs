@@ -30,6 +30,8 @@ namespace TownOfUs
 
                 foreach (var playerInfo in GameData.Instance.AllPlayers.GetFastEnumerator())
                 {
+                    if (playerInfo.Object && playerInfo.Object.hasAliveKillingLover()) 
+                        continue;
                     var (playerCompleted, playerTotal) = taskInfo(playerInfo);
                     totalTasks += playerTotal;
                     completedTasks += playerCompleted;

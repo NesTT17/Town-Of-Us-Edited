@@ -105,7 +105,7 @@ namespace TownOfUs.Roles
                         }
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Scavenger) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Scavenger) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () =>
                 {
                     if (scavengerButtonText != null) scavengerButtonText.text = $"{scavengerNumberToWin - local.eatenBodies}";

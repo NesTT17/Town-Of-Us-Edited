@@ -21,6 +21,12 @@ namespace TownOfUs.Modifiers
             { RoleId.Sleuth, typeof(ModifierBase<Sleuth>) },
             { RoleId.Drunk, typeof(ModifierBase<Drunk>) },
             { RoleId.Radar, typeof(ModifierBase<Radar>) },
+            { RoleId.Immovable, typeof(ModifierBase<Immovable>) },
+            { RoleId.Tiebreaker, typeof(ModifierBase<Tiebreaker>) },
+            { RoleId.Chameleon, typeof(ModifierBase<Chameleon>) },
+
+            { RoleId.Disperser, typeof(ModifierBase<Disperser>) },
+            { RoleId.DoubleShot, typeof(ModifierBase<DoubleShot>) },
         };
     }
 

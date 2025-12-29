@@ -106,7 +106,7 @@ namespace TownOfUs.Roles
                         local.currentTarget = null;
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Glitch) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Glitch) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget != null && PlayerControl.LocalPlayer.CanMove; },
                 () => { glitchKillButton.Timer = glitchKillButton.MaxTimer; },
                 hm.KillButton.graphic.sprite, CustomButton.ButtonPositions.upperRowRight, hm, KeyCode.Q
@@ -156,7 +156,7 @@ namespace TownOfUs.Roles
                         glitchMimicButton.EffectDuration = morphDuration;
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Glitch) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Glitch) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return PlayerControl.LocalPlayer.CanMove; },
                 () =>
                 {
@@ -183,7 +183,7 @@ namespace TownOfUs.Roles
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
                     RPCProcedure.glitchHack(local.currentTarget.PlayerId, PlayerControl.LocalPlayer.PlayerId);
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Glitch) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Glitch) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && hackedPlayer == null && PlayerControl.LocalPlayer.CanMove; },
                 () =>
                 {
@@ -212,6 +212,14 @@ namespace TownOfUs.Roles
             mimicTargets = new List<byte>();
             hackedPlayers = new Dictionary<PlayerControl, DateTime>();
             players = new List<Glitch>();
+        }
+
+        public static int countLovers()
+        {
+            int counter = 0;
+            foreach (var player in allPlayers)
+                if (player.isLovers()) counter += 1;
+            return counter;
         }
 
         public static Sprite getMimicButtonSprite()

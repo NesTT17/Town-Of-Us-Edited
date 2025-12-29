@@ -20,7 +20,8 @@ namespace TownOfUs.Patches
         public static void Postfix(ref int __result)
         {
             if (GameOptionsManager.Instance.CurrentGameOptions.GameMode == GameModes.Normal)
-            {  // Ignore Vanilla impostor limits in TOR Games.
+            {  
+                // Ignore Vanilla impostor limits in TOU Games.
                 __result = Mathf.Clamp(GameOptionsManager.Instance.CurrentGameOptions.NumImpostors, 1, 3);
             }
         }
@@ -135,6 +136,7 @@ namespace TownOfUs.Patches
             nonKillingNeutralSettings.Add((byte)RoleId.Scavenger, CustomOptionHolder.scavengerSpawnRate.data);
             nonKillingNeutralSettings.Add((byte)RoleId.Mercenary, CustomOptionHolder.mercenarySpawnRate.data);
             nonKillingNeutralSettings.Add((byte)RoleId.Thief, CustomOptionHolder.thiefSpawnRate.data);
+            nonKillingNeutralSettings.Add((byte)RoleId.Doomsayer, CustomOptionHolder.doomsayerSpawnRate.data);
 
             killingNeutralSettings.Add((byte)RoleId.Juggernaut, CustomOptionHolder.juggernautSpawnRate.data);
             killingNeutralSettings.Add((byte)RoleId.Plaguebearer, CustomOptionHolder.plaguebearerSpawnRate.data);
@@ -358,7 +360,7 @@ namespace TownOfUs.Patches
             {
                 var possibleTargets = new List<PlayerControl>();
                 foreach (PlayerControl p in PlayerControl.AllPlayerControls)
-                    if (!p.Data.IsDead && !p.Data.Disconnected && p.isKiller())
+                    if (!p.Data.IsDead && !p.Data.Disconnected && !p.isLovers() && p.isKiller())
                         possibleTargets.Add(p);
 
                 if (possibleTargets.Count == 0)
@@ -387,13 +389,13 @@ namespace TownOfUs.Patches
                 if (rnd.Next(1, 101) <= (GuardianAngel.oddsEvilTarget * 10))
                 {
                     foreach (PlayerControl p in PlayerControl.AllPlayerControls)
-                        if (!p.Data.IsDead && !p.Data.Disconnected)
+                        if (!p.Data.IsDead && !p.Data.Disconnected && !p.isLovers())
                             possibleTargets.Add(p);
                 }
                 else
                 {
                     foreach (PlayerControl p in PlayerControl.AllPlayerControls)
-                        if (!p.Data.IsDead && !p.Data.Disconnected && !p.isEvil())
+                        if (!p.Data.IsDead && !p.Data.Disconnected && !p.isLovers() && !p.isEvil())
                             possibleTargets.Add(p);
                 }
 
@@ -421,7 +423,7 @@ namespace TownOfUs.Patches
             {
                 var possibleTargets = new List<PlayerControl>();
                 foreach (PlayerControl p in PlayerControl.AllPlayerControls)
-                    if (!p.Data.IsDead && !p.Data.Disconnected && !p.isEvil() && !p.isRole(RoleId.Politician) && !p.isRole(RoleId.Sheriff))
+                    if (!p.Data.IsDead && !p.Data.Disconnected && !p.isLovers() && !p.isEvil() && !p.isRole(RoleId.Politician) && !p.isRole(RoleId.Sheriff))
                         possibleTargets.Add(p);
 
                 if (possibleTargets.Count == 0)
@@ -471,7 +473,61 @@ namespace TownOfUs.Patches
                 RoleId.Torch,
                 RoleId.Vip,
                 RoleId.Radar,
+                RoleId.Disperser,
+                RoleId.DoubleShot,
+                RoleId.Immovable,
+                RoleId.Tiebreaker,
+                RoleId.Chameleon,
             });
+
+            // Assign Lovers
+            if (CustomOptionHolder.modifierLover.getSelection() > 0)
+            {
+                for (int i = 0; i < CustomOptionHolder.modifierLover.count; i++)
+                {
+                    List<PlayerControl> impPlayer = new(players);
+                    List<PlayerControl> crewPlayer = new(players);
+                    impPlayer.RemoveAll(x => !x.isKiller());
+                    crewPlayer.RemoveAll(x => x.isKiller() || x.isRole(RoleId.Lawyer) || x.isRole(RoleId.GuardianAngel) || x.isRole(RoleId.Executioner));
+                    var singleCrew = crewPlayer.FindAll(x => !x.isLovers());
+                    var singleImps = impPlayer.FindAll(x => !x.isLovers());
+
+                    if (rnd.Next(1, 101) <= CustomOptionHolder.modifierLover.getSelection() * 10)
+                    {
+                        int lover1 = -1;
+                        int lover2 = -1;
+                        int lover1Index = -1;
+                        int lover2Index = -1;
+                        if (singleImps.Count > 0 && singleCrew.Count > 0 && rnd.Next(1, 101) <= CustomOptionHolder.modifierLoverImpLoverRate.getSelection() * 10)
+                        {
+                            lover1Index = rnd.Next(0, singleImps.Count);
+                            lover1 = singleImps[lover1Index].PlayerId;
+
+                            lover2Index = rnd.Next(0, singleCrew.Count);
+                            lover2 = singleCrew[lover2Index].PlayerId;
+                        }
+
+                        else if (singleCrew.Count >= 2)
+                        {
+                            lover1Index = rnd.Next(0, singleCrew.Count);
+                            while (lover2Index == lover1Index || lover2Index < 0) lover2Index = rnd.Next(0, singleCrew.Count);
+
+                            lover1 = singleCrew[lover1Index].PlayerId;
+                            lover2 = singleCrew[lover2Index].PlayerId;
+                        }
+
+                        if (lover1 >= 0 && lover2 >= 0)
+                        {
+                            MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.SetLovers, Hazel.SendOption.Reliable, -1);
+                            writer.Write((byte)lover1);
+                            writer.Write((byte)lover2);
+                            AmongUsClient.Instance.FinishRpcImmediately(writer);
+                            RPCProcedure.setLovers((byte)lover1, (byte)lover2);
+                            modifierCount--;
+                        }
+                    }
+                }
+            }
 
             foreach (RoleId m in allModifiers)
             {
@@ -521,8 +577,10 @@ namespace TownOfUs.Patches
             assignGuesserGamemodeToPlayers(impPlayer, Mathf.RoundToInt(CustomOptionHolder.guesserGamemodeImpNumber.getFloat()));
         }
 
-        private static void assignGuesserGamemodeToPlayers(List<PlayerControl> playerList, int count, bool forceJackal = false, bool forceThief = false) {
-            for (int i = 0; i < count && playerList.Count > 0; i++) {
+        private static void assignGuesserGamemodeToPlayers(List<PlayerControl> playerList, int count, bool forceJackal = false, bool forceThief = false)
+        {
+            for (int i = 0; i < count && playerList.Count > 0; i++)
+            {
                 var index = rnd.Next(0, playerList.Count);
                 byte playerId = playerList[index].PlayerId;
                 playerList.RemoveAt(index);
@@ -579,6 +637,9 @@ namespace TownOfUs.Patches
             byte playerId;
             List<PlayerControl> crewPlayer = new(playerList);
             crewPlayer.RemoveAll(x => x.isEvil());
+
+            List<PlayerControl> impPlayer = new(playerList);
+            impPlayer.RemoveAll(x => !x.Data.Role.IsImpostor);
 
             // Crewmate Modifiers
             if (modifiers.Contains(RoleId.Bait))
@@ -676,6 +737,36 @@ namespace TownOfUs.Patches
                 modifiers.RemoveAll(x => x == RoleId.ButtonBarry);
             }
 
+            // Impostor modifiers
+            if (modifiers.Contains(RoleId.Disperser))
+            {
+                int disperserCount = 0;
+                while (disperserCount < modifiers.FindAll(x => x == RoleId.Disperser).Count)
+                {
+                    playerId = setModifierToRandomPlayer((byte)RoleId.Disperser, impPlayer);
+                    impPlayer.RemoveAll(x => x.PlayerId == playerId);
+                    playerList.RemoveAll(x => x.PlayerId == playerId);
+                    disperserCount++;
+                }
+                modifiers.RemoveAll(x => x == RoleId.Disperser);
+            }
+            
+            if (modifiers.Contains(RoleId.DoubleShot))
+            {
+                int doubleShotCount = 0;
+                while (doubleShotCount < modifiers.FindAll(x => x == RoleId.DoubleShot).Count)
+                {
+                    List<PlayerControl> impPlayerGuesser = new(impPlayer);
+                    impPlayerGuesser.RemoveAll(x => !HandleGuesser.isGuesser(x.PlayerId));
+                    playerId = setModifierToRandomPlayer((byte)RoleId.DoubleShot, impPlayerGuesser);
+                    impPlayer.RemoveAll(x => x.PlayerId == playerId);
+                    impPlayerGuesser.RemoveAll(x => x.PlayerId == playerId);
+                    playerList.RemoveAll(x => x.PlayerId == playerId);
+                    doubleShotCount++;
+                }
+                modifiers.RemoveAll(x => x == RoleId.DoubleShot);
+            }
+
             foreach (RoleId modifier in modifiers)
             {
                 if (playerList.Count == 0) break;
@@ -728,6 +819,28 @@ namespace TownOfUs.Patches
                 case RoleId.Radar:
                     selection = CustomOptionHolder.modifierRadar.rate;
                     if (multiplyQuantity) selection *= CustomOptionHolder.modifierRadar.count;
+                    break;
+                case RoleId.Disperser:
+                    selection = CustomOptionHolder.modifierDisperser.rate;
+                    if (multiplyQuantity) selection *= CustomOptionHolder.modifierDisperser.count;
+                    break;
+                case RoleId.Lover:
+                    selection = CustomOptionHolder.modifierLover.getSelection(); break;
+                case RoleId.DoubleShot:
+                    selection = CustomOptionHolder.modifierDoubleShot.rate;
+                    if (multiplyQuantity) selection *= CustomOptionHolder.modifierDoubleShot.count;
+                    break;
+                case RoleId.Immovable:
+                    selection = CustomOptionHolder.modifierImmovable.rate;
+                    if (multiplyQuantity) selection *= CustomOptionHolder.modifierImmovable.count;
+                    break;
+                case RoleId.Tiebreaker:
+                    selection = CustomOptionHolder.modifierTieBreaker.rate;
+                    if (multiplyQuantity) selection *= CustomOptionHolder.modifierTieBreaker.count;
+                    break;
+                case RoleId.Chameleon:
+                    selection = CustomOptionHolder.modifierChameleon.rate;
+                    if (multiplyQuantity) selection *= CustomOptionHolder.modifierChameleon.count;
                     break;
             }
 

@@ -19,7 +19,6 @@ namespace TownOfUs.CustomGameModes
 
         public static int remainingShots(byte playerId, bool shoot = false)
         {
-
             var g = guessers.FindLast(x => x.guesser.PlayerId == playerId);
             if (g == null) return 0;
             if (shoot) g.shots--;
@@ -33,7 +32,6 @@ namespace TownOfUs.CustomGameModes
             g.guesser = null;
             g.shots = Mathf.RoundToInt(CustomOptionHolder.guesserGamemodeNumberOfShots.getFloat());
             g.tasksToUnlock = Mathf.RoundToInt(CustomOptionHolder.guesserGamemodeCrewGuesserNumberOfTasks.getFloat());
-
             guessers.Remove(g);
         }
 

@@ -31,7 +31,7 @@ namespace TownOfUs.Patches
         public static void MainMenuManager_StartPostfix(MainMenuManager __instance)
         {
             // Prefab for the title
-            var go = new GameObject("TitleTextTOR");
+            var go = new GameObject("TitleTextTOU");
             var tmp = go.AddComponent<TextMeshPro>();
             tmp.fontSize = 4;
             tmp.alignment = TextAlignmentOptions.Center;

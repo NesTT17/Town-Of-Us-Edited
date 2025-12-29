@@ -58,9 +58,11 @@ namespace TownOfUs
             Detective.setButtonCooldowns();
             Bomber.setButtonCooldowns();
             Venerer.setButtonCooldowns();
+            Doomsayer.setButtonCooldowns();
             
             Shifter.setButtonCooldowns();
             ButtonBarry.setButtonCooldowns();
+            Disperser.setButtonCooldowns();
             // Already set the timer to the max, as the button is enabled during the game and not available at the start
             zoomOutButton.MaxTimer = 0f;
         }
@@ -116,9 +118,11 @@ namespace TownOfUs
             Detective.makeButtons(__instance);
             Bomber.makeButtons(__instance);
             Venerer.makeButtons(__instance);
+            Doomsayer.makeButtons(__instance);
             
             Shifter.makeButtons(__instance);
             ButtonBarry.makeButtons(__instance);
+            Disperser.makeButtons(__instance);
 
             // Zoom Button
             zoomOutButton = new CustomButton(
@@ -133,6 +137,9 @@ namespace TownOfUs
                 null, new Vector3(-15f, -15f, 0f), __instance, KeyCode.KeypadPlus
             );
             zoomOutButton.Timer = 0f;
+
+            initialized = true;
+            setCustomButtonCooldowns();
         }
     }
 }

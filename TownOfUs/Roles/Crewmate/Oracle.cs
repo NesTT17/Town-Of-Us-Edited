@@ -126,7 +126,7 @@ namespace TownOfUs.Roles
                     local.currentTarget = null;
                     oracleButton.Timer = oracleButton.MaxTimer;
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Oracle) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Oracle) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && !local.investigated && PlayerControl.LocalPlayer.CanMove; },
                 () => { oracleButton.Timer = oracleButton.MaxTimer; },
                 getButtonSprite(), CustomButton.ButtonPositions.lowerRowRight, hm, KeyCode.F,

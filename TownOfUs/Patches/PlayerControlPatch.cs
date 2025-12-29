@@ -132,7 +132,6 @@ namespace TownOfUs.Patches {
                 if (p.cosmetics.colorBlindText != null && p.cosmetics.showColorBlindText && p.cosmetics.colorBlindText.gameObject.active)
                 {
                     p.cosmetics.colorBlindText.transform.localPosition = new Vector3(0, -1f, 0f);
-                    p.cosmetics.colorBlindText.color = Palette.PlayerColors[p.Data.DefaultOutfit.ColorId];
                 }
                 p.cosmetics.nameText.transform.parent.SetLocalZ(-0.0001f);  // This moves both the name AND the colorblindtext behind objects (if the player is behind the object), like the rock on polus
 
@@ -343,6 +342,8 @@ namespace TownOfUs.Patches {
                 impostorSetTarget();
                 // Morphling and Camouflager
                 morphlingAndCamouflagerUpdate();
+                // Chameleon (invis stuff, timers)
+                Chameleon.local.update();
             }
 
             FixedUpdate(__instance);
@@ -439,7 +440,7 @@ namespace TownOfUs.Patches {
 
             foreach (var player in PlayerControl.AllPlayerControls)
             {
-                if (!target.Disconnected && player.PlayerId == target.PlayerId)
+                if (!target.Disconnected && player.PlayerId == target.PlayerId && player != null)
                 {
                     if (Plaguebearer.isInfected(PlayerControl.LocalPlayer) || Plaguebearer.isInfected(player))
                     {
@@ -684,6 +685,7 @@ namespace TownOfUs.Patches {
             if (AmongUsClient.Instance != null && AmongUsClient.Instance.GameState == InnerNetClient.GameStates.Started)
             {
                 if (player != null && !player.Data.IsDead) overrideDeathReasonAndKiller(player, DeadPlayer.CustomDeathReason.Disconnect, null);
+                Lovers.HandleDisconnect(player, reason);
             }
 
             if (MeetingHud.Instance)

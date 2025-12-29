@@ -16,6 +16,7 @@ namespace TownOfUs
             GASuicide,
             Shift,
             Bomb,
+            LoverSuicide,
         };
 
         public PlayerControl player;

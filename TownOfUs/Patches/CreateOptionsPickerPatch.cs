@@ -36,7 +36,7 @@ namespace TownOfUs.Patches
         {
             if (TOUMapOptions.gameMode == CustomGamemodes.Guesser)
             {
-                __instance.GameModeText.text = "TOR Guesser";
+                __instance.GameModeText.text = "TOU Guesser";
             }
             else if (TOUMapOptions.gameMode == CustomGamemodes.AllAny)
             {

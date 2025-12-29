@@ -17,6 +17,13 @@ namespace TownOfUs.Patches
             return pc.inMovingPlat || pc.onLadder;
         }
 
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(ZiplineBehaviour), nameof(ZiplineBehaviour.Use), new Type[] { typeof(PlayerControl), typeof(bool) })]
+        public static void prefix3(ZiplineBehaviour __instance, PlayerControl player, bool fromTop)
+        {
+            Immovable.local.position = PlayerControl.LocalPlayer.transform.position;
+        }
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(ZiplineBehaviour), nameof(ZiplineBehaviour.Use), [typeof(PlayerControl), typeof(bool)])]
         public static void postfix(ZiplineBehaviour __instance, PlayerControl player, bool fromTop)
@@ -30,15 +37,19 @@ namespace TownOfUs.Patches
                 {
                     if (Camouflager.camouflageTimer <= 0 && !Helpers.MushroomSabotageActive())
                     {
-                        foreach (var morphling in Morphling.players)  {
-                            if (player == morphling.player && morphling.morphTimer > 0) {
+                        foreach (var morphling in Morphling.players)
+                        {
+                            if (player == morphling.player && morphling.morphTimer > 0)
+                            {
                                 hand.SetPlayerColor(morphling.morphTarget.CurrentOutfit, PlayerMaterial.MaskType.None, 1f);
                                 // Also set hat color, cause the line destroys it...
                                 player.RawSetHat(morphling.morphTarget.Data.DefaultOutfit.HatId, morphling.morphTarget.Data.DefaultOutfit.ColorId);
                             }
                         }
-                        foreach (var glitch in Glitch.players)  {
-                            if (player == glitch.player && Glitch.morphTimer > 0) {
+                        foreach (var glitch in Glitch.players)
+                        {
+                            if (player == glitch.player && Glitch.morphTimer > 0)
+                            {
                                 hand.SetPlayerColor(Glitch.morphPlayer.CurrentOutfit, PlayerMaterial.MaskType.None, 1f);
                                 // Also set hat color, cause the line destroys it...
                                 player.RawSetHat(Glitch.morphPlayer.Data.DefaultOutfit.HatId, Glitch.morphPlayer.Data.DefaultOutfit.ColorId);
@@ -53,14 +64,23 @@ namespace TownOfUs.Patches
                 }
             })));
         }
-        
+
+        // Save the position of the player prior to starting the climb / gap platform
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(PlayerPhysics), nameof(PlayerPhysics.ClimbLadder))]
+        public static void prefix()
+        {
+            Immovable.local.position = PlayerControl.LocalPlayer.transform.position;
+        }
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(PlayerPhysics), nameof(PlayerPhysics.ClimbLadder))]
         public static void postfix2(PlayerPhysics __instance, Ladder source, byte climbLadderSid)
         {
             // Fix camo:
             var player = __instance.myPlayer;
-            __instance.StartCoroutine(Effects.Lerp(5.0f, new System.Action<float>((p) => {
+            __instance.StartCoroutine(Effects.Lerp(5.0f, new System.Action<float>((p) =>
+            {
                 if (Camouflager.camouflageTimer <= 0 && !Helpers.MushroomSabotageActive())
                 {
                     foreach (var morphling in Morphling.players)
@@ -70,13 +90,22 @@ namespace TownOfUs.Patches
                             player.RawSetHat(morphling.morphTarget.Data.DefaultOutfit.HatId, morphling.morphTarget.Data.DefaultOutfit.ColorId);
                         }
                     }
-                    foreach (var glitch in Glitch.players)  {
-                        if (player == glitch.player && Glitch.morphTimer > 0.1f) {
+                    foreach (var glitch in Glitch.players)
+                    {
+                        if (player == glitch.player && Glitch.morphTimer > 0.1f)
+                        {
                             player.RawSetHat(Glitch.morphPlayer.Data.DefaultOutfit.HatId, Glitch.morphPlayer.Data.DefaultOutfit.ColorId);
                         }
                     }
                 }
             })));
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(MovingPlatformBehaviour), nameof(MovingPlatformBehaviour.UsePlatform))]
+        public static void prefix2()
+        {
+            Immovable.local.position = PlayerControl.LocalPlayer.transform.position;
         }
     }
 }

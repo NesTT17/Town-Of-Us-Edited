@@ -119,7 +119,7 @@ namespace TownOfUs.Modules
         {
             public static void Postfix(HudManager __instance)
             {
-                if (!__instance.Chat.isActiveAndEnabled && (AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay))
+                if (!__instance.Chat.isActiveAndEnabled && (AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay || (Lovers.enableChat && PlayerControl.LocalPlayer.isLovers())))
                     __instance.Chat.SetVisible(true);
             }
         }

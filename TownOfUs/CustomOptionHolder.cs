@@ -73,6 +73,7 @@ namespace TownOfUs
         
         public static CustomRoleOption engineerSpawnRate;
         public static CustomOption engineerNumberOfFixes;
+        public static CustomOption engineerRechargeTasksNumber;
         
         public static CustomRoleOption jesterSpawnRate;
         public static CustomOption jesterCanCallEmergency;
@@ -94,6 +95,7 @@ namespace TownOfUs
         public static CustomOption veteranCooldown;
         public static CustomOption veteranAlertDuration;
         public static CustomOption veteranAlertNumber;
+        public static CustomOption veteranRechargeTasksNumber;
 
         public static CustomModifierOption modifierBait;
         public static CustomOption modifierBaitReportDelay;
@@ -254,6 +256,7 @@ namespace TownOfUs
         public static CustomRoleOption transporterSpawnRate;
         public static CustomOption transporterCooldown;
         public static CustomOption transporterNumberOfTransports;
+        public static CustomOption transporterRechargeTasksNumber;
         
         public static CustomModifierOption modifierButtonBarry;
         
@@ -333,6 +336,32 @@ namespace TownOfUs
         public static CustomOption mayorBlockGameEnd;
         public static CustomOption swapperBlockGameEnd;
 
+        public static CustomModifierOption modifierDisperser;
+        public static CustomOption modifierDisperserInitialDisperses;
+        public static CustomOption modifierDisperserRechargeKillsNumber;
+        public static CustomOption modifierDisperserDispersesToVent;
+        
+        public static CustomModifierOption modifierLover;
+        public static CustomOption modifierLoverImpLoverRate;
+        public static CustomOption modifierLoverBothDie;
+        public static CustomOption modifierLoverEnableChat;
+        
+        public static CustomModifierOption modifierDoubleShot;
+        
+        public static CustomRoleOption doomsayerSpawnRate;
+        public static CustomOption doomsayerGuessesToWin;
+        public static CustomOption doomsayerObserveCooldown;
+        public static CustomOption doomsayerCantObserve;
+        
+        public static CustomModifierOption modifierImmovable;
+        
+        public static CustomModifierOption modifierTieBreaker;
+        
+        public static CustomModifierOption modifierChameleon;
+        public static CustomOption modifierChameleonHoldDuration;
+        public static CustomOption modifierChameleonFadeDuration;
+        public static CustomOption modifierChameleonMinVisibility;
+
         public static void Load()
         {
             CustomOption.vanillaSettings = TownOfUsPlugin.Instance.Config.Bind("Preset0", "VanillaOptions", "");
@@ -409,7 +438,8 @@ namespace TownOfUs
             detectiveGetExamineInfo = CustomOption.Create(377, Types.Crewmate, "Show Examine Reports", false, detectiveSpawnRate);
 
             engineerSpawnRate = new CustomRoleOption(115, Types.Crewmate, "Engineer", Engineer.color);
-            engineerNumberOfFixes = CustomOption.Create(116, Types.Crewmate, "Number Of Repairs", 1f, 1f, 5f, 1f, engineerSpawnRate);
+            engineerNumberOfFixes = CustomOption.Create(116, Types.Crewmate, "Initial Number Of Repairs", 1f, 1f, 3f, 1f, engineerSpawnRate);
+            engineerRechargeTasksNumber = CustomOption.Create(117, Types.Crewmate, "Number Of Tasks Needed For Recharging", 2f, 1f, 10f, 1f, engineerSpawnRate);
 
             investigatorSpawnRate = new CustomRoleOption(265, Types.Crewmate, "Investigator", Investigator.color);
             investigatorAnonymousFootprints = CustomOption.Create(267, Types.Crewmate, "Anonymous Footprints", false, investigatorSpawnRate);
@@ -429,8 +459,8 @@ namespace TownOfUs
             medicReportNameDuration = CustomOption.Create(214, Types.Crewmate, "Time Where Medic Reports Will Have Name", 0f, 0f, 30f, 0.25f, medicGetsInfo);
             medicReportColorDuration = CustomOption.Create(215, Types.Crewmate, "Time Where Medic Reports Will Have Color Type", 0f, 0f, 60f, 0.25f, medicGetsInfo);
 
-            mysticSpawnRate = new CustomRoleOption(320, Types.Crewmate, "Mystic", Mystic.color);
-            mysticArrowDuration = CustomOption.Create(321, Types.Crewmate, "Arrow Duration", 0.5f, 0.125f, 1f, 0.125f, mysticSpawnRate);
+            mysticSpawnRate = new CustomRoleOption(3200, Types.Crewmate, "Mystic", Mystic.color);
+            mysticArrowDuration = CustomOption.Create(3210, Types.Crewmate, "Arrow Duration", 0.5f, 0.125f, 1f, 0.125f, mysticSpawnRate);
 
             oracleSpawnRate = new CustomRoleOption(280, Types.Crewmate, "Oracle", Oracle.color);
             oracleConfessCooldown = CustomOption.Create(281, Types.Crewmate, "Confess Cooldown", 30f, 10f, 60f, 2.5f, oracleSpawnRate);
@@ -471,7 +501,8 @@ namespace TownOfUs
 
             transporterSpawnRate = new CustomRoleOption(335, Types.Crewmate, "Transporter", Transporter.color);
             transporterCooldown = CustomOption.Create(336, Types.Crewmate, "Transport Cooldown", 30f, 10f, 60f, 2.5f, transporterSpawnRate);
-            transporterNumberOfTransports = CustomOption.Create(337, Types.Crewmate, "Number Of Transports", 5f, 1f, 15f, 1f, transporterSpawnRate);
+            transporterNumberOfTransports = CustomOption.Create(337, Types.Crewmate, "Initial Number Of Transports", 3f, 1f, 5f, 1f, transporterSpawnRate);
+            transporterRechargeTasksNumber = CustomOption.Create(338, Types.Crewmate, "Number Of Tasks Needed For Recharging", 2f, 1f, 10f, 1f, transporterSpawnRate);
 
             vampireHunterSpawnRate = new CustomRoleOption(200, Types.Crewmate, "Vampire Hunter", VampireHunter.color, 1);
             vampireHunterStakeCooldown = CustomOption.Create(201, Types.Crewmate, "Stake Cooldown", 30f, 10f, 60f, 2.5f, vampireHunterSpawnRate);
@@ -483,7 +514,8 @@ namespace TownOfUs
             veteranSpawnRate = new CustomRoleOption(140, Types.Crewmate, "Veteran", Veteran.color);
             veteranCooldown = CustomOption.Create(141, Types.Crewmate, "Alert Cooldown", 30f, 10f, 60f, 2.5f, veteranSpawnRate);
             veteranAlertDuration = CustomOption.Create(142, Types.Crewmate, "Alert Duration", 10f, 1f, 20f, 0.5f, veteranSpawnRate);
-            veteranAlertNumber = CustomOption.Create(143, Types.Crewmate, "Number Of Alerts", 5f, 1f, 15f, 1f, veteranSpawnRate);
+            veteranAlertNumber = CustomOption.Create(143, Types.Crewmate, "Number Of Alerts", 3f, 1f, 5f, 1f, veteranSpawnRate);
+            veteranRechargeTasksNumber = CustomOption.Create(144, Types.Crewmate, "Number Of Tasks Needed For Recharging", 2f, 1f, 10f, 1f, veteranSpawnRate);
             #endregion
 
             #region Neutral Benign Roles
@@ -526,6 +558,11 @@ namespace TownOfUs
             #endregion
 
             #region Neutral Evil Roles
+            doomsayerSpawnRate = new CustomRoleOption(390, Types.NeutralEvil, "Doomsayer", Doomsayer.color, 1);
+            doomsayerGuessesToWin = CustomOption.Create(393, Types.NeutralEvil, "Correct Guesses To Win", 3f, 2f, 5f, 1f, doomsayerSpawnRate);
+            doomsayerObserveCooldown = CustomOption.Create(391, Types.NeutralEvil, "Observe Cooldown", 10f, 1f, 20f, 0.5f, doomsayerSpawnRate);
+            doomsayerCantObserve = CustomOption.Create(392, Types.NeutralEvil, "Doomsayer Can't Observe (For Experts)", false, doomsayerSpawnRate);
+
             executionerSpawnRate = new CustomRoleOption(240, Types.NeutralEvil, "Executioner", Executioner.color, 1);
             executionerVision = CustomOption.Create(241, Types.NeutralEvil, "Executioner Vision Multiplier", 1f, 0.25f, 3f, 0.25f, executionerSpawnRate);
             executionerCanCallEmergency = CustomOption.Create(242, Types.NeutralEvil, "Can Call Emergency", false, executionerSpawnRate);
@@ -614,7 +651,7 @@ namespace TownOfUs
             bountyHunterReducedCooldown = CustomOption.Create(322, Types.Impostor, "Cooldown After Killing Bounty", 2.5f, 0f, 30f, 2.5f, bountyHunterSpawnRate);
             bountyHunterPunishmentTime = CustomOption.Create(323, Types.Impostor, "Additional Cooldown After Killing Others", 20f, 0f, 60f, 2.5f, bountyHunterSpawnRate);
             bountyHunterShowArrow = CustomOption.Create(324, Types.Impostor, "Show Arrow Pointing Towards The Bounty", true, bountyHunterSpawnRate);
-            bountyHunterArrowUpdateIntervall = CustomOption.Create(325, Types.Impostor, "Arrow Update Intervall", 15f, 2.5f, 60f, 2.5f, bountyHunterShowArrow);
+            bountyHunterArrowUpdateIntervall = CustomOption.Create(3251, Types.Impostor, "Arrow Update Intervall", 15f, 2.5f, 60f, 2.5f, bountyHunterShowArrow);
 
             camouflagerSpawnRate = new CustomRoleOption(145, Types.Impostor, "Camouflager", Camouflager.color, 1);
             camouflagerCooldown = CustomOption.Create(146, Types.Impostor, "Camo Cooldown", 30f, 10f, 60f, 2.5f, camouflagerSpawnRate);
@@ -664,12 +701,37 @@ namespace TownOfUs
             modifierTorch = new CustomModifierOption(1009, Types.Modifier, "Torch", Torch.color);
 
             modifierVip = new CustomModifierOption(1011, Types.Modifier, "Vip", Vip.color);
+
             // Global Modifiers
             modifierButtonBarry = new CustomModifierOption(1010, Types.Modifier, "Button Barry", ButtonBarry.color);
+
+            modifierChameleon = new CustomModifierOption(1091, Types.Modifier, "Chameleon", Chameleon.color);
+            modifierChameleonHoldDuration = CustomOption.Create(1092, Types.Modifier, "Time Until Fading Starts", 3f, 1f, 10f, 0.5f, modifierChameleon);
+            modifierChameleonFadeDuration = CustomOption.Create(1093, Types.Modifier, "Fade Duration", 1f, 0.25f, 10f, 0.25f, modifierChameleon);
+            modifierChameleonMinVisibility = CustomOption.Create(1094, Types.Modifier, "Minimum Visibility", new string[] { "0%", "10%", "20%", "30%", "40%", "50%" }, modifierChameleon);
+
             modifierDrunk = new CustomModifierOption(1008, Types.Modifier, "Drunk", Drunk.color);
+
+            modifierImmovable = new CustomModifierOption(1031, Types.Modifier, "Immovable", Immovable.color);
+
+            modifierLover = new CustomModifierOption(1025, Types.Modifier, "Lovers", Lovers.color);
+            modifierLoverImpLoverRate = CustomOption.Create(1026, Types.Modifier, "Chance That One Lover Is Killer", rates, modifierLover);
+            modifierLoverBothDie = CustomOption.Create(1027, Types.Modifier, "Both Lovers Die", false, modifierLover);
+            modifierLoverEnableChat = CustomOption.Create(1028, Types.Modifier, "Enable Lover Chat", false, modifierLover);
+            
             modifierRadar = new CustomModifierOption(1012, Types.Modifier, "Radar", Radar.color);
+
             modifierSleuth = new CustomModifierOption(1004, Types.Modifier, "Sleuth", Sleuth.color);
+
+            modifierTieBreaker = new CustomModifierOption(1032, Types.Modifier, "Tiebreaker", Tiebreaker.color, 1);
+
             // Impostor Modifiers
+            modifierDisperser = new CustomModifierOption(1020, Types.Modifier, "Disperser", Disperser.color, 1);
+            modifierDisperserInitialDisperses = CustomOption.Create(1021, Types.Modifier, "Number Of Initial Disperses", 1f, 0f, 3f, 1f, modifierDisperser);
+            modifierDisperserRechargeKillsNumber = CustomOption.Create(1022, Types.Modifier, "Number Of Kills Needed For Recharging", 2f, 1f, 10f, 1f, modifierDisperser);
+            modifierDisperserDispersesToVent = CustomOption.Create(1023, Types.Modifier, "Disperses To Vent", false, modifierDisperser);
+
+            modifierDoubleShot = new CustomModifierOption(1030, Types.Modifier, "Double Shot", DoubleShot.color, 1);
             #endregion
         }
     }

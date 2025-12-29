@@ -82,6 +82,9 @@ namespace TownOfUs
         DetectiveExamine,
         DetectiveResetExamine,
         VenererCamo,
+        DisperserDisperse,
+        SetLovers,
+        SetTiebreak,
     }
 
     public static class RPCProcedure
@@ -523,6 +526,11 @@ namespace TownOfUs
             if (dyingTarget == null) return;
             if (Lawyer.target != null && dyingTarget == Lawyer.target) Lawyer.targetWasGuessed = true;
             if (GuardianAngel.target != null && dyingTarget == GuardianAngel.target) GuardianAngel.targetWasGuessed = true;
+            if (Executioner.target != null && dyingTarget == Executioner.target) Executioner.targetWasGuessed = true;
+            PlayerControl dyingLoverPartner = Lovers.bothDie ? dyingTarget.getPartner() : null; // Lover check
+            if (Lawyer.target != null && dyingLoverPartner == Lawyer.target) Lawyer.targetWasGuessed = true;
+            if (GuardianAngel.target != null && dyingLoverPartner == GuardianAngel.target) GuardianAngel.targetWasGuessed = true;
+            if (Executioner.target != null && dyingLoverPartner == Executioner.target) Executioner.targetWasGuessed = true;
 
             PlayerControl guesser = Helpers.playerById(killerId);
             if (killer.isRole(RoleId.Thief) && Thief.canStealWithGuess)
@@ -531,6 +539,16 @@ namespace TownOfUs
                 if (!killer.Data.IsDead && !Thief.isFailedThiefKill(dyingTarget, guesser, roleInfo))
                 {
                     thiefStealsRole(dyingTarget.PlayerId, killerId);
+                }
+            }
+
+            if (killer.isRole(RoleId.Doomsayer) && killer != dyingTarget)
+            {
+                var doomsayerRole = RoleBase<Doomsayer>.getRole(killer);
+                doomsayerRole.numOfGuesses++;
+                if (doomsayerRole.numOfGuesses == Doomsayer.guessesToWin)
+                {
+                    Doomsayer.triggerDoomsayerWin = true;
                 }
             }
 
@@ -585,14 +603,15 @@ namespace TownOfUs
 
             dyingTarget.Exiled();
             GameHistory.overrideDeathReasonAndKiller(dyingTarget, DeadPlayer.CustomDeathReason.Guess, guesser);
-            HandleGuesser.remainingShots(killerId, true);
+            byte partnerId = dyingLoverPartner != null ? dyingLoverPartner.PlayerId : dyingTargetId;
 
+            HandleGuesser.remainingShots(killerId, true);
             if (Constants.ShouldPlaySfx()) SoundManager.Instance.PlaySound(dyingTarget.KillSfx, false, 0.8f);
             if (MeetingHud.Instance)
             {
                 foreach (PlayerVoteArea pva in MeetingHud.Instance.playerStates)
                 {
-                    if (pva.TargetPlayerId == dyingTargetId || lawyerDiedAdditionally && Helpers.playerById(pva.TargetPlayerId).isRole(RoleId.Lawyer) || gaDiedAdditionally && Helpers.playerById(pva.TargetPlayerId).isRole(RoleId.GuardianAngel) || exeDiedAdditionally && Helpers.playerById(pva.TargetPlayerId).isRole(RoleId.Executioner))
+                    if (pva.TargetPlayerId == dyingTargetId || pva.TargetPlayerId == partnerId || lawyerDiedAdditionally && Helpers.playerById(pva.TargetPlayerId).isRole(RoleId.Lawyer) || gaDiedAdditionally && Helpers.playerById(pva.TargetPlayerId).isRole(RoleId.GuardianAngel) || exeDiedAdditionally && Helpers.playerById(pva.TargetPlayerId).isRole(RoleId.Executioner))
                     {
                         pva.SetDead(pva.DidReport, true);
                         pva.Overlay.gameObject.SetActive(true);
@@ -600,7 +619,7 @@ namespace TownOfUs
                     }
 
                     //Give players back their vote if target is shot dead
-                    if (pva.VotedFor != dyingTargetId && (!lawyerDiedAdditionally || Lawyer.allPlayers.ToArray().Where(x => x.PlayerId != dyingTarget.PlayerId).FirstOrDefault().PlayerId != pva.VotedFor || !gaDiedAdditionally || GuardianAngel.allPlayers.ToArray().Where(x => x.PlayerId != dyingTarget.PlayerId).FirstOrDefault().PlayerId != pva.VotedFor || !exeDiedAdditionally || Executioner.allPlayers.ToArray().Where(x => x.PlayerId != dyingTarget.PlayerId).FirstOrDefault().PlayerId != pva.VotedFor)) continue;
+                    if (pva.VotedFor != dyingTargetId && pva.VotedFor != partnerId && (!lawyerDiedAdditionally || Lawyer.allPlayers.ToArray().Where(x => x.PlayerId != dyingTarget.PlayerId).FirstOrDefault().PlayerId != pva.VotedFor || !gaDiedAdditionally || GuardianAngel.allPlayers.ToArray().Where(x => x.PlayerId != dyingTarget.PlayerId).FirstOrDefault().PlayerId != pva.VotedFor || !exeDiedAdditionally || Executioner.allPlayers.ToArray().Where(x => x.PlayerId != dyingTarget.PlayerId).FirstOrDefault().PlayerId != pva.VotedFor)) continue;
                     pva.UnsetVote();
                     var voteAreaPlayer = Helpers.playerById(pva.TargetPlayerId);
                     if (!voteAreaPlayer.AmOwner) continue;
@@ -615,6 +634,28 @@ namespace TownOfUs
                 if (PlayerControl.LocalPlayer == dyingTarget)
                 {
                     FastDestroyableSingleton<HudManager>.Instance.KillOverlay.ShowKillAnimation(guesser.Data, dyingTarget.Data);
+                    if (MeetingHudPatch.guesserUI != null) MeetingHudPatch.guesserUIExitButton.OnClick.Invoke();
+                }
+                else if (dyingLoverPartner != null && PlayerControl.LocalPlayer == dyingLoverPartner)
+                {
+                    FastDestroyableSingleton<HudManager>.Instance.KillOverlay.ShowKillAnimation(dyingLoverPartner.Data, dyingLoverPartner.Data);
+                    if (MeetingHudPatch.guesserUI != null) MeetingHudPatch.guesserUIExitButton.OnClick.Invoke();
+                }
+            }
+
+            // remove shoot button from targets for all guessers and close their guesserUI
+            if (HandleGuesser.isGuesser(PlayerControl.LocalPlayer.PlayerId) && PlayerControl.LocalPlayer != guesser && !PlayerControl.LocalPlayer.Data.IsDead && GuesserGM.remainingShots(PlayerControl.LocalPlayer.PlayerId) > 0 && MeetingHud.Instance)
+            {
+                MeetingHud.Instance.playerStates.ToList().ForEach(x => { if (x.TargetPlayerId == dyingTarget.PlayerId && x.transform.FindChild("ShootButton") != null) UnityEngine.Object.Destroy(x.transform.FindChild("ShootButton").gameObject); });
+                if (dyingLoverPartner != null)
+                    MeetingHud.Instance.playerStates.ToList().ForEach(x => { if (x.TargetPlayerId == dyingLoverPartner.PlayerId && x.transform.FindChild("ShootButton") != null) UnityEngine.Object.Destroy(x.transform.FindChild("ShootButton").gameObject); });
+
+                if (MeetingHudPatch.guesserUI != null && MeetingHudPatch.guesserUIExitButton != null)
+                {
+                    if (MeetingHudPatch.guesserCurrentTarget == dyingTarget.PlayerId)
+                        MeetingHudPatch.guesserUIExitButton.OnClick.Invoke();
+                    else if (dyingLoverPartner != null && MeetingHudPatch.guesserCurrentTarget == dyingLoverPartner.PlayerId)
+                        MeetingHudPatch.guesserUIExitButton.OnClick.Invoke();
                 }
             }
 
@@ -1151,6 +1192,58 @@ namespace TownOfUs
             };
             PlayerControl.LocalPlayer.NetTransform.RpcSnapTo(SpawnPositions[rnd.Next(SpawnPositions.Count)]);
         }
+
+        public static void disperserDisperse()
+        {
+            Helpers.showFlash(Palette.ImpostorRed);
+
+            foreach (PlayerControl player in PlayerControl.AllPlayerControls)
+            {
+                if (!player.Data.IsDead && !player.hasModifier(RoleId.Immovable))
+                {
+                    if (MapBehaviour.Instance)
+                        MapBehaviour.Instance.Close();
+                    if (Minigame.Instance)
+                        Minigame.Instance.ForceClose();
+                    if (player.inVent)
+                    {
+                        player.MyPhysics.RpcExitVent(Vent.currentVent.Id);
+                        player.MyPhysics.ExitAllVents();
+                    }
+
+                    if (Disperser.dispersesToVent)
+                    {
+                        player.NetTransform.RpcSnapTo
+                        (MapData.FindVentSpawnPositions()[rnd.Next(MapData.FindVentSpawnPositions().Count)]);
+                    }
+                    else
+                    {
+                        var SpawnPositions = GameOptionsManager.Instance.currentNormalGameOptions.MapId switch
+                        {
+                            0 => MapData.SkeldSpawnPosition,
+                            1 => MapData.MiraSpawnPosition,
+                            2 => MapData.PolusSpawnPosition,
+                            3 => MapData.DleksSpawnPosition,
+                            4 => MapData.AirshipSpawnPosition,
+                            5 => MapData.FungleSpawnPosition,
+                            _ => MapData.FindVentSpawnPositions()
+                        };
+                        player.NetTransform.RpcSnapTo
+                            (SpawnPositions[rnd.Next(SpawnPositions.Count)]);
+                    }
+                }
+            }
+        }
+
+        public static void setLovers(byte playerId1, byte playerId2)
+        {
+            Lovers.addCouple(Helpers.playerById(playerId1), Helpers.playerById(playerId2));
+        }
+
+        public static void setTiebreak()
+        {
+            Tiebreaker.isTiebreak = true;
+        }
     }
 
     [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.HandleRpc))]
@@ -1404,6 +1497,15 @@ namespace TownOfUs
                     break;
                 case (byte)CustomRPC.VenererCamo:
                     RPCProcedure.venererCamo(reader.ReadByte());
+                    break;
+                case (byte)CustomRPC.DisperserDisperse:
+                    RPCProcedure.disperserDisperse();
+                    break;
+                case (byte)CustomRPC.SetLovers:
+                    RPCProcedure.setLovers(reader.ReadByte(), reader.ReadByte());
+                    break;
+                case (byte)CustomRPC.SetTiebreak:
+                    RPCProcedure.setTiebreak();
                     break;
             }
         }

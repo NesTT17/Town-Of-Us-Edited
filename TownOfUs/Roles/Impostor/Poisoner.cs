@@ -86,7 +86,7 @@ namespace TownOfUs.Roles
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
                     RPCProcedure.poisonerSetPoisoned(local.poisoned.PlayerId, 0, PlayerControl.LocalPlayer.PlayerId);
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Poisoner) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Poisoner) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () =>
                 {

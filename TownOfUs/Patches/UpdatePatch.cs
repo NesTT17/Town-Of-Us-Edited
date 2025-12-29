@@ -40,6 +40,7 @@ namespace TownOfUs.Patches
 
                     nameText.text = Helpers.hidePlayerName(localPlayer, player) ? "" : playerName;
                     nameText.color = color = amImpostor && data.Role.IsImpostor ? Palette.ImpostorRed : Color.white;
+                    nameText.color = nameText.color.SetAlpha(Chameleon.local.visibility(player.PlayerId));
                 }
                 else
                 {
@@ -64,7 +65,7 @@ namespace TownOfUs.Patches
 
         static void setPlayerNameColor(PlayerControl p, Color color)
         {
-            p.cosmetics.nameText.color = color;
+            p.cosmetics.nameText.color = color.SetAlpha(Chameleon.local.visibility(p.PlayerId));
             if (MeetingHud.Instance != null)
                 foreach (PlayerVoteArea player in MeetingHud.Instance.playerStates)
                     if (player.NameText != null && p.PlayerId == player.TargetPlayerId)
@@ -261,17 +262,33 @@ namespace TownOfUs.Patches
                             player.NameText.text += suffix;
             }
 
+            // Lovers
+            if (PlayerControl.LocalPlayer.isLovers() && !PlayerControl.LocalPlayer.Data.IsDead)
+            {
+                string suffix = Lovers.getIcon(PlayerControl.LocalPlayer);
+                var lover1 = PlayerControl.LocalPlayer;
+                var lover2 = PlayerControl.LocalPlayer.getPartner();
+
+                lover1.cosmetics.nameText.text += suffix;
+                lover2.cosmetics.nameText.text += suffix;
+
+                if (MeetingHud.Instance)
+                    foreach (PlayerVoteArea player in MeetingHud.Instance.playerStates)
+                        if (lover1.PlayerId == player.TargetPlayerId || lover2.PlayerId == player.TargetPlayerId)
+                            player.NameText.text += suffix;
+            }
+
             // Show flashed players for Grenadier
-                if (Grenadier.exists && (PlayerControl.LocalPlayer.isRole(RoleId.Grenadier) || Helpers.shouldShowGhostInfo()))
+            if (Grenadier.exists && (PlayerControl.LocalPlayer.isRole(RoleId.Grenadier) || Helpers.shouldShowGhostInfo()))
+            {
+                foreach (PlayerControl player in Grenadier.flashedPlayers)
                 {
-                    foreach (PlayerControl player in Grenadier.flashedPlayers)
+                    if (!player.Data.Role.IsImpostor && !player.Data.IsDead)
                     {
-                        if (!player.Data.Role.IsImpostor && !player.Data.IsDead)
-                        {
-                            setPlayerNameColor(player, Color.black);
-                        }
+                        setPlayerNameColor(player, Color.black);
                     }
                 }
+            }
 
             // Display lighter / darker color for all alive players
             if (PlayerControl.LocalPlayer != null && MeetingHud.Instance != null && showLighterDarker)

@@ -86,7 +86,7 @@ namespace TownOfUs.Roles
                         local.currentTarget = null;
                     }
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Sheriff) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Sheriff) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && PlayerControl.LocalPlayer.CanMove; },
                 () => { sheriffKillButton.Timer = sheriffKillButton.MaxTimer; },
                 getShootButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q

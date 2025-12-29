@@ -94,7 +94,7 @@ namespace TownOfUs.Roles
                     AmongUsClient.Instance.FinishRpcImmediately(writer);
                     RPCProcedure.mercenarySetShielded(local.currentTarget.PlayerId, PlayerControl.LocalPlayer.PlayerId);
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Mercenary) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Mercenary) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () => { return local.currentTarget && !local.usedAbility && PlayerControl.LocalPlayer.CanMove; },
                 () => { mercenaryProtectButton.Timer = mercenaryProtectButton.MaxTimer; },
                 getProtectButtonSprite(), CustomButton.ButtonPositions.upperRowRight, hm, KeyCode.F
@@ -109,7 +109,7 @@ namespace TownOfUs.Roles
                     RPCProcedure.mercenaryDonArmor(PlayerControl.LocalPlayer.PlayerId);
                     local.brilders--;
                 },
-                () => { return PlayerControl.LocalPlayer.isRole(RoleId.Mercenary) && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.isRole(RoleId.Mercenary) && !PlayerControl.LocalPlayer.Data.IsDead; },
                 () =>
                 {
                     if (mercenaryDonArmorButtonText != null) mercenaryDonArmorButtonText.text = $"{local.brilders}/{brildersRequires}";
