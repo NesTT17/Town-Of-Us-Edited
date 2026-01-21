@@ -6,6 +6,8 @@ namespace TownOfUs.Modules
     [HarmonyPatch]
     public static class ChatCommands
     {
+        public static bool isLover(this PlayerControl player) => !(player == null) && (player == Lovers.lover1 || player == Lovers.lover2);
+
         [HarmonyPatch(typeof(ChatController), nameof(ChatController.SendChat))]
         private static class SendChatPatch
         {
@@ -13,7 +15,6 @@ namespace TownOfUs.Modules
             {
                 string text = __instance.freeChatField.Text;
                 bool handled = false;
-
                 if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Started)
                 {
                     if (text.ToLower().StartsWith("/kick "))
@@ -52,17 +53,15 @@ namespace TownOfUs.Modules
                         {
                             gameMode = CustomGamemodes.Guesser;
                         }
-                        else if (gm.StartsWith("allany") || gm.StartsWith("anm"))
-                        {
-                            gameMode = CustomGamemodes.AllAny;
-                        }
+                        // else its classic!
+
                         if (AmongUsClient.Instance.AmHost)
                         {
                             MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.ShareGamemode, Hazel.SendOption.Reliable, -1);
-                            writer.Write((byte)TOUMapOptions.gameMode);
+                            writer.Write((byte)TOUEdMapOptions.gameMode);
                             AmongUsClient.Instance.FinishRpcImmediately(writer);
                             RPCProcedure.shareGamemode((byte)gameMode);
-                            RPCProcedure.shareGamemode((byte)TOUMapOptions.gameMode);
+                            RPCProcedure.shareGamemode((byte)TOUEdMapOptions.gameMode);
                         }
                         else
                         {
@@ -119,7 +118,7 @@ namespace TownOfUs.Modules
         {
             public static void Postfix(HudManager __instance)
             {
-                if (!__instance.Chat.isActiveAndEnabled && (AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay || (Lovers.enableChat && PlayerControl.LocalPlayer.isLovers())))
+                if (!__instance.Chat.isActiveAndEnabled && (AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay || (PlayerControl.LocalPlayer.isLover() && Lovers.enableChat)))
                     __instance.Chat.SetVisible(true);
             }
         }
@@ -130,7 +129,7 @@ namespace TownOfUs.Modules
             public static void Postfix(ChatBubble __instance, [HarmonyArgument(0)] string playerName)
             {
                 PlayerControl sourcePlayer = PlayerControl.AllPlayerControls.ToArray().ToList().FirstOrDefault(x => x.Data != null && x.Data.PlayerName.Equals(playerName));
-                if (sourcePlayer != null && PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.Data?.Role?.IsImpostor == true && (sourcePlayer.isRole(RoleId.Agent) || Dracula.players.Any(x => x.wasTeamRed && x.player != null && x.player == sourcePlayer) || Vampire.players.Any(x => x.wasTeamRed && x.player != null && x.player == sourcePlayer)) && __instance != null) __instance.NameText.color = Palette.ImpostorRed;
+                if (sourcePlayer != null && PlayerControl.LocalPlayer != null && PlayerControl.LocalPlayer.Data?.Role?.IsImpostor == true && (Vampire.vampire != null && Vampire.wasTeamRed && sourcePlayer.PlayerId == Vampire.vampire.PlayerId || Dracula.dracula != null && Dracula.wasTeamRed && sourcePlayer.PlayerId == Dracula.dracula.PlayerId) && __instance != null) __instance.NameText.color = Palette.ImpostorRed;
             }
         }
 
@@ -142,7 +141,8 @@ namespace TownOfUs.Modules
                 if (__instance != FastDestroyableSingleton<HudManager>.Instance.Chat)
                     return true;
                 PlayerControl localPlayer = PlayerControl.LocalPlayer;
-                return localPlayer == null || MeetingHud.Instance != null || LobbyBehaviour.Instance != null || (localPlayer.Data.IsDead) || sourcePlayer.PlayerId == PlayerControl.LocalPlayer.PlayerId;
+                return localPlayer == null || (MeetingHud.Instance != null || LobbyBehaviour.Instance != null || (localPlayer.Data.IsDead || localPlayer.isLover() && Lovers.enableChat) || (int)sourcePlayer.PlayerId == (int)PlayerControl.LocalPlayer.PlayerId);
+
             }
         }
     }

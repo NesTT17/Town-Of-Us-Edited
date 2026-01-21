@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace TownOfUs.Objects
@@ -17,6 +16,7 @@ namespace TownOfUs.Objects
         {
             get => _instance ? _instance : _instance = new GameObject("FootprintHolder").AddComponent<FootprintHolder>();
             set => _instance = value;
+
         }
 
         private static Sprite _footprintSprite;
@@ -89,13 +89,16 @@ namespace TownOfUs.Objects
                 }
 
                 Color color;
-                if (AnonymousFootprints || Camouflager.camouflageTimer > 0 || Helpers.MushroomSabotageActive()) {
+                if (AnonymousFootprints || Camouflager.camouflageTimer > 0 || Helpers.MushroomSabotageActive())
+                {
                     color = Palette.PlayerColors[6];
                 }
-                else if (Morphling.players.Any(x => x.player == activeFootprint.Owner && x.morphTarget && x.morphTimer > 0 && x.morphTarget.Data != null)) {
-                    color = Palette.PlayerColors[Morphling.getRole(activeFootprint.Owner).morphTarget.Data.DefaultOutfit.ColorId];
+                else if (activeFootprint.Owner == Morphling.morphling && Morphling.morphTimer > 0 && Morphling.morphTarget && Morphling.morphTarget.Data != null)
+                {
+                    color = Palette.PlayerColors[Morphling.morphTarget.Data.DefaultOutfit.ColorId];
                 }
-                else if (Glitch.players.Any(x => x.player == activeFootprint.Owner && Glitch.morphPlayer && Glitch.morphTimer > 0 && Glitch.morphPlayer.Data != null)) {
+                else if (activeFootprint.Owner == Glitch.glitch && Glitch.morphTimer > 0 && Glitch.morphPlayer && Glitch.morphPlayer.Data != null)
+                {
                     color = Palette.PlayerColors[Glitch.morphPlayer.Data.DefaultOutfit.ColorId];
                 }
                 else

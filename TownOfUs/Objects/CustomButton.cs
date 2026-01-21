@@ -1,5 +1,7 @@
+using Rewired;
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,6 +10,8 @@ namespace TownOfUs.Objects
     public class CustomButton
     {
         public static List<CustomButton> buttons = new List<CustomButton>();
+        public static KeyCode Action2Keycode = KeyCode.G; //TownOfUsPlugin.Instance.Config.Bind("Buttons", "Action2Keycode", KeyCode.G, "Second Ability Button Key").Value;
+        public static KeyCode Action3Keycode = KeyCode.H; // TownOfUsPlugin.Instance.Config.Bind("Buttons", "Action3Keycode", KeyCode.H, "Third Ability Button Key").Value;
         public ActionButton actionButton;
         public GameObject actionButtonGameObject;
         public SpriteRenderer actionButtonRenderer;
@@ -29,9 +33,8 @@ namespace TownOfUs.Objects
         public HudManager hudManager;
         public bool mirror;
         public KeyCode? hotkey;
+        public KeyCode? originalHotkey;
         public string buttonText;
-        public bool isHandcuffed = false;
-        public bool shakeOnEnd = true;
         public bool Locked = false;
         public GameObject lockImg;
         private static readonly int Desat = Shader.PropertyToID("_Desat");
@@ -45,9 +48,10 @@ namespace TownOfUs.Objects
             public static readonly Vector3 upperRowCenter = new Vector3(-1f, 1f, 0f);  // Not usable for imps beacuse of new button positions!
             public static readonly Vector3 upperRowLeft = new Vector3(-2f, 1f, 0f);
             public static readonly Vector3 upperRowFarLeft = new Vector3(-3f, 1f, 0f);
+            public static readonly Vector3 highRowRight = new Vector3(0f, 2.06f, 0f);
         }
 
-        public CustomButton(Action OnClick, Func<bool> HasButton, Func<bool> CouldUse, Action OnMeetingEnds, Sprite Sprite, Vector3 PositionOffset, HudManager hudManager, KeyCode? hotkey, bool HasEffect, float EffectDuration, Action OnEffectEnds, bool mirror = false, string buttonText = "", bool shakeOnEnd = true)
+        public CustomButton(Action OnClick, Func<bool> HasButton, Func<bool> CouldUse, Action OnMeetingEnds, Sprite Sprite, Vector3 PositionOffset, HudManager hudManager, KeyCode? hotkey, bool HasEffect, float EffectDuration, Action OnEffectEnds, bool mirror = false, string buttonText = "")
         {
             this.hudManager = hudManager;
             this.OnClick = OnClick;
@@ -62,8 +66,8 @@ namespace TownOfUs.Objects
             this.mirror = mirror;
             this.hotkey = hotkey;
             this.buttonText = buttonText;
-            this.shakeOnEnd = shakeOnEnd;
-            Timer = 10f + 8.6f;
+            originalHotkey = hotkey;
+            Timer = 16.2f;
             buttons.Add(this);
             actionButton = UnityEngine.Object.Instantiate(hudManager.KillButton, hudManager.KillButton.transform.parent);
             actionButtonGameObject = actionButton.gameObject;
@@ -81,11 +85,12 @@ namespace TownOfUs.Objects
             setActive(false);
         }
 
-        public CustomButton(Action OnClick, Func<bool> HasButton, Func<bool> CouldUse, Action OnMeetingEnds, Sprite Sprite, Vector3 PositionOffset, HudManager hudManager, KeyCode? hotkey, bool mirror = false, string buttonText = "", bool shakeOnEnd = true)
-        : this(OnClick, HasButton, CouldUse, OnMeetingEnds, Sprite, PositionOffset, hudManager, hotkey, false, 0f, () => { }, mirror, buttonText, shakeOnEnd) { }
+        public CustomButton(Action OnClick, Func<bool> HasButton, Func<bool> CouldUse, Action OnMeetingEnds, Sprite Sprite, Vector3 PositionOffset, HudManager hudManager, KeyCode? hotkey, bool mirror = false, string buttonText = "")
+        : this(OnClick, HasButton, CouldUse, OnMeetingEnds, Sprite, PositionOffset, hudManager, hotkey, false, 0f, () => { }, mirror, buttonText) { }
 
         public void onClickEvent()
         {
+            if (HudManager.Instance && HudManager.Instance.Chat.IsOpenOrOpening) return;
             if (this.Timer < 0f && HasButton() && CouldUse() && !Locked)
             {
                 actionButtonRenderer.color = new Color(1f, 1f, 1f, 0.3f);
@@ -150,6 +155,38 @@ namespace TownOfUs.Objects
             }
         }
 
+        // Reload the rebound hotkeys from the among us settings.
+        public static void ReloadHotkeys()
+        {
+            foreach (var button in buttons)
+            {
+                // Q button is used only for killing! This rebinds every button that would use Q to use the currently set killing button in among us.
+                if (button.originalHotkey == KeyCode.Q)
+                {
+                    Player player = Rewired.ReInput.players.GetPlayer(0);
+                    string keycode = player.controllers.maps.GetFirstButtonMapWithAction(8, true).elementIdentifierName;
+                    button.hotkey = (KeyCode)Enum.Parse(typeof(KeyCode), keycode);
+                }
+                // F is the default ability button. All buttons that would use F now use the ability button.
+                if (button.originalHotkey == KeyCode.F)
+                {
+                    Player player = Rewired.ReInput.players.GetPlayer(0);
+                    string keycode = player.controllers.maps.GetFirstButtonMapWithAction(49, true).elementIdentifierName;
+                    button.hotkey = (KeyCode)Enum.Parse(typeof(KeyCode), keycode);
+                }
+
+                if (button.originalHotkey == KeyCode.G)
+                {
+                    button.hotkey = Action2Keycode;
+                }
+                if (button.originalHotkey == KeyCode.H)
+                {
+                    button.hotkey = Action3Keycode;
+                }
+            }
+
+        }
+
         public void setActive(bool isActive)
         {
             if (isActive)
@@ -205,14 +242,10 @@ namespace TownOfUs.Objects
                 actionButtonMat.SetFloat(Desat, 1f);
             }
 
-            if (Timer >= 0 && !RoleDraftEx.isRunning)
+            if (Timer >= 0)
             {
                 if (HasEffect && isEffectActive)
-                {
                     Timer -= Time.deltaTime;
-                    if (Timer <= 3f && Timer > 0f && shakeOnEnd)
-                        actionButton.graphic.transform.localPosition = actionButton.transform.localPosition + (Vector3)UnityEngine.Random.insideUnitCircle * 0.05f;
-                }
                 else if (!localPlayer.inVent && moveable)
                     Timer -= Time.deltaTime;
             }
@@ -230,15 +263,18 @@ namespace TownOfUs.Objects
             if (hotkey.HasValue && Input.GetKeyDown(hotkey.Value)) onClickEvent();
         }
 
-        public void Hack() {
-            if (HasButton()) {
+        public void Hack()
+        {
+            if (HasButton())
+            {
                 lockImg.transform.position = new Vector3(actionButton.transform.position.x, actionButton.transform.position.y, -50f);
                 lockImg.SetActive(true);
                 Locked = true;
             }
         }
 
-        public void UnHack() {
+        public void UnHack()
+        {
             lockImg.transform.position = new Vector3(actionButton.transform.position.x, actionButton.transform.position.y, -50f);
             lockImg.SetActive(false);
             Locked = false;

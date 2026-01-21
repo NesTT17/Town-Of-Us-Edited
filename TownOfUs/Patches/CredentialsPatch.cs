@@ -36,33 +36,33 @@ Modded <color=#018001FF>Donners</color>, <color=#018001FF>Term</color>, <color=#
                 {
                     string gameModeText = $"";
                     if (HandleGuesser.isGuesserGm) gameModeText = $"Guesser";
-                    else if (TOUMapOptions.gameMode == CustomGamemodes.AllAny) gameModeText = $"All Any";
-
                     if (gameModeText != "") gameModeText = Helpers.cs(Color.yellow, gameModeText) + "\n";
-                    __instance.text.text = $"<size=130%><color=#018001FF>Town Of Us</color></size> v{TownOfUsPlugin.Version.ToString()}\n{gameModeText}" + __instance.text.text;
+
+                    string betterPolusText = $"";
+                    if (CustomOptionHolder.enableBetterPolus.getBool()) betterPolusText = $"\n<size=70%> + <color=#5E4CA6FF>BetterPolus v1.2.2</color> by Brybry</size>";
+
+                    __instance.text.text = $"<size=130%><color=#018001FF>Town Of Us</color></size> v{TownOfUsPlugin.Version.ToString()}{betterPolusText}\n{gameModeText}" + __instance.text.text;
                     position.DistanceFromEdge = new Vector3(2.25f, 0.11f, 0);
                 }
                 else
                 {
                     string gameModeText = $"";
-                    if (TOUMapOptions.gameMode == CustomGamemodes.Guesser) gameModeText = $"Guesser";
-                    else if (TOUMapOptions.gameMode == CustomGamemodes.AllAny) gameModeText = $"All Any";
+                    if (TOUEdMapOptions.gameMode == CustomGamemodes.Guesser) gameModeText = $"Guesser";
                     if (gameModeText != "") gameModeText = Helpers.cs(Color.yellow, gameModeText);
 
-                    __instance.text.text = $"{fullCredentialsVersion}\n{fullCredentials}\n {__instance.text.text}";
-                    position.DistanceFromEdge = new Vector3(0f, 0.1f, 0);
+                    string betterPolusText = $"";
+                    if (CustomOptionHolder.enableBetterPolus.getBool()) betterPolusText = $"\n<size=70%> + <color=#5E4CA6FF>BetterPolus v1.2.2</color> by Brybry</size>";
 
-                    if (LobbyBehaviour.Instance)
+                    __instance.text.text = $"{fullCredentialsVersion}{betterPolusText}\n{fullCredentials}\n {__instance.text.text}";
+                    position.DistanceFromEdge = new Vector3(0f, 0.1f, 0);
+                    try
                     {
-                        try
-                        {
-                            var GameModeText = GameObject.Find("GameModeText")?.GetComponent<TextMeshPro>();
-                            GameModeText.text = gameModeText == "" ? (GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek ? "Van. HideNSeek" : "Classic") : gameModeText;
-                            var ModeLabel = GameObject.Find("ModeLabel")?.GetComponentInChildren<TextMeshPro>();
-                            ModeLabel.text = "Game Mode";
-                        }
-                        catch { }
+                        var GameModeText = GameObject.Find("GameModeText")?.GetComponent<TextMeshPro>();
+                        GameModeText.text = gameModeText == "" ? (GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek ? "Van. HideNSeek" : "Classic") : gameModeText;
+                        var ModeLabel = GameObject.Find("ModeLabel")?.GetComponentInChildren<TextMeshPro>();
+                        ModeLabel.text = "Game Mode";
                     }
+                    catch { }
                 }
                 position.AdjustPosition();
             }

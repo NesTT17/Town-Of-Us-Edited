@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System;
 using UnityEngine;
+using System.Linq;
 
 namespace TownOfUs
 {
@@ -11,11 +12,9 @@ namespace TownOfUs
             Exile,
             Kill,
             Disconnect,
-            Guess,
             LawyerSuicide,
-            GASuicide,
-            Shift,
-            Bomb,
+            Guess,
+            Arson,
             LoverSuicide,
         };
 
@@ -40,6 +39,30 @@ namespace TownOfUs
         public static List<Tuple<Vector3, bool>> localPlayerPositions = new List<Tuple<Vector3, bool>>();
         public static List<DeadPlayer> deadPlayers = new List<DeadPlayer>();
 
+        public static void clearGameHistory()
+        {
+            localPlayerPositions = new List<Tuple<Vector3, bool>>();
+            deadPlayers = new List<DeadPlayer>();
+        }
+
+        public static void overrideDeathReasonAndKiller(PlayerControl player, DeadPlayer.CustomDeathReason deathReason, PlayerControl killer = null)
+        {
+            var target = deadPlayers.FirstOrDefault(x => x.player.PlayerId == player.PlayerId);
+            if (target != null)
+            {
+                target.deathReason = deathReason;
+                if (killer != null)
+                {
+                    target.killerIfExisting = killer;
+                }
+            }
+            else if (player != null)
+            {  // Create dead player if needed:
+                var dp = new DeadPlayer(player, DateTime.UtcNow, deathReason, killer);
+                deadPlayers.Add(dp);
+            }
+        }
+
         public static List<DeadPlayer> GetKilledPlayers(PlayerControl player)
         {
             List<DeadPlayer> killedPlayers = [];
@@ -58,31 +81,6 @@ namespace TownOfUs
             }
 
             return killedPlayers;
-        }
-
-        public static void clearGameHistory()
-        {
-            localPlayerPositions = new List<Tuple<Vector3, bool>>();
-            deadPlayers = new List<DeadPlayer>();
-        }
-
-        public static void overrideDeathReasonAndKiller(PlayerControl player, DeadPlayer.CustomDeathReason deathReason, PlayerControl killer)
-        {
-            DeadPlayer target = deadPlayers.Find(x => x.player.PlayerId == player.PlayerId);
-            if (target != null)
-            {
-                target.deathReason = deathReason;
-                if (killer)
-                {
-                    target.killerIfExisting = killer;
-                }
-            }
-            else if (player)
-            {
-                // Create dead player if needed:
-                var dp = new DeadPlayer(player, DateTime.UtcNow, deathReason, killer);
-                deadPlayers.Add(dp);
-            }
         }
     }
 }

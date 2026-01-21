@@ -1,8 +1,7 @@
-﻿using System.Collections;
+﻿using BepInEx.Unity.IL2CPP.Utils;
+using System.Collections;
 using System.IO;
 using System.Text.Json;
-using BepInEx.Unity.IL2CPP.Utils;
-using TownOfUs.Utilities;
 using UnityEngine;
 using UnityEngine.Networking;
 using static TownOfUs.Modules.CustomHats.CustomHatManager;
@@ -15,7 +14,7 @@ public class HatsLoader : MonoBehaviour
 
     public void FetchHats()
     {
-        if (isRunning) return;
+        if (isRunning || BepInExUpdater.UpdateRequired) return;
         this.StartCoroutine(CoFetchHats());
     }
 
@@ -23,7 +22,9 @@ public class HatsLoader : MonoBehaviour
     private IEnumerator CoFetchHats()
     {
         isRunning = true;
+        var dh = new DownloadHandlerBuffer();
         var www = new UnityWebRequest();
+        www.downloadHandler = dh;
         www.SetMethod(UnityWebRequest.UnityWebRequestMethod.Get);
         TownOfUsPlugin.Logger.LogMessage($"Download manifest at: {RepositoryUrl}/{ManifestFileName}");
         www.SetUrl($"{RepositoryUrl}/{ManifestFileName}");
@@ -65,40 +66,18 @@ public class HatsLoader : MonoBehaviour
 
     private static IEnumerator CoDownloadHatAsset(string fileName)
     {
-        var www = new UnityWebRequest();
-        www.SetMethod(UnityWebRequest.UnityWebRequestMethod.Get);
         fileName = fileName.Replace(" ", "%20");
         TownOfUsPlugin.Logger.LogMessage($"downloading hat: {fileName}");
-        www.SetUrl($"{RepositoryUrl}/hats/{fileName}");
-        www.downloadHandler = new DownloadHandlerBuffer();
-        var operation = www.SendWebRequest();
-
-        while (!operation.isDone)
-        {
-            yield return new WaitForEndOfFrame();
-        }
-
-        if (www.isNetworkError || www.isHttpError)
-        {
-            TownOfUsPlugin.Logger.LogError(www.error);
-            yield break;
-        }
-
+        string url = $"{RepositoryUrl}/hats/{fileName}";
         var filePath = Path.Combine(HatsDirectory, fileName);
         filePath = filePath.Replace("%20", " ");
-        var persistTask = File.WriteAllBytesAsync(filePath, www.downloadHandler.data);
-        while (!persistTask.IsCompleted)
-        {
-            if (persistTask.Exception != null)
-            {
-                TownOfUsPlugin.Logger.LogError(persistTask.Exception.Message);
-                break;
-            }
 
-            yield return new WaitForEndOfFrame();
-        }
+        var task = Helpers.DownloadFile(url, filePath);
 
-        www.downloadHandler.Dispose();
-        www.Dispose();
+        while (!task.IsCompleted)
+            yield return null;
+
+        if (task.Exception != null)
+            TownOfUsPlugin.Logger.LogError(task.Exception);
     }
 }

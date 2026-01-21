@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using AmongUs.GameOptions;
+using System.Linq;
 using System;
 
 namespace TownOfUs.Patches
@@ -14,20 +15,14 @@ namespace TownOfUs.Patches
         {
             if (GameOptionsManager.Instance.currentGameOptions.GameMode != GameModes.Normal) return;
             var target = __instance.HauntTarget;
-
-            string factionInfo = "";
-            if (target.Data.Role.IsImpostor) factionInfo = "Impostor";
-            else if (target.isAnyNeutral()) factionInfo = "Neutral";
-            else factionInfo = "Crewmate";
-
             var roleInfo = RoleInfo.getRoleInfoForPlayer(target, false);
             string roleString = (roleInfo.Count > 0 && ghostsSeeRoles) ? roleInfo[0].name : "";
             if (__instance.HauntTarget.Data.IsDead)
             {
-                __instance.FilterText.text = !ghostsSeeRoles ? factionInfo : roleString + " Ghost";
+                __instance.FilterText.text = roleString + " Ghost";
                 return;
             }
-            __instance.FilterText.text = !ghostsSeeRoles ? factionInfo : roleString;
+            __instance.FilterText.text = roleString;
             return;
         }
 
@@ -40,19 +35,8 @@ namespace TownOfUs.Patches
             if (__instance.filterMode == HauntMenuMinigame.HauntFilters.Impostor)
             {
                 var info = RoleInfo.getRoleInfoForPlayer(pc, false);
-                __result = pc.isKiller() && !pc.Data.IsDead;
+                __result = pc.isEvil() && !pc.Data.IsDead;
             }
-        }
-
-        // Moves the haunt menu a bit further down
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(HauntMenuMinigame), nameof(HauntMenuMinigame.FixedUpdate))]
-        public static void UpdatePostfix(HauntMenuMinigame __instance)
-        {
-            if (GameOptionsManager.Instance.currentGameOptions.GameMode != GameModes.Normal) return;
-            if (PlayerControl.LocalPlayer.Data.Role.IsImpostor && !PlayerControl.LocalPlayer.isRole(RoleId.Poisoner))
-                __instance.gameObject.transform.localPosition = new UnityEngine.Vector3(-6f, -1.1f, __instance.gameObject.transform.localPosition.z);
-            return;
         }
 
         // Shows the "haunt evil roles button"
@@ -75,6 +59,34 @@ namespace TownOfUs.Patches
                 }
             }
             return false;
+        }
+
+        // Moves the haunt menu a bit further down
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(HauntMenuMinigame), nameof(HauntMenuMinigame.FixedUpdate))]
+        public static void UpdatePostfix(HauntMenuMinigame __instance)
+        {
+            if (GameOptionsManager.Instance.currentGameOptions.GameMode != GameModes.Normal) return;
+            if (PlayerControl.LocalPlayer.Data.Role.IsImpostor && Poisoner.poisoner != PlayerControl.LocalPlayer)
+                __instance.gameObject.transform.localPosition = new UnityEngine.Vector3(-6f, -1.1f, __instance.gameObject.transform.localPosition.z);
+            return;
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(AbilityButton), nameof(AbilityButton.Update))]
+        public static void showOrHideAbilityButtonPostfix(AbilityButton __instance)
+        {
+            bool isGameMode = GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek;
+            if (PlayerControl.LocalPlayer.Data.IsDead && (CustomOptionHolder.finishTasksBeforeHauntingOrZoomingOut.getBool() || isGameMode))
+            {
+                // player has haunt button.
+                var (playerCompleted, playerTotal) = TasksHandler.taskInfo(PlayerControl.LocalPlayer.Data);
+                int numberOfLeftTasks = playerTotal - playerCompleted;
+                if (numberOfLeftTasks <= 0 || isGameMode)
+                    __instance.Show();
+                else
+                    __instance.Hide();
+            }
         }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Cpp2IL.Core.Extensions;
-using HarmonyLib;
 
 namespace TownOfUs.Modules.CustomHats.Patches;
 
@@ -11,7 +10,7 @@ internal static class HatManagerPatches
     private static bool isRunning;
     private static bool isLoaded;
     private static List<HatData> allHats;
-        
+
     [HarmonyPatch(nameof(HatManager.GetHatById))]
     [HarmonyPrefix]
     private static void GetHatByIdPrefix(HatManager __instance)
@@ -39,7 +38,7 @@ internal static class HatManagerPatches
 
         __instance.allHats = allHats.ToArray();
     }
-        
+
     [HarmonyPatch(nameof(HatManager.GetHatById))]
     [HarmonyPostfix]
     private static void GetHatByIdPostfix()

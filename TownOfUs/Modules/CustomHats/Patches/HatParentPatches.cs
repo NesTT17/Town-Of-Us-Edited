@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using HarmonyLib;
 using PowerTools;
 using TownOfUs.Modules.CustomHats.Extensions;
 using UnityEngine;
@@ -238,7 +237,7 @@ internal static class HatParentPatches
             __instance.FrontLayer.sprite = null;
             __instance.BackLayer.sprite = asset.MainImage;
         }
-        if (/*!__instance.options.Initialized ||*/ !__instance.HideHat()) return false;
+        if (!__instance.HideHat()) return false;
         __instance.FrontLayer.enabled = false;
         __instance.BackLayer.enabled = false;
         return false;

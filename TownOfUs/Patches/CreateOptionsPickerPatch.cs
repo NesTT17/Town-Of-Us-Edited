@@ -1,3 +1,4 @@
+﻿using AmongUs.GameOptions;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,12 +7,14 @@ namespace TownOfUs.Patches
     [HarmonyPatch(typeof(CreateOptionsPicker))]
     class CreateOptionsPickerPatch
     {
+        private static List<SpriteRenderer> renderers = new List<SpriteRenderer>();
+
         [HarmonyPatch(typeof(CreateOptionsPicker), nameof(CreateOptionsPicker.SetGameMode))]
         public static bool Prefix(CreateOptionsPicker __instance, ref GameModes mode)
         {
             if (mode <= GameModes.HideNSeek)
             {
-                TOUMapOptions.gameMode = CustomGamemodes.Classic;
+                TOUEdMapOptions.gameMode = CustomGamemodes.Classic;
                 return true;
             }
 
@@ -19,13 +22,8 @@ namespace TownOfUs.Patches
             CustomGamemodes gm = (CustomGamemodes)((int)mode - 2);
             if (gm == CustomGamemodes.Guesser)
             {
-                __instance.GameModeText.text = "TOU Guesser";
-                TOUMapOptions.gameMode = CustomGamemodes.Guesser;
-            }
-            else if (gm == CustomGamemodes.AllAny)
-            {
-                __instance.GameModeText.text = "TOU All Any";
-                TOUMapOptions.gameMode = CustomGamemodes.AllAny;
+                __instance.GameModeText.text = "TOU Ed Guesser";
+                TOUEdMapOptions.gameMode = CustomGamemodes.Guesser;
             }
             return false;
         }
@@ -34,13 +32,9 @@ namespace TownOfUs.Patches
         [HarmonyPatch(typeof(CreateOptionsPicker), nameof(CreateOptionsPicker.Refresh))]
         public static void Postfix(CreateOptionsPicker __instance)
         {
-            if (TOUMapOptions.gameMode == CustomGamemodes.Guesser)
+            if (TOUEdMapOptions.gameMode == CustomGamemodes.Guesser)
             {
-                __instance.GameModeText.text = "TOU Guesser";
-            }
-            else if (TOUMapOptions.gameMode == CustomGamemodes.AllAny)
-            {
-                __instance.GameModeText.text = "TOU All Any";
+                __instance.GameModeText.text = "TOU Ed Guesser";
             }
         }
     }
@@ -67,7 +61,7 @@ namespace TownOfUs.Patches
                         chatLanguageButton.Text.text = DestroyableSingleton<TranslationController>.Instance.GetString(GameModesHelpers.ModeToName[entry], new Il2CppReferenceArray<Il2CppSystem.Object>(0));
                     else
                     {
-                        chatLanguageButton.Text.text = i == 3 ? "TOU Guesser" : "TOU All Any";
+                        chatLanguageButton.Text.text = "TOU Ed Guesser";
                     }
                     chatLanguageButton.Button.OnClick.RemoveAllListeners();
                     chatLanguageButton.Button.OnClick.AddListener((System.Action)delegate
@@ -75,7 +69,7 @@ namespace TownOfUs.Patches
                         __instance.ChooseOption(entry);
                     });
 
-                    bool isCurrentMode = i <= 2 && TOUMapOptions.gameMode == CustomGamemodes.Classic ? (long)entry == (long)((ulong)gameMode) : (i == 3 && TOUMapOptions.gameMode == CustomGamemodes.Guesser || i == 4 && TOUMapOptions.gameMode == CustomGamemodes.AllAny);
+                    bool isCurrentMode = i <= 2 && TOUEdMapOptions.gameMode == CustomGamemodes.Classic ? (long)entry == (long)((ulong)gameMode) : (i == 3 && TOUEdMapOptions.gameMode == CustomGamemodes.Guesser);
                     chatLanguageButton.SetSelected(isCurrentMode);
                     __instance.controllerSelectable.Add(chatLanguageButton.Button);
                     if (isCurrentMode)

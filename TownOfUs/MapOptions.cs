@@ -3,27 +3,33 @@ using UnityEngine;
 
 namespace TownOfUs
 {
-    static class TOUMapOptions
+    public static class TOUEdMapOptions
     {
         // Set values
         public static int maxNumberOfMeetings = 10;
+        public static BlockOptions blockSkippingInEmergencyMeetings = BlockOptions.Off;
+        public static bool noVoteIsSelfVote = false;
         public static bool hidePlayerNames = false;
         public static bool allowParallelMedBayScans = false;
+        public static bool killPlayersInVent = false;
+        public static bool abilityPlayersInVent = false;
         public static bool shieldFirstKill = false;
-        public static bool enableBetterPolus = false;
+        public static CustomGamemodes gameMode = CustomGamemodes.Classic;
 
         public static bool ghostsSeeRoles = true;
         public static bool ghostsSeeModifier = true;
+        public static bool ghostsSeeTasks = true;
         public static bool ghostsSeeInformation = true;
         public static bool ghostsSeeVotes = true;
         public static bool showRoleSummary = true;
-        public static bool showLighterDarker = true;
-        public static bool ShowChatNotifications = true;
-
-        public static CustomGamemodes gameMode = CustomGamemodes.Classic;
-
+        public static bool enableSoundEffects = true;
+        public static bool showVentsOnMap = true;
+        public static bool showChatNotifications = true;
+        
         // Updating values
         public static int meetingsCount = 0;
+        public static List<SurvCamera> camerasToAdd = new List<SurvCamera>();
+        public static List<Vent> ventsToSeal = new List<Vent>();
         public static Dictionary<byte, PoolablePlayer> playerIcons = new Dictionary<byte, PoolablePlayer>();
         public static string firstKillName;
         public static PlayerControl firstKillPlayer;
@@ -31,13 +37,18 @@ namespace TownOfUs
         public static void clearAndReloadMapOptions()
         {
             meetingsCount = 0;
-            playerIcons = new Dictionary<byte, PoolablePlayer>();
+            camerasToAdd = new List<SurvCamera>();
+            ventsToSeal = new List<Vent>();
+            playerIcons = new Dictionary<byte, PoolablePlayer>(); ;
 
-            maxNumberOfMeetings = Mathf.RoundToInt(CustomOptionHolder.maxNumberOfMeetings.getSelection());
+            maxNumberOfMeetings = Mathf.RoundToInt(CustomOptionHolder.maxNumberOfMeetings.getFloat());
+            blockSkippingInEmergencyMeetings = (BlockOptions)CustomOptionHolder.blockSkippingInEmergencyMeetings.getSelection();
+            noVoteIsSelfVote = CustomOptionHolder.noVoteIsSelfVote.getBool();
             hidePlayerNames = CustomOptionHolder.hidePlayerNames.getBool();
             allowParallelMedBayScans = CustomOptionHolder.allowParallelMedBayScans.getBool();
+            killPlayersInVent = CustomOptionHolder.killPlayersInVent.getBool();
+            abilityPlayersInVent = CustomOptionHolder.abilityPlayersInVent.getBool();
             shieldFirstKill = CustomOptionHolder.shieldFirstKill.getBool();
-            enableBetterPolus = CustomOptionHolder.enableBetterPolus.getBool();
             firstKillPlayer = null;
         }
 
@@ -45,17 +56,13 @@ namespace TownOfUs
         {
             ghostsSeeRoles = TownOfUsPlugin.GhostsSeeRoles.Value;
             ghostsSeeModifier = TownOfUsPlugin.GhostsSeeModifier.Value;
+            ghostsSeeTasks = TownOfUsPlugin.GhostsSeeTasks.Value;
             ghostsSeeInformation = TownOfUsPlugin.GhostsSeeInformation.Value;
             ghostsSeeVotes = TownOfUsPlugin.GhostsSeeVotes.Value;
             showRoleSummary = TownOfUsPlugin.ShowRoleSummary.Value;
-            showLighterDarker = TownOfUsPlugin.ShowLighterDarker.Value;
-            ShowChatNotifications = TownOfUsPlugin.ShowChatNotifications.Value;
-        }
-
-        public static void resetPoolables() {
-            foreach (PoolablePlayer p in playerIcons.Values) {
-                if (p != null && p.gameObject != null) p.gameObject.SetActive(false);
-            }
+            enableSoundEffects = TownOfUsPlugin.EnableSoundEffects.Value;
+            showVentsOnMap = TownOfUsPlugin.ShowVentsOnMap.Value;
+            showChatNotifications = TownOfUsPlugin.ShowChatNotifications.Value;
         }
     }
 }

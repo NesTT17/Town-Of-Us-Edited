@@ -1,7 +1,8 @@
-using AmongUs.GameOptions;
+﻿using AmongUs.GameOptions;
 using Reactor.Utilities.Extensions;
 using System;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 
 namespace TownOfUs.Patches
@@ -45,12 +46,12 @@ namespace TownOfUs.Patches
             }
 
             var buttonList = __instance.modeButtons.ToList();
-            for (int l = 2; l <= 3; l++)
+            for (int l = 2; l <= 2; l++)
             {
                 var newButton = GameObject.Instantiate(template, template.transform.parent);
                 newButton.transform.localPosition = new Vector3(-0.71f + 1.42f * (l), 0f, -3f);
 
-                string tooltip = "A TOU Game Mode";
+                string tooltip = "A TOU Ed Game Mode";
 
                 for (int j = 0; j < newButton.transform.childCount; j++)
                 {
@@ -71,14 +72,9 @@ namespace TownOfUs.Patches
                             float textSize = 2f;
                             if (l == 2)
                             {
-                                newText = "TOU Guesser";
+                                newText = "TOU Ed Guesser";
                                 tooltip = "Everyone can be a Guesser in this mode. Don't reveal your role or you might die!";
-                            }
-                            else if (l == 3)
-                            {
-                                newText = "TOU All Any";
-                                tooltip = "TOU Classic with the removed restriction on the uniqueness of the role!";
-                                textSize = 1.5f;
+
                             }
                             newButton.name = newText + "Option";
                             newButton.StartCoroutine(Effects.Lerp(0.2f, new Action<float>(p => { text.SetText(newText); })));
@@ -118,7 +114,7 @@ namespace TownOfUs.Patches
 
             if (i < 2)
             {
-                TOUMapOptions.gameMode = CustomGamemodes.Classic;
+                TOUEdMapOptions.gameMode = CustomGamemodes.Classic;
                 return true;
             }
 
@@ -126,11 +122,7 @@ namespace TownOfUs.Patches
             CustomGamemodes gm = (CustomGamemodes)(i - 1);
             if (gm == CustomGamemodes.Guesser)
             {
-                TOUMapOptions.gameMode = CustomGamemodes.Guesser;
-            }
-            else if (gm == CustomGamemodes.AllAny)
-            {
-                TOUMapOptions.gameMode = CustomGamemodes.AllAny;
+                TOUEdMapOptions.gameMode = CustomGamemodes.Guesser;
             }
 
             if (saveSetting)
@@ -146,9 +138,8 @@ namespace TownOfUs.Patches
         [HarmonyPatch(typeof(ConfirmCreatePopUp), nameof(ConfirmCreatePopUp.SetupInfo))]
         public static void Postfix2(ConfirmCreatePopUp __instance)
         {
-            if (TOUMapOptions.gameMode == CustomGamemodes.Classic) return;
-            string modeText = "TOU Guesser";
-            if (TOUMapOptions.gameMode == CustomGamemodes.AllAny) modeText = "TOU All Any";
+            if (TOUEdMapOptions.gameMode == CustomGamemodes.Classic) return;
+            string modeText = "TOU Ed Guesser";
 
             __instance.modeText.text = modeText;
         }

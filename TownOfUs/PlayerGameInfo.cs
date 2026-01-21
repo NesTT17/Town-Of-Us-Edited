@@ -3,70 +3,127 @@ using System.Linq;
 
 namespace TownOfUs
 {
+    public enum InfoType
+    {
+        AddKill,
+        AddCorrectShot,
+        AddMisfire,
+        AddCorrectGuess,
+        AddIncorrectGuess,
+        AddAbilityKill,
+        AddEat,
+        AddClean,
+    }
+
     public class PlayerGameInfo
     {
-        public static readonly Dictionary<byte, PlayerGameInfo> mapping = new();
-        public readonly List<RoleInfo> roles = new();
-        public readonly List<RoleInfo> modifiers = new();
+        public static readonly Dictionary<byte, PlayerGameInfo> Mapping = new();
+        public int Kills = 0;
+        public int CorrectGuesses = 0;
+        public int IncorrectGuesses = 0;
+        public int CorrectShots = 0;
+        public int Misfires = 0;
+        public int AbilityKills = 0;
+        public int Eats = 0;
+        public int Cleans = 0;
+        public readonly List<RoleInfo> Roles = new();
+        public readonly List<RoleInfo> Modifiers = new();
 
-        public static List<RoleInfo> getRoles(PlayerControl player)
+        public static int TotalKills(byte playerId)
         {
-            if (mapping.TryGetValue(player.PlayerId, out PlayerGameInfo roleInfo))
-                return roleInfo.roles;
-
-            mapping.Add(player.PlayerId, roleInfo = new PlayerGameInfo());
-
-            if (player.Data.Role.IsImpostor)
-                roleInfo.roles.Add(RoleInfo.impostor);
-            else
-                roleInfo.roles.Add(RoleInfo.crewmate);
-
-            return roleInfo.roles;
+            return Mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo) ? gameInfo.Kills : 0;
         }
 
-        public static List<RoleInfo> getRoles(NetworkedPlayerInfo player)
+        public static int TotalCorrectShots(byte playerId)
         {
-            if (mapping.TryGetValue(player.PlayerId, out PlayerGameInfo roleInfo))
-                return roleInfo.roles;
+            return Mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo) ? gameInfo.CorrectShots : 0;
+        }
 
-            mapping.Add(player.PlayerId, roleInfo = new PlayerGameInfo());
+        public static int TotalMisfires(byte playerId)
+        {
+            return Mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo) ? gameInfo.Misfires : 0;
+        }
+
+        public static int TotalCorrectGuesses(byte playerId)
+        {
+            return Mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo) ? gameInfo.CorrectGuesses : 0;
+        }
+
+        public static int TotalIncorrectGuesses(byte playerId)
+        {
+            return Mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo) ? gameInfo.IncorrectGuesses : 0;
+        }
+
+        public static int TotalAbilityKills(byte playerId)
+        {
+            return Mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo) ? gameInfo.AbilityKills : 0;
+        }
+
+        public static int TotalEaten(byte playerId)
+        {
+            return Mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo) ? gameInfo.Eats : 0;
+        }
+
+        public static int TotalCleaned(byte playerId)
+        {
+            return Mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo) ? gameInfo.Cleans : 0;
+        }
+
+        public static List<RoleInfo> GetRoles(PlayerControl player) => GetRoles(player.Data);
+        public static List<RoleInfo> GetRoles(NetworkedPlayerInfo player)
+        {
+            if (Mapping.TryGetValue(player.PlayerId, out PlayerGameInfo roleInfo))
+            {
+                if (roleInfo.Roles?.Count != 0)
+                    return roleInfo.Roles;
+            }
+            else
+            {
+                Mapping.Add(player.PlayerId, roleInfo = new PlayerGameInfo());
+            }
 
             if (player.Role.IsImpostor)
-                roleInfo.roles.Add(RoleInfo.impostor);
+                roleInfo.Roles.Add(RoleInfo.impostor);
             else
-                roleInfo.roles.Add(RoleInfo.crewmate);
+                roleInfo.Roles.Add(RoleInfo.crewmate);
 
-            return roleInfo.roles;
+            return roleInfo.Roles;
         }
 
-        public static void addRole(byte playerId, RoleInfo role)
+        public static void EraseHistory(PlayerControl player)
         {
-            if (!mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo))
-                mapping.Add(playerId, gameInfo = new PlayerGameInfo());
-
-            if (!gameInfo.roles.Any(r => r.roleId == role.roleId))
-                gameInfo.roles.Add(role);
+            if (Mapping.TryGetValue(player.PlayerId, out PlayerGameInfo roleInfo))
+                roleInfo.Roles.Clear();
         }
 
-        public static List<RoleInfo> getModifiers(byte playerId)
+        public static void AddRole(byte playerId, RoleInfo role)
         {
-            if (!mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo))
-                mapping.Add(playerId, gameInfo = new PlayerGameInfo());
-            return gameInfo.modifiers;
+            if (!Mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo))
+                Mapping.Add(playerId, gameInfo = new PlayerGameInfo());
+
+            if (!gameInfo.Roles.Any(r => r.roleId == role.roleId))
+                gameInfo.Roles.Add(role);
         }
 
-        public static void addModifier(byte playerId, RoleInfo role)
+        public static List<RoleInfo> GetModifiers(byte playerId)
         {
-            if (!mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo))
-                mapping.Add(playerId, gameInfo = new PlayerGameInfo());
+            if (!Mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo))
+                Mapping.Add(playerId, gameInfo = new PlayerGameInfo());
+            return gameInfo.Modifiers;
+        }
 
-            if (!gameInfo.modifiers.Any(r => r.roleId == role.roleId))
-                gameInfo.modifiers.Add(role);
+        public static void AddModifier(byte playerId, RoleInfo role)
+        {
+            if (!Mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo))
+                Mapping.Add(playerId, gameInfo = new PlayerGameInfo());
+
+            if (!gameInfo.Modifiers.Any(r => r.roleId == role.roleId))
+                gameInfo.Modifiers.Add(role);
         }
 
         public static void clearAndReload()
         {
-            mapping.Clear();
+            Mapping.Clear();
         }
     }
 }

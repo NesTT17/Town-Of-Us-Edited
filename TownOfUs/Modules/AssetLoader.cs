@@ -1,6 +1,5 @@
 using Reactor.Utilities.Extensions;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -34,30 +33,19 @@ namespace TownOfUs.Modules
             return AssetBundle.LoadFromMemory(assets);
         }
 
-        // Currently ill-advisable to load all at once.
-        private IEnumerator LoadAllAssets(AssetBundle assetBundle)
-        {
-            var assets = assetBundle.LoadAllAssetsAsync();
-            yield return assets;
-            foreach (var asset in assets.allAssets)
-            {
-                loadedObjects.Add(assetBundle.name, asset.DontUnload());
-            }
-        }
-
         private string ConvertToBaseName(string name)
         {
             return name.Split('/').Last().Split('.').First();
         }
 
-#nullable enable
+        #nullable enable
         private T? LoadAsset<T>(AssetBundle assetBundle, string name) where T : UnityObject
-#nullable disable
         {
             var asset = assetBundle.LoadAsset(name, Il2CppType.Of<T>())?.Cast<T>().DontUnload();
             loadedObjects.Add(name, asset);
             return asset;
         }
+        #nullable disable
 
         private Dictionary<string, AssetBundle> bundles = new Dictionary<string, AssetBundle>();
         private Dictionary<string, string> objectname_to_bundle = new Dictionary<string, string>();
@@ -72,17 +60,6 @@ namespace TownOfUs.Modules
                 return LoadAsset<T>(bundles[obj2], name);
             }
             return null;
-        }
-
-    }
-
-    public static class AssetLoadingUtils
-    {
-        public static T CanUnload<T>(this T obj) where T : UnityObject
-        {
-            obj.hideFlags |= HideFlags.None;
-
-            return obj;
         }
     }
 }

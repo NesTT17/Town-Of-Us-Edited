@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -15,36 +16,69 @@ public static class PlayerPhysiscs_Awake_Patch
 }
 
 [HarmonyPatch(typeof(PlayerPhysics), nameof(PlayerPhysics.FixedUpdate))]
-public static class PlayerPhysicsFixedUpdate
+public static class PlayerPhysicsFixedUpdatePatch
 {
     public static void Postfix(PlayerPhysics __instance)
     {
-        bool shouldInvert = PlayerControl.LocalPlayer.hasModifier(RoleId.Drunk);
-        if (__instance.AmOwner &&
-            AmongUsClient.Instance &&
-            AmongUsClient.Instance.GameState == InnerNetClient.GameStates.Started &&
-            !PlayerControl.LocalPlayer.Data.IsDead &&
-            shouldInvert &&
-            GameData.Instance &&
-            __instance.myPlayer.CanMove) __instance.body.velocity *= -1;
-    }
-}
-
-[HarmonyPatch(typeof(CustomNetworkTransform), nameof(CustomNetworkTransform.FixedUpdate))]
-public static class SpeedPatch {
-    public static void Postfix(CustomNetworkTransform __instance) {
-        if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Started || GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek)
-            return;
-        
-        venererUpdate(__instance);
+        if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Started) return;
+        updateUndertakerMoveSpeed(__instance);
+        updateVenererMoveSpeed(__instance);
+        updateFlashMoveSpeed(__instance);
+        updateFrostyChillSpeed(__instance);
     }
 
-    static void venererUpdate(CustomNetworkTransform __instance) {
-        if (Venerer.exists) {
-            if (__instance.gameObject.GetComponent<PlayerControl>().isRole(RoleId.Venerer) && !__instance.AmOwner && Venerer.getRole(__instance.gameObject.GetComponent<PlayerControl>()).numberOfKills >= 2 && Venerer.getRole(__instance.gameObject.GetComponent<PlayerControl>()).morphTimer > 0f)
-                __instance.body.velocity *= Venerer.speedMultiplier;
-            if (!__instance.gameObject.GetComponent<PlayerControl>().isRole(RoleId.Venerer) && !__instance.AmOwner && Venerer.players.Any(x => x.player && x.numberOfKills >= 3 && x.morphTimer > 0f))
-                __instance.body.velocity *= Venerer.freezeMultiplier;
+    static void updateUndertakerMoveSpeed(PlayerPhysics playerPhysics)
+    {
+        if (Undertaker.undertaker == null || Undertaker.undertaker != PlayerControl.LocalPlayer) return;
+        if (Undertaker.dragedBody != null)
+        {
+            if (playerPhysics.AmOwner && GameData.Instance && playerPhysics.myPlayer.CanMove)
+                playerPhysics.body.velocity *= Undertaker.velocity;
+        }
+    }
+
+    static void updateVenererMoveSpeed(PlayerPhysics playerPhysics)
+    {
+        if (Venerer.venerer == null || Venerer.numberOfKills < 2) return;
+        if (Venerer.numberOfKills >= 2 && PlayerControl.LocalPlayer == Venerer.venerer)
+        {
+            if (playerPhysics.AmOwner && GameData.Instance && playerPhysics.myPlayer.CanMove && Venerer.abilityTimer > 0f)
+                playerPhysics.body.velocity *= Venerer.speedMultiplier;
+        }
+        if (Venerer.numberOfKills >= 3 && PlayerControl.LocalPlayer != Venerer.venerer && !PlayerControl.LocalPlayer.Data.IsDead && Venerer.abilityTimer > 0f)
+        {
+            if (playerPhysics.AmOwner && GameData.Instance && playerPhysics.myPlayer.CanMove)
+                playerPhysics.body.velocity *= Venerer.freezeMultiplier;
+        }
+    }
+
+    static void updateFlashMoveSpeed(PlayerPhysics playerPhysics)
+    {
+        if (Flash.flash != null && Flash.flash.Any(x => x.PlayerId == PlayerControl.LocalPlayer.PlayerId) && !PlayerControl.LocalPlayer.Data.IsDead)
+        {
+            if (playerPhysics.AmOwner && GameData.Instance && playerPhysics.myPlayer.CanMove)
+                playerPhysics.body.velocity *= Flash.speed;
+        }
+    }
+
+    static void updateFrostyChillSpeed(PlayerPhysics playerPhysics)
+    {
+        if (Frosty.chilled != null && Frosty.chilled == PlayerControl.LocalPlayer && Frosty.isChilled)
+        {
+            var utcNow = DateTime.UtcNow;
+            var timeSpan = utcNow - Frosty.lastChilled;
+            var duration = Frosty.duration * 1000f;
+            if (playerPhysics.AmOwner && GameData.Instance && playerPhysics.myPlayer.CanMove)
+            {
+                if ((float)timeSpan.TotalMilliseconds < duration)
+                {
+                    playerPhysics.body.velocity *= 1 - (duration - (float)timeSpan.TotalMilliseconds) * (1 - Frosty.startSpeed) / duration;
+                }
+                else
+                {
+                    Frosty.isChilled = false;
+                }
+            }
         }
     }
 }

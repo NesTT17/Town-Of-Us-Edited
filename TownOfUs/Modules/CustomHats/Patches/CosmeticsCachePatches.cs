@@ -1,6 +1,4 @@
-﻿using HarmonyLib;
-
-namespace TownOfUs.Modules.CustomHats.Patches;
+﻿namespace TownOfUs.Modules.CustomHats.Patches;
 
 [HarmonyPatch(typeof(CosmeticsCache))]
 internal static class CosmeticsCachePatches

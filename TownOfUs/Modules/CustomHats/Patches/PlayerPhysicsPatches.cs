@@ -1,5 +1,4 @@
 ﻿using TownOfUs.Modules.CustomHats.Extensions;
-using HarmonyLib;
 
 namespace TownOfUs.Modules.CustomHats.Patches;
 

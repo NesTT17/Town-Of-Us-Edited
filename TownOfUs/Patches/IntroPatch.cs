@@ -2,6 +2,11 @@ using System;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using Reactor.Utilities;
+using System.Collections;
+using BepInEx.Unity.IL2CPP.Utils.Collections;
+using PowerTools;
 
 namespace TownOfUs.Patches
 {
@@ -10,10 +15,11 @@ namespace TownOfUs.Patches
     {
         public static PoolablePlayer playerPrefab;
         public static Vector3 bottomLeft;
-        public static bool isCooldownReseted = false;
+        public static bool isCooldownResetted = false;
         public static void Prefix(IntroCutscene __instance)
         {
             // Generate and initialize player icons
+            int playerCounter = 0;
             if (PlayerControl.LocalPlayer != null && FastDestroyableSingleton<HudManager>.Instance != null)
             {
                 float aspect = Camera.main.aspect;
@@ -30,20 +36,43 @@ namespace TownOfUs.Patches
                     p.SetPlayerMaterialColors(player.cosmetics.currentBodySprite.BodySprite);
                     player.SetSkin(data.DefaultOutfit.SkinId, data.DefaultOutfit.ColorId);
                     player.cosmetics.SetHat(data.DefaultOutfit.HatId, data.DefaultOutfit.ColorId);
-                    PlayerControl.LocalPlayer.SetKillTimer(ResetButtonCooldown.initialCooldown);
-                    foreach (CustomButton button in CustomButton.buttons)
-                    {
-                        button.Timer = ResetButtonCooldown.initialCooldown;
-                        button.Update();
-                    }
                     player.cosmetics.nameText.text = data.PlayerName;
                     player.SetFlipX(true);
                     playerIcons[p.PlayerId] = player;
                     player.gameObject.SetActive(false);
+                    if (PlayerControl.LocalPlayer == Seer.seer && p != Seer.seer)
+                    {
+                        player.transform.localPosition = bottomLeft + new Vector3(-0.25f, -0.25f, 0) + Vector3.right * playerCounter++ * 0.4f;
+                        player.transform.localScale = Vector3.one * 0.3f;
+                        player.setSemiTransparent(true);
+                        player.gameObject.SetActive(true);
+                    }
+                    else
+                    {
+                        player.transform.localPosition = bottomLeft;
+                        player.transform.localScale = Vector3.one * 0.4f;
+                        player.gameObject.SetActive(false);
+                    }
+                    PlayerControl.LocalPlayer.SetKillTimer(10f);
+                    foreach (CustomButton button in CustomButton.buttons)
+                    {
+                        button.Timer = 10f;
+                        button.Update();
+                    }
+                }
+            }
 
-                    player.transform.localPosition = bottomLeft;
-                    player.transform.localScale = Vector3.one * 0.4f;
-                    player.gameObject.SetActive(false);
+            // Force Scavenger to load a new Bounty when the Intro is over
+            if (Scavenger.bounty != null && PlayerControl.LocalPlayer == Scavenger.scavenger)
+            {
+                Scavenger.bountyUpdateTimer = 0f;
+                if (FastDestroyableSingleton<HudManager>.Instance != null)
+                {
+                    Scavenger.cooldownText = UnityEngine.Object.Instantiate<TMPro.TextMeshPro>(FastDestroyableSingleton<HudManager>.Instance.KillButton.cooldownTimerText, FastDestroyableSingleton<HudManager>.Instance.transform);
+                    Scavenger.cooldownText.alignment = TMPro.TextAlignmentOptions.Center;
+                    Scavenger.cooldownText.transform.localPosition = bottomLeft + new Vector3(0f, -0.35f, -62f);
+                    Scavenger.cooldownText.transform.localScale = Vector3.one * 0.4f;
+                    Scavenger.cooldownText.gameObject.SetActive(true);
                 }
             }
 
@@ -59,46 +88,43 @@ namespace TownOfUs.Patches
                     RPCProcedure.setFirstKill(target.PlayerId);
                 }
             }
-            firstKillName = "";
 
-            // Force Bounty Hunter to load a new Bounty when the Intro is over
-            foreach (var bountyHunter in BountyHunter.players)
+            // Reset Cooldown
+            if (!isCooldownResetted)
             {
-                if (bountyHunter.bounty != null)
-                {
-                    if (PlayerControl.LocalPlayer == bountyHunter.player) bountyHunter.bountyUpdateTimer = 0f;
-                }
-            }
-
-            // Reset Cooldown after Draft Mode
-            if (!RoleDraftEx.isRunning && !isCooldownReseted)
-            {
-                isCooldownReseted = true;
-                PlayerControl.LocalPlayer.SetKillTimer(ResetButtonCooldown.initialCooldown);
+                isCooldownResetted = true;
+                PlayerControl.LocalPlayer.SetKillTimer(10f);
                 foreach (CustomButton button in CustomButton.buttons)
                 {
-                    button.Timer = ResetButtonCooldown.initialCooldown;
+                    button.Timer = 10f;
                     button.Update();
                 }
             }
 
-            if (!Helpers.isMovedVentOnPolus)
+            // Random Spawn Positions
+            if (CustomOptionHolder.randomSpawnPositions.getSelection() != 0)
             {
-                if (!MapUtilities.CachedShipStatus) return;
-                if (!Helpers.isPolus()) return;
+                if (MapBehaviour.Instance)
+                    MapBehaviour.Instance.Close();
+                if (Minigame.Instance)
+                    Minigame.Instance.ForceClose();
+                if (PlayerControl.LocalPlayer.inVent)
+                {
+                    PlayerControl.LocalPlayer.MyPhysics.RpcExitVent(Vent.currentVent.Id);
+                    PlayerControl.LocalPlayer.MyPhysics.ExitAllVents();
+                }
 
-                Vent bathroomVent = GameObject.FindObjectsOfType<Vent>().ToList().FirstOrDefault(x => x.name == "BathroomVent");
-                if (bathroomVent == null) return;
-
-                Vector3 initialBathroomVentPos = bathroomVent.transform.localPosition;
-                bathroomVent.transform.localPosition = new Vector3(initialBathroomVentPos.x, initialBathroomVentPos.y - 1.2f, initialBathroomVentPos.z);
-
-                Helpers.isMovedVentOnPolus = true;
-            }
-
-            if (CustomOptionHolder.randomSpawnPositions.getSelection() == 1 || CustomOptionHolder.randomSpawnPositions.getSelection() == 2) 
-            { 
-                RPCProcedure.systemSpreadPlayers();
+                var SpawnPositions = GameOptionsManager.Instance.currentNormalGameOptions.MapId switch
+                {
+                    0 => MapData.SkeldSpawnPosition,
+                    1 => MapData.MiraSpawnPosition,
+                    2 => MapData.PolusSpawnPosition,
+                    3 => MapData.DleksSpawnPosition,
+                    4 => MapData.AirshipSpawnPosition,
+                    5 => MapData.FungleSpawnPosition,
+                    _ => MapData.FindVentSpawnPositions(),
+                };
+                PlayerControl.LocalPlayer.NetTransform.RpcSnapTo(SpawnPositions[rnd.Next(SpawnPositions.Count)]);
             }
         }
     }
@@ -106,6 +132,178 @@ namespace TownOfUs.Patches
     [HarmonyPatch]
     class IntroPatch
     {
+        public static IEnumerator CoBegin(IntroCutscene __instance)
+        {
+            SoundManager.Instance.PlaySound(__instance.IntroStinger, false, 1f, null);
+            if (GameManager.Instance.IsNormal())
+            {
+                __instance.LogPlayerRoleData();
+                __instance.HideAndSeekPanels.SetActive(false);
+                __instance.CrewmateRules.SetActive(false);
+                __instance.ImpostorRules.SetActive(false);
+                __instance.ImpostorName.gameObject.SetActive(false);
+                __instance.ImpostorTitle.gameObject.SetActive(false);
+                var list = new Il2CppSystem.Collections.Generic.List<PlayerControl>();
+                list =
+                    IntroCutscene.SelectTeamToShow(
+                        (Func<NetworkedPlayerInfo, bool>)(pcd =>
+                            !PlayerControl.LocalPlayer.Data.Role.IsImpostor ||
+                            pcd.Role.TeamType == PlayerControl.LocalPlayer.Data.Role.TeamType
+                        )
+                    );
+                if (PlayerControl.LocalPlayer.Data.Role.IsImpostor)
+                {
+                    __instance.ImpostorText.gameObject.SetActive(false);
+                }
+                else
+                {
+                    int adjustedNumImpostors = GameManager.Instance.LogicOptions.GetAdjustedNumImpostors(GameData.Instance.PlayerCount);
+                    if (adjustedNumImpostors == 1)
+                    {
+                        __instance.ImpostorText.text = DestroyableSingleton<TranslationController>.Instance.GetString(StringNames.NumImpostorsS, new UnityEngine.Object());
+                    }
+                    else
+                    {
+                        var parameters = new Il2CppReferenceArray<Il2CppSystem.Object>(new Il2CppSystem.Object[] { (Il2CppSystem.Object)adjustedNumImpostors });
+                        __instance.ImpostorText.text = DestroyableSingleton<TranslationController>.Instance.GetString(StringNames.NumImpostorsP, parameters);
+                    }
+                    __instance.ImpostorText.text = __instance.ImpostorText.text.Replace("[FF1919FF]", "<color=#FF1919FF>");
+                    __instance.ImpostorText.text = __instance.ImpostorText.text.Replace("[]", "</color>");
+                }
+                yield return __instance.ShowTeam(list, 3f);
+                yield return SetUpRoleTextPatch.SetRoleTexts(__instance).WrapToIl2Cpp();
+            }
+            else
+            {
+                __instance.LogPlayerRoleData();
+                __instance.HideAndSeekPanels.SetActive(true);
+                if (PlayerControl.LocalPlayer.Data.Role.IsImpostor)
+                {
+                    __instance.CrewmateRules.SetActive(false);
+                    __instance.ImpostorRules.SetActive(true);
+                }
+                else
+                {
+                    __instance.CrewmateRules.SetActive(true);
+                    __instance.ImpostorRules.SetActive(false);
+                }
+                Il2CppSystem.Collections.Generic.List<PlayerControl> list2 = IntroCutscene.SelectTeamToShow(
+                    (Func<NetworkedPlayerInfo, bool>)(pcd => PlayerControl.LocalPlayer.Data.Role.IsImpostor != pcd.Role.IsImpostor)
+                );
+                PlayerControl impostor = PlayerControl.AllPlayerControls.Find(
+                    (Il2CppSystem.Predicate<PlayerControl>)(pc => pc.Data.Role.IsImpostor)
+                );
+                GameManager.Instance.SetSpecialCosmetics(impostor);
+                __instance.ImpostorName.gameObject.SetActive(true);
+                __instance.ImpostorTitle.gameObject.SetActive(true);
+                __instance.BackgroundBar.enabled = false;
+                __instance.TeamTitle.gameObject.SetActive(false);
+                if (impostor != null)
+                {
+                    __instance.ImpostorName.text = impostor.Data.PlayerName;
+                }
+                else
+                {
+                    __instance.ImpostorName.text = "???";
+                }
+                yield return new WaitForSecondsRealtime(0.1f);
+                PoolablePlayer playerSlot = null;
+                if (impostor != null)
+                {
+                    playerSlot = __instance.CreatePlayer(1, 1, impostor.Data, false);
+                    playerSlot.SetBodyType(PlayerBodyTypes.Normal);
+                    playerSlot.SetFlipX(false);
+                    playerSlot.transform.localPosition = __instance.impostorPos;
+                    playerSlot.transform.localScale = Vector3.one * __instance.impostorScale;
+                }
+                yield return ShipStatus.Instance.CosmeticsCache.PopulateFromPlayers();
+                yield return new WaitForSecondsRealtime(6f);
+                if (playerSlot != null)
+                {
+                    playerSlot.gameObject.SetActive(false);
+                }
+                __instance.HideAndSeekPanels.SetActive(false);
+                __instance.CrewmateRules.SetActive(false);
+                __instance.ImpostorRules.SetActive(false);
+                LogicOptionsHnS logicOptionsHnS = GameManager.Instance.LogicOptions as LogicOptionsHnS;
+                LogicHnSMusic logicHnSMusic = GameManager.Instance.GetLogicComponent<LogicHnSMusic>() as LogicHnSMusic;
+                if (logicHnSMusic != null)
+                {
+                    logicHnSMusic.StartMusicWithIntro();
+                }
+                if (PlayerControl.LocalPlayer.Data.Role.IsImpostor)
+                {
+                    float crewmateLeadTime = (float)logicOptionsHnS.GetCrewmateLeadTime();
+                    __instance.HideAndSeekTimerText.gameObject.SetActive(true);
+                    PoolablePlayer poolablePlayer;
+                    AnimationClip animationClip;
+                    if (AprilFoolsMode.ShouldHorseAround())
+                    {
+                        poolablePlayer = __instance.HorseWrangleVisualSuit;
+                        poolablePlayer.gameObject.SetActive(true);
+                        poolablePlayer.SetBodyType(PlayerBodyTypes.Seeker);
+                        animationClip = __instance.HnSSeekerSpawnHorseAnim;
+                        __instance.HorseWrangleVisualPlayer.SetBodyType(PlayerBodyTypes.Normal);
+                        __instance.HorseWrangleVisualPlayer.UpdateFromPlayerData(PlayerControl.LocalPlayer.Data, PlayerControl.LocalPlayer.CurrentOutfitType, PlayerMaterial.MaskType.None, false, null, false);
+                    }
+                    else if (AprilFoolsMode.ShouldLongAround())
+                    {
+                        poolablePlayer = __instance.HideAndSeekPlayerVisual;
+                        poolablePlayer.gameObject.SetActive(true);
+                        poolablePlayer.SetBodyType(PlayerBodyTypes.LongSeeker);
+                        animationClip = __instance.HnSSeekerSpawnLongAnim;
+                    }
+                    else
+                    {
+                        poolablePlayer = __instance.HideAndSeekPlayerVisual;
+                        poolablePlayer.gameObject.SetActive(true);
+                        poolablePlayer.SetBodyType(PlayerBodyTypes.Seeker);
+                        animationClip = __instance.HnSSeekerSpawnAnim;
+                    }
+                    poolablePlayer.SetBodyCosmeticsVisible(false);
+                    poolablePlayer.UpdateFromPlayerData(PlayerControl.LocalPlayer.Data, PlayerControl.LocalPlayer.CurrentOutfitType, PlayerMaterial.MaskType.None, false, null, false);
+                    SpriteAnim component = poolablePlayer.GetComponent<SpriteAnim>();
+                    poolablePlayer.gameObject.SetActive(true);
+                    poolablePlayer.ToggleName(false);
+                    component.Play(animationClip, 1f);
+                    while (crewmateLeadTime > 0f)
+                    {
+                        __instance.HideAndSeekTimerText.text = Mathf.RoundToInt(crewmateLeadTime).ToString();
+                        crewmateLeadTime -= Time.deltaTime;
+                        yield return null;
+                    }
+                }
+                else
+                {
+                    ShipStatus.Instance.HideCountdown = (float)logicOptionsHnS.GetCrewmateLeadTime();
+                    if (AprilFoolsMode.ShouldHorseAround())
+                    {
+                        if (impostor != null)
+                        {
+                            impostor.AnimateCustom(__instance.HnSSeekerSpawnHorseInGameAnim);
+                        }
+                    }
+                    else if (AprilFoolsMode.ShouldLongAround())
+                    {
+                        if (impostor != null)
+                        {
+                            impostor.AnimateCustom(__instance.HnSSeekerSpawnLongInGameAnim);
+                        }
+                    }
+                    else if (impostor != null)
+                    {
+                        impostor.AnimateCustom(__instance.HnSSeekerSpawnAnim);
+                        impostor.cosmetics.SetBodyCosmeticsVisible(false);
+                    }
+                }
+                impostor = null;
+                playerSlot = null;
+            }
+            ShipStatus.Instance.StartSFX();
+            UnityEngine.Object.Destroy(__instance.gameObject);
+            yield break;
+        }
+
         public static void setupIntroTeamIcons(IntroCutscene __instance, ref Il2CppSystem.Collections.Generic.List<PlayerControl> yourTeam)
         {
             // Intro solo teams
@@ -115,28 +313,6 @@ namespace TownOfUs.Patches
                 soloTeam.Add(PlayerControl.LocalPlayer);
                 yourTeam = soloTeam;
             }
-
-            // Add the Spy to the Impostor team (for the Impostors)
-            if (Agent.exists && PlayerControl.LocalPlayer.Data.Role.IsImpostor)
-            {
-                List<PlayerControl> players = PlayerControl.AllPlayerControls.ToArray().ToList().OrderBy(x => Guid.NewGuid()).ToList();
-                var fakeImpostorTeam = new Il2CppSystem.Collections.Generic.List<PlayerControl>(); // The local player always has to be the first one in the list (to be displayed in the center)
-                fakeImpostorTeam.Add(PlayerControl.LocalPlayer);
-                foreach (PlayerControl p in players)
-                {
-                    if (PlayerControl.LocalPlayer != p && (p.isRole(RoleId.Agent) || p.Data.Role.IsImpostor))
-                        fakeImpostorTeam.Add(p);
-                }
-                yourTeam = fakeImpostorTeam;
-            }
-
-            // Role draft: If spy is enabled, don't show the team
-            if (RoleDraftEx.isEnabled && CustomOptionHolder.agentSpawnRate.getSelection() > 0 && PlayerControl.AllPlayerControls.ToArray().ToList().Where(x => x.Data.Role.IsImpostor).Count() > 1)
-            {
-                var fakeImpostorTeam = new Il2CppSystem.Collections.Generic.List<PlayerControl>(); // The local player always has to be the first one in the list (to be displayed in the center)
-                fakeImpostorTeam.Add(PlayerControl.LocalPlayer);
-                yourTeam = fakeImpostorTeam;
-            }
         }
 
         public static void setupIntroTeam(IntroCutscene __instance, ref Il2CppSystem.Collections.Generic.List<PlayerControl> yourTeam)
@@ -144,11 +320,8 @@ namespace TownOfUs.Patches
             List<RoleInfo> infos = RoleInfo.getRoleInfoForPlayer(PlayerControl.LocalPlayer);
             RoleInfo roleInfo = infos.Where(info => info.factionId != FactionId.Modifier).FirstOrDefault();
             var neutralColor = new Color32(76, 84, 78, 255);
-            if (roleInfo == null)
-            {
-                return;
-            }
-            if (roleInfo.factionId == FactionId.BenignNeutral || roleInfo.factionId == FactionId.EvilNeutral || roleInfo.factionId == FactionId.KillingNeutral)
+            if (roleInfo == null) return;
+            if (roleInfo.factionId == FactionId.NeutralBenign || roleInfo.factionId == FactionId.NeutralEvil || roleInfo.factionId == FactionId.NeutralKilling)
             {
                 __instance.BackgroundBar.material.color = neutralColor;
                 __instance.TeamTitle.text = "Neutral";
@@ -163,7 +336,6 @@ namespace TownOfUs.Patches
             __instance.RoleText.gameObject.SetActive(false);
             __instance.RoleBlurbText.gameObject.SetActive(false);
             __instance.ourCrewmate.gameObject.SetActive(false);
-
         }
 
         [HarmonyPatch(typeof(IntroCutscene), nameof(IntroCutscene.CreatePlayer))]
@@ -175,32 +347,69 @@ namespace TownOfUs.Patches
             }
         }
 
-        [HarmonyPatch(typeof(IntroCutscene._ShowRole_d__41), nameof(IntroCutscene._ShowRole_d__41.MoveNext))]
+        [HarmonyPatch(typeof(IntroCutscene), nameof(IntroCutscene.CoBegin))]
+        class IntroCutsceneCoBeginPatch
+        {
+            public static bool Prefix(IntroCutscene __instance, ref Il2CppSystem.Collections.IEnumerator __result)
+            {
+                __result = CoBegin(__instance).WrapToIl2Cpp();
+
+                return false;
+            }
+        }
+
+        [HarmonyPatch]
         class SetUpRoleTextPatch
         {
-            private static int last;
-            public static void Postfix(IntroCutscene._ShowRole_d__41 __instance)
+            static int seed = 0;
+            static public IEnumerator SetRoleTexts(IntroCutscene __instance)
             {
-                if (__instance.__4__this.GetInstanceID() == last)
-                    return;
-                last = __instance.__4__this.GetInstanceID();
+                seed = rnd.Next(5000);
+                
                 // Don't override the intro of the vanilla roles
                 List<RoleInfo> infos = RoleInfo.getRoleInfoForPlayer(PlayerControl.LocalPlayer);
                 RoleInfo roleInfo = infos.Where(info => info.factionId != FactionId.Modifier).FirstOrDefault();
                 RoleInfo modifierInfo = infos.Where(info => info.factionId == FactionId.Modifier).FirstOrDefault();
 
-                __instance.__4__this.RoleBlurbText.text = "";
+                __instance.RoleBlurbText.text = "";
                 if (roleInfo != null)
                 {
-                    __instance.__4__this.RoleText.text = roleInfo.name;
-                    __instance.__4__this.RoleText.color = roleInfo.color;
-                    __instance.__4__this.RoleBlurbText.text = roleInfo.introDescription;
-                    __instance.__4__this.RoleBlurbText.color = roleInfo.color;
+                    __instance.RoleText.text = roleInfo.name;
+                    __instance.RoleText.color = roleInfo.color;
+                    __instance.RoleBlurbText.text = roleInfo.introDescription;
+                    __instance.RoleBlurbText.color = roleInfo.color;
+                    __instance.YouAreText.color = roleInfo.color;
                 }
                 if (modifierInfo != null)
                 {
-                    __instance.__4__this.RoleBlurbText.text += Helpers.cs(modifierInfo.color, $"\n{modifierInfo.introDescription}");
+                    if (modifierInfo.roleId != RoleId.Lover)
+                        __instance.RoleBlurbText.text += Helpers.cs(modifierInfo.color, $"\n{modifierInfo.introDescription}");
+                    else
+                    {
+                        PlayerControl otherLover = PlayerControl.LocalPlayer == Lovers.lover1 ? Lovers.lover2 : Lovers.lover1;
+                        __instance.RoleBlurbText.text += Helpers.cs(Lovers.color, $"\n♥ You are in love with {otherLover?.Data?.PlayerName ?? ""} ♥");
+                    }
                 }
+
+                SoundManager.Instance.PlaySound(PlayerControl.LocalPlayer.Data.Role.IntroSound, false, 1f, null);
+                __instance.YouAreText.gameObject.SetActive(true);
+                __instance.RoleText.gameObject.SetActive(true);
+                __instance.RoleBlurbText.gameObject.SetActive(true);
+                if (__instance.ourCrewmate == null)
+                {
+                    __instance.ourCrewmate = __instance.CreatePlayer(0, 1, PlayerControl.LocalPlayer.Data, false);
+                    __instance.ourCrewmate.gameObject.SetActive(false);
+                }
+                __instance.ourCrewmate.gameObject.SetActive(true);
+                __instance.ourCrewmate.transform.localPosition = new Vector3(0f, -1.05f, -18f);
+                __instance.ourCrewmate.transform.localScale = new Vector3(1f, 1f, 1f);
+                __instance.ourCrewmate.ToggleName(false);
+                yield return new WaitForSeconds(2.5f);
+                __instance.YouAreText.gameObject.SetActive(false);
+                __instance.RoleText.gameObject.SetActive(false);
+                __instance.RoleBlurbText.gameObject.SetActive(false);
+                __instance.ourCrewmate.gameObject.SetActive(false);
+                yield break;
             }
         }
 

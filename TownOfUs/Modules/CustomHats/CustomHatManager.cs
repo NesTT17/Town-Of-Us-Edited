@@ -11,11 +11,10 @@ namespace TownOfUs.Modules.CustomHats;
 
 public static class CustomHatManager
 {
-    public const string ResourcesDirectory = "TownOfHats";
+    public const string ResourcesDirectory = "TownOfUsHats";
     public const string InnerslothPackageName = "Innersloth Hats";
-    public const string DeveloperPackageName = "Developer Hats";
-    
-    internal static readonly Tuple<string, string> Repository = new("NesTT17", "TheOtherHats");
+
+    internal static readonly Tuple<string, string> Repository = new("NesTT17", "TownOfUsHats");
     internal static string RepositoryUrl
     {
         get
@@ -26,35 +25,35 @@ public static class CustomHatManager
     }
 
     internal static readonly string ManifestFileName = "CustomHats.json";
-    
+
     internal static string CustomSkinsDirectory => Path.Combine(Path.GetDirectoryName(Application.dataPath)!, ResourcesDirectory);
     internal static string HatsDirectory => CustomSkinsDirectory;
-    
+
     internal static List<CustomHat> UnregisteredHats = new();
     internal static readonly Dictionary<string, HatViewData> ViewDataCache = new();
     internal static readonly Dictionary<string, HatExtension> ExtensionCache = new();
-    
+
     private static readonly HatsLoader Loader;
-    
+
     internal static HatExtension TestExtension { get; private set; }
 
     static CustomHatManager()
     {
         Loader = TownOfUsPlugin.Instance.AddComponent<HatsLoader>();
     }
-    
+
     internal static void LoadHats()
     {
         Loader.FetchHats();
     }
-    
+
     internal static bool TryGetCached(this HatParent hatParent, out HatViewData asset)
     {
         if (hatParent && hatParent.Hat) return hatParent.Hat.TryGetCached(out asset);
         asset = null;
         return false;
     }
-    
+
     internal static bool TryGetCached(this HatData hat, out HatViewData asset)
     {
         return ViewDataCache.TryGetValue(hat.name, out asset);
@@ -64,19 +63,20 @@ public static class CustomHatManager
     {
         return ViewDataCache.ContainsKey(hat.name);
     }
-    
+
     internal static bool IsCached(this HatParent hatParent)
     {
         return hatParent.Hat.IsCached();
     }
-    
+
     internal static HatData CreateHatBehaviour(CustomHat ch, bool testOnly = false)
     {
         var viewData = ViewDataCache[ch.Name] = ScriptableObject.CreateInstance<HatViewData>();
         var hat = ScriptableObject.CreateInstance<HatData>();
 
         viewData.MainImage = CreateHatSprite(ch.Resource);
-        if (viewData.MainImage == null) {
+        if (viewData.MainImage == null)
+        {
             throw new FileNotFoundException("File not downloaded yet");
         }
         viewData.FloorImage = viewData.MainImage;
@@ -100,7 +100,8 @@ public static class CustomHatManager
         hat.ChipOffset = new Vector2(0f, 0.2f);
         hat.Free = true;
 
-        var extend = new HatExtension {
+        var extend = new HatExtension
+        {
             Author = ch.Author ?? "Unknown",
             Package = ch.Package ?? "Misc.",
             Condition = ch.Condition ?? "none",
@@ -126,19 +127,19 @@ public static class CustomHatManager
         {
             ExtensionCache[hat.name] = extend;
         }
-        
+
         hat.ViewDataRef = new AssetReference(ViewDataCache[hat.name].Pointer);
         hat.CreateAddressableAsset();
         return hat;
     }
-    
+
     private static Sprite CreateHatSprite(string path)
     {
         var texture = Helpers.loadTextureFromDisk(Path.Combine(HatsDirectory, path));
         if (texture == null)
             texture = Helpers.loadTextureFromResources(path);
         if (texture == null) return null;
-        var sprite = Sprite.Create(texture, 
+        var sprite = Sprite.Create(texture,
             new Rect(0, 0, texture.width, texture.height),
             new Vector2(0.53f, 0.575f),
             texture.width * 0.375f);

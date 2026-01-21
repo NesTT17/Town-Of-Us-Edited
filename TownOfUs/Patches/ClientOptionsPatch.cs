@@ -1,37 +1,40 @@
-using UnityEngine;
 using System;
 using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
 using UnityEngine.Events;
-using static UnityEngine.UI.Button;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
-namespace TownOfUs.Patches 
+namespace TownOfUs.Patches
 {
     [HarmonyPatch]
     public static class ClientOptionsPatch
     {
         private static readonly SelectionBehaviour[] AllOptions = {
             new("Ghosts Can See Roles", () => ghostsSeeRoles = TownOfUsPlugin.GhostsSeeRoles.Value = !TownOfUsPlugin.GhostsSeeRoles.Value, TownOfUsPlugin.GhostsSeeRoles.Value),
-            new("Ghosts Can Additionally See Modifier", () => ghostsSeeModifier = TownOfUsPlugin.GhostsSeeModifier.Value = !TownOfUsPlugin.GhostsSeeModifier.Value, TownOfUsPlugin.GhostsSeeModifier.Value),
-            new("Ghosts See Tasks & Other Info", () => ghostsSeeInformation = TownOfUsPlugin.GhostsSeeInformation.Value = !TownOfUsPlugin.GhostsSeeInformation.Value, TownOfUsPlugin.GhostsSeeInformation.Value),
+            new("Ghosts Can See Modifier", () => ghostsSeeModifier = TownOfUsPlugin.GhostsSeeModifier.Value = !TownOfUsPlugin.GhostsSeeModifier.Value, TownOfUsPlugin.GhostsSeeModifier.Value),
+            new("Ghosts See Tasks", () => ghostsSeeTasks = TownOfUsPlugin.GhostsSeeTasks.Value = !TownOfUsPlugin.GhostsSeeTasks.Value, TownOfUsPlugin.GhostsSeeTasks.Value),
+            new("Ghosts See Other Info", () => ghostsSeeInformation = TownOfUsPlugin.GhostsSeeInformation.Value = !TownOfUsPlugin.GhostsSeeInformation.Value, TownOfUsPlugin.GhostsSeeInformation.Value),
             new("Ghosts Can See Votes", () => ghostsSeeVotes = TownOfUsPlugin.GhostsSeeVotes.Value = !TownOfUsPlugin.GhostsSeeVotes.Value, TownOfUsPlugin.GhostsSeeVotes.Value),
             new("Show Role Summary", () => showRoleSummary = TownOfUsPlugin.ShowRoleSummary.Value = !TownOfUsPlugin.ShowRoleSummary.Value, TownOfUsPlugin.ShowRoleSummary.Value),
-            new("Show Lighter / Darker", () => showLighterDarker = TownOfUsPlugin.ShowLighterDarker.Value = !TownOfUsPlugin.ShowLighterDarker.Value, TownOfUsPlugin.ShowLighterDarker.Value),
-            new("Show Chat Notifications", () => ShowChatNotifications = TownOfUsPlugin.ShowChatNotifications.Value = !TownOfUsPlugin.ShowChatNotifications.Value, TownOfUsPlugin.ShowChatNotifications.Value),
+            new("Enable Sound Effects", () =>  { enableSoundEffects = TownOfUsPlugin.EnableSoundEffects.Value = !TownOfUsPlugin.EnableSoundEffects.Value; if (!enableSoundEffects) SoundEffectsManager.stopAll(); return enableSoundEffects; }, TownOfUsPlugin.EnableSoundEffects.Value),
+            new("Show Vents On Map", () => showVentsOnMap = TownOfUsPlugin.ShowVentsOnMap.Value = !TownOfUsPlugin.ShowVentsOnMap.Value, TownOfUsPlugin.ShowVentsOnMap.Value),
+            new("Show Chat Notifications", () => showChatNotifications = TownOfUsPlugin.ShowChatNotifications.Value = !TownOfUsPlugin.ShowChatNotifications.Value, TownOfUsPlugin.ShowChatNotifications.Value),
         };
-        
+
         private static GameObject popUp;
         private static TextMeshPro titleText;
 
         private static ToggleButtonBehaviour buttonPrefab;
         private static Vector3? _origin;
-        
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(MainMenuManager), nameof(MainMenuManager.Start))]
         public static void MainMenuManager_StartPostfix(MainMenuManager __instance)
         {
             // Prefab for the title
-            var go = new GameObject("TitleTextTOU");
+            var go = new GameObject("TitleTextTOUEd");
             var tmp = go.AddComponent<TextMeshPro>();
             tmp.fontSize = 4;
             tmp.alignment = TextAlignmentOptions.Center;
@@ -46,7 +49,7 @@ namespace TownOfUs.Patches
         public static void OptionsMenuBehaviour_StartPostfix(OptionsMenuBehaviour __instance)
         {
             if (!__instance.CensorChatButton) return;
-            
+
             if (!popUp)
             {
                 CreateCustom(__instance);
@@ -68,7 +71,7 @@ namespace TownOfUs.Patches
             Object.DontDestroyOnLoad(popUp);
             var transform = popUp.transform;
             var pos = transform.localPosition;
-            pos.z = -810f; 
+            pos.z = -810f;
             transform.localPosition = pos;
 
             Object.Destroy(popUp.GetComponent<OptionsMenuBehaviour>());
@@ -77,7 +80,7 @@ namespace TownOfUs.Patches
                 if (gObj.name != "Background" && gObj.name != "CloseButton")
                     Object.Destroy(gObj);
             }
-            
+
             popUp.SetActive(false);
         }
 
@@ -101,8 +104,8 @@ namespace TownOfUs.Patches
             moreOptions.Text.text = "Mod Options...";
             moreOptions.Text.transform.localScale = new Vector3(1 / 0.66f, 1, 1);
             var moreOptionsButton = moreOptions.GetComponent<PassiveButton>();
-            moreOptionsButton.OnClick = new ButtonClickedEvent();
-            moreOptionsButton.OnClick.AddListener((Action) (() =>
+            moreOptionsButton.OnClick = new Button.ButtonClickedEvent();
+            moreOptionsButton.OnClick.AddListener((Action)(() =>
             {
                 bool closeUnderlying = false;
                 if (!popUp) return;
@@ -118,11 +121,11 @@ namespace TownOfUs.Patches
                     popUp.transform.SetParent(null);
                     Object.DontDestroyOnLoad(popUp);
                 }
-                
+
                 CheckSetTitle();
                 RefreshOpen();
                 if (closeUnderlying)
-                    __instance.Close();                    
+                    __instance.Close();
             }));
         }
 
@@ -132,11 +135,11 @@ namespace TownOfUs.Patches
             popUp.gameObject.SetActive(true);
             SetUpOptions();
         }
-        
+
         private static void CheckSetTitle()
         {
             if (!popUp || popUp.GetComponentInChildren<TextMeshPro>() || !titleText) return;
-            
+
             var title = Object.Instantiate(titleText, popUp.transform);
             title.GetComponent<RectTransform>().localPosition = Vector3.up * 2.3f;
             title.gameObject.SetActive(true);
@@ -147,11 +150,11 @@ namespace TownOfUs.Patches
         private static void SetUpOptions()
         {
             if (popUp.transform.GetComponentInChildren<ToggleButtonBehaviour>()) return;
-            
+
             for (var i = 0; i < AllOptions.Length; i++)
             {
                 var info = AllOptions[i];
-                
+
                 var button = Object.Instantiate(buttonPrefab, popUp.transform);
                 var pos = new Vector3(i % 2 == 0 ? -1.17f : 1.17f, 1.3f - i / 2 * 0.8f, -.5f);
 
@@ -160,7 +163,7 @@ namespace TownOfUs.Patches
 
                 button.onState = info.DefaultValue;
                 button.Background.color = button.onState ? Color.green : Palette.ImpostorRed;
-                
+
                 button.Text.text = info.Title;
                 button.Text.fontSizeMin = button.Text.fontSizeMax = 1.8f;
                 button.Text.font = Object.Instantiate(titleText.font);
@@ -168,38 +171,38 @@ namespace TownOfUs.Patches
 
                 button.name = info.Title.Replace(" ", "") + "Toggle";
                 button.gameObject.SetActive(true);
-                
+
                 var passiveButton = button.GetComponent<PassiveButton>();
                 var colliderButton = button.GetComponent<BoxCollider2D>();
-                
+
                 colliderButton.size = new Vector2(2.2f, .7f);
-                
-                passiveButton.OnClick = new ButtonClickedEvent();
+
+                passiveButton.OnClick = new Button.ButtonClickedEvent();
                 passiveButton.OnMouseOut = new UnityEvent();
                 passiveButton.OnMouseOver = new UnityEvent();
 
-                passiveButton.OnClick.AddListener((Action) (() =>
+                passiveButton.OnClick.AddListener((Action)(() =>
                 {
                     button.onState = info.OnClick();
                     button.Background.color = button.onState ? Color.green : Palette.ImpostorRed;
                 }));
-                
-                passiveButton.OnMouseOver.AddListener((Action) (() => button.Background.color = button.onState ? new Color32(34 ,139, 34, byte.MaxValue): new Color32(139, 34, 34, byte.MaxValue)));
-                passiveButton.OnMouseOut.AddListener((Action) (() => button.Background.color = button.onState ? Color.green : Palette.ImpostorRed));
+
+                passiveButton.OnMouseOver.AddListener((Action)(() => button.Background.color = button.onState ? new Color32(34, 139, 34, byte.MaxValue) : new Color32(139, 34, 34, byte.MaxValue)));
+                passiveButton.OnMouseOut.AddListener((Action)(() => button.Background.color = button.onState ? Color.green : Palette.ImpostorRed));
 
                 foreach (var spr in button.gameObject.GetComponentsInChildren<SpriteRenderer>())
                     spr.size = new Vector2(2.2f, .7f);
             }
         }
-        
+
         private static IEnumerable<GameObject> GetAllChilds(this GameObject Go)
         {
-            for (var i = 0; i< Go.transform.childCount; i++)
+            for (var i = 0; i < Go.transform.childCount; i++)
             {
                 yield return Go.transform.GetChild(i).gameObject;
             }
         }
-        
+
         public class SelectionBehaviour
         {
             public string Title;

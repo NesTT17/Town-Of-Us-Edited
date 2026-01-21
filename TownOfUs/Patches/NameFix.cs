@@ -1,3 +1,6 @@
+using AmongUs.Data;
+using AmongUs.Data.Legacy;
+
 namespace TownOfUs.Patches
 {
     [Harmony]

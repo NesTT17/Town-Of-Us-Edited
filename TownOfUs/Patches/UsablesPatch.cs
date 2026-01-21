@@ -2,6 +2,8 @@ using System;
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
+using Reactor.Utilities.Extensions;
+using AmongUs.GameOptions;
 
 namespace TownOfUs.Patches
 {
@@ -16,7 +18,30 @@ namespace TownOfUs.Patches
             PlayerControl @object = pc.Object;
 
             bool roleCouldUse = @object.roleCanUseVents();
+            if (__instance.name.StartsWith("SealedVent_"))
+            {
+                canUse = couldUse = false;
+                __result = num;
+                return false;
+            }
+
             var usableDistance = __instance.UsableDistance;
+            if (__instance.name.StartsWith("MinerVent_"))
+            {
+                if (Miner.miner != PlayerControl.LocalPlayer)
+                {
+                    // Only the Miner can use the Miner Vents!
+                    canUse = false;
+                    couldUse = false;
+                    __result = num;
+                    return false;
+                }
+                else
+                {
+                    // Reduce the usable distance to reduce the risk of gettings stuck while trying to jump into the box if it's placed near objects
+                    usableDistance = 0.4f;
+                }
+            }
 
             couldUse = (@object.inVent || roleCouldUse) && !pc.IsDead && (@object.CanMove || @object.inVent);
             canUse = couldUse;
@@ -25,9 +50,20 @@ namespace TownOfUs.Patches
                 Vector3 center = @object.Collider.bounds.center;
                 Vector3 position = __instance.transform.position;
                 num = Vector2.Distance(center, position);
-                canUse &= (num <= usableDistance && (!PhysicsHelpers.AnythingBetween(@object.Collider, center, position, Constants.ShipOnlyMask, false)));
+                canUse &= (num <= usableDistance && (!PhysicsHelpers.AnythingBetween(@object.Collider, center, position, Constants.ShipOnlyMask, false) || __instance.name.StartsWith("MinerVent_")));
             }
             __result = num;
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(VentButton), nameof(VentButton.DoClick))]
+    class VentButtonDoClickPatch
+    {
+        static bool Prefix(VentButton __instance)
+        {
+            // Manually modifying the VentButton to use Vent.Use again in order to trigger the Vent.Use prefix patch
+            if (__instance.currentTarget != null && Glitch.hackedPlayer != PlayerControl.LocalPlayer) __instance.currentTarget.Use();
             return false;
         }
     }
@@ -41,10 +77,24 @@ namespace TownOfUs.Patches
             bool canUse;
             bool couldUse;
             __instance.CanUse(PlayerControl.LocalPlayer.Data, out canUse, out couldUse);
-            bool canMoveInVents = !PlayerControl.LocalPlayer.isRole(RoleId.Agent);
+            bool canMoveInVents = true;
+            if (PlayerControl.LocalPlayer.IsJester(out _))
+                canMoveInVents = false;
+
             if (!canUse) return false; // No need to execute the native method as using is disallowed anyways
 
             bool isEnter = !PlayerControl.LocalPlayer.inVent;
+            if (__instance.name.StartsWith("MinerVent_"))
+            {
+                __instance.SetButtons(isEnter && canMoveInVents);
+                MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.UseUncheckedVent, Hazel.SendOption.Reliable);
+                writer.WritePacked(__instance.Id);
+                writer.Write(PlayerControl.LocalPlayer.PlayerId);
+                writer.Write(isEnter ? byte.MaxValue : (byte)0);
+                AmongUsClient.Instance.FinishRpcImmediately(writer);
+                RPCProcedure.useUncheckedVent(__instance.Id, PlayerControl.LocalPlayer.PlayerId, isEnter ? byte.MaxValue : (byte)0);
+                return false;
+            }
 
             if (isEnter)
             {
@@ -59,13 +109,28 @@ namespace TownOfUs.Patches
         }
     }
 
-    [HarmonyPatch(typeof(VentButton), nameof(VentButton.DoClick))]
-    class VentButtonDoClickPatch
+    [HarmonyPatch(typeof(VentButton), nameof(VentButton.SetTarget))]
+    public static class VentButtonSetTargetPatch
     {
-        static bool Prefix(VentButton __instance)
+        public static Sprite defaultVentSprite = null;
+        public static bool Prefix(VentButton __instance)
         {
-            if (__instance.currentTarget != null && Glitch.hackedPlayer != PlayerControl.LocalPlayer) __instance.currentTarget.Use();
-            return false;
+            if (defaultVentSprite == null)
+            {
+                defaultVentSprite = __instance.graphic.sprite;
+            }
+            return true;
+        }
+
+        static void Postfix(VentButton __instance)
+        {
+            if (!Helpers.GameStarted || !__instance.isActiveAndEnabled) return;
+
+            if (PlayerControl.LocalPlayer.IsJester(out _) && Jester.canEnterVents)
+            {
+                __instance.buttonLabelText.SetOutlineColor(Jester.color);
+                __instance.buttonLabelText.text = "Hide";
+            }
         }
     }
 
@@ -90,24 +155,135 @@ namespace TownOfUs.Patches
             {
                 // Use an unchecked kill command, to allow shorter kill cooldowns etc. without getting kicked
                 MurderAttemptResult res = Helpers.checkMurderAttemptAndKill(PlayerControl.LocalPlayer, __instance.currentTarget);
-                Helpers.politicianRpcCampaign(PlayerControl.LocalPlayer, __instance.currentTarget);
-                Helpers.plaguebearerRpcInfect(PlayerControl.LocalPlayer, __instance.currentTarget);
-                // Handle kills
+                PlayerControl.LocalPlayer.rpcCampaignPlayer(__instance.currentTarget);
+                PlayerControl.LocalPlayer.rpcInfectPlayer(__instance.currentTarget);
+                // Handle perform kill
+                if (res == MurderAttemptResult.PerformKill) PlayerControl.LocalPlayer.addGameInfoRpc(InfoType.AddKill);
+                // Handle blank kill
                 if (res == MurderAttemptResult.BlankKill)
                 {
-                    PlayerControl.LocalPlayer.killTimer = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown;
-                    if (PlayerControl.LocalPlayer.isRole(RoleId.Janitor))
+                    if (PlayerControl.LocalPlayer != Underdog.underdog) PlayerControl.LocalPlayer.killTimer = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown;
+                    else
                     {
-                        Janitor.janitorButton.Timer = Janitor.janitorButton.MaxTimer;
+                        float addition = 0f;
+                        int impsAlive = PlayerControl.AllPlayerControls.ToArray().Count(x => x.Data.Role.IsImpostor && x != null && !x.Data.IsDead && !x.Data.Disconnected);
+                        if (impsAlive >= 2 && Underdog.increaseCooldown) addition = Underdog.addition;
+                        else addition = -(Underdog.addition);
+                        PlayerControl.LocalPlayer.killTimer = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown + addition;
                     }
-                    if (PlayerControl.LocalPlayer.isRole(RoleId.Poisoner))
+
+                    if (PlayerControl.LocalPlayer == Janitor.janitor && PlayerControl.LocalPlayer != Underdog.underdog && janitorCleanButton != null)
+                        janitorCleanButton.Timer = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown;
+                    else if (PlayerControl.LocalPlayer == Janitor.janitor && PlayerControl.LocalPlayer == Underdog.underdog && janitorCleanButton != null)
                     {
-                        Poisoner.poisonerButton.Timer = Poisoner.poisonerButton.MaxTimer + Poisoner.poisonerButton.EffectDuration;
+                        float addition = 0f;
+                        int impsAlive = PlayerControl.AllPlayerControls.ToArray().Count(x => x.Data.Role.IsImpostor && x != null && !x.Data.IsDead && !x.Data.Disconnected);
+                        if (impsAlive >= 2 && Underdog.increaseCooldown) addition = Underdog.addition;
+                        else addition = -(Underdog.addition);
+                        janitorCleanButton.Timer = GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown + addition;
                     }
+                    else if (PlayerControl.LocalPlayer == Mini.mini && Mini.mini.Data.Role.IsImpostor)
+                        Mini.mini.SetKillTimer(GameOptionsManager.Instance.currentNormalGameOptions.KillCooldown * (Mini.isGrownUp() ? 0.66f : 2f));
+                }
+                // Handle survivor reset
+                if (res == MurderAttemptResult.SurvivorReset)
+                {
+                    if (PlayerControl.LocalPlayer != Underdog.underdog) PlayerControl.LocalPlayer.SetKillTimerUnchecked(Survivor.cooldownReset);
+                    else
+                    {
+                        float addition = 0f;
+                        int impsAlive = PlayerControl.AllPlayerControls.ToArray().Count(x => x.Data.Role.IsImpostor && x != null && !x.Data.IsDead && !x.Data.Disconnected);
+                        if (impsAlive >= 2 && Underdog.increaseCooldown) addition = Underdog.addition;
+                        else addition = -(Underdog.addition);
+                        PlayerControl.LocalPlayer.SetKillTimerUnchecked(Survivor.cooldownReset + addition);
+                    }
+
+                    if (PlayerControl.LocalPlayer == Janitor.janitor && janitorCleanButton != null)
+                        janitorCleanButton.Timer = Survivor.cooldownReset;
+                    else if (PlayerControl.LocalPlayer == Janitor.janitor && PlayerControl.LocalPlayer == Underdog.underdog && janitorCleanButton != null)
+                    {
+                        float addition = 0f;
+                        int impsAlive = PlayerControl.AllPlayerControls.ToArray().Count(x => x.Data.Role.IsImpostor && x != null && !x.Data.IsDead && !x.Data.Disconnected);
+                        if (impsAlive >= 2 && Underdog.increaseCooldown) addition = Underdog.addition;
+                        else addition = -(Underdog.addition);
+                        janitorCleanButton.Timer = Survivor.cooldownReset + addition;
+                    }
+                    else if (PlayerControl.LocalPlayer == Mini.mini && Mini.mini.Data.Role.IsImpostor)
+                        Mini.mini.SetKillTimerUnchecked(Survivor.cooldownReset * (Mini.isGrownUp() ? 0.66f : 2f));
+                }
+                // Handle survivor reset
+                if (res == MurderAttemptResult.GAReset)
+                {
+                    if (PlayerControl.LocalPlayer != Underdog.underdog) PlayerControl.LocalPlayer.SetKillTimerUnchecked(GuardianAngel.cooldownReset);
+                    else
+                    {
+                        float addition = 0f;
+                        int impsAlive = PlayerControl.AllPlayerControls.ToArray().Count(x => x.Data.Role.IsImpostor && x != null && !x.Data.IsDead && !x.Data.Disconnected);
+                        if (impsAlive >= 2 && Underdog.increaseCooldown) addition = Underdog.addition;
+                        else addition = -(Underdog.addition);
+                        PlayerControl.LocalPlayer.SetKillTimerUnchecked(GuardianAngel.cooldownReset + addition);
+                    }
+
+                    if (PlayerControl.LocalPlayer == Janitor.janitor && janitorCleanButton != null)
+                        janitorCleanButton.Timer = GuardianAngel.cooldownReset;
+                    else if (PlayerControl.LocalPlayer == Janitor.janitor && PlayerControl.LocalPlayer == Underdog.underdog && janitorCleanButton != null)
+                    {
+                        float addition = 0f;
+                        int impsAlive = PlayerControl.AllPlayerControls.ToArray().Count(x => x.Data.Role.IsImpostor && x != null && !x.Data.IsDead && !x.Data.Disconnected);
+                        if (impsAlive >= 2 && Underdog.increaseCooldown) addition = Underdog.addition;
+                        else addition = -(Underdog.addition);
+                        janitorCleanButton.Timer = GuardianAngel.cooldownReset + addition;
+                    }
+                    else if (PlayerControl.LocalPlayer == Mini.mini && Mini.mini.Data.Role.IsImpostor)
+                        Mini.mini.SetKillTimerUnchecked(GuardianAngel.cooldownReset * (Mini.isGrownUp() ? 0.66f : 2f));
                 }
                 __instance.SetTarget(null);
             }
             return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(SabotageButton), nameof(SabotageButton.Refresh))]
+    class SabotageButtonRefreshPatch
+    {
+        static void Postfix()
+        {
+            bool blockSabotageWhileFlash = Grenadier.grenadier != null && Grenadier.flashTimer > 0f;
+            bool blockSabotageWhileHack = Glitch.hackedPlayer != null && Glitch.hackedPlayer == PlayerControl.LocalPlayer;
+            if (blockSabotageWhileFlash || blockSabotageWhileHack)
+            {
+                FastDestroyableSingleton<HudManager>.Instance.SabotageButton.SetDisabled();
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SabotageSystemType), nameof(SabotageSystemType.UpdateSystem))]
+    public class SabotageSystemUpdate
+    {
+        public static void Prefix(SabotageSystemType __instance, ref PlayerControl player)
+        {
+            if (Saboteur.saboteur == null || Saboteur.saboteur != player) return;
+
+            if (__instance.Timer <= Saboteur.reduceCooldown) __instance.Timer = 0f;
+        }
+    }
+
+    [HarmonyPatch(typeof(SabotageSystemType), nameof(SabotageSystemType.Deserialize))]
+    public class SabotageSystemDeserialize
+    {
+        public static void Prefix(SabotageSystemType __instance)
+        {
+            if (__instance.AnyActive) return;
+            if (__instance.initialCooldown) return;
+
+            if (Saboteur.saboteur != null) Saboteur.timer = __instance.Timer;
+        }
+        
+        public static void Postfix(SabotageSystemType __instance)
+        {
+            if (__instance.AnyActive) return;
+            if (__instance.initialCooldown) return;
+            if (Saboteur.saboteur != null) __instance.Timer = Saboteur.timer;
         }
     }
 
@@ -120,31 +296,38 @@ namespace TownOfUs.Patches
             var statusText = "";
 
             // Potentially deactivate emergency button for Jester
-            if (PlayerControl.LocalPlayer.isRole(RoleId.Jester) && !Jester.canCallEmergency)
+            if (PlayerControl.LocalPlayer.IsJester(out _) && !Jester.canCallEmergency)
             {
                 roleCanCallEmergency = false;
-                statusText = "The Jester can't call an emergency";
+                statusText = "The Jester can't start an emergency meeting";
             }
 
             // Potentially deactivate emergency button for Lawyer
-            if (PlayerControl.LocalPlayer.isRole(RoleId.Lawyer) && Lawyer.winsAfterMeetings)
+            if (Lawyer.lawyer != null && Lawyer.lawyer == PlayerControl.LocalPlayer && !Lawyer.canCallEmergency)
             {
                 roleCanCallEmergency = false;
-                statusText = $"Meetings Left: {Lawyer.neededMeetings - Lawyer.meetings}";
+                statusText = "The Lawyer can't start an emergency meeting";
             }
-            
-            // Potentially deactivate emergency button for Swapper
-            if (PlayerControl.LocalPlayer.isRole(RoleId.Swapper) && !Swapper.canCallEmergency)
-            {
-                roleCanCallEmergency = false;
-                statusText = "The Swapper can't call an emergency";
-            }
-            
+
             // Potentially deactivate emergency button for Executioner
-            if (PlayerControl.LocalPlayer.isRole(RoleId.Executioner) && !Executioner.canCallEmergency)
+            if (Executioner.executioner != null && Executioner.executioner == PlayerControl.LocalPlayer && !Executioner.canCallEmergency)
             {
                 roleCanCallEmergency = false;
-                statusText = "The Executioner can't call an emergency";
+                statusText = "The Executioner can't start an emergency meeting";
+            }
+
+            // Deactivate emergency button for Swapper
+            if (Swapper.swapper != null && Swapper.swapper == PlayerControl.LocalPlayer && !Swapper.canCallEmergency)
+            {
+                roleCanCallEmergency = false;
+                statusText = "The Swapper can't start an emergency meeting";
+            }
+
+            // Deactivate emergency button for Guardian Angel
+            if (GuardianAngel.guardianAngel != null && GuardianAngel.guardianAngel == PlayerControl.LocalPlayer && !GuardianAngel.canCallEmergency)
+            {
+                roleCanCallEmergency = false;
+                statusText = "The Guardian Angel can't start an emergency meeting";
             }
 
             if (!roleCanCallEmergency)
@@ -190,12 +373,13 @@ namespace TownOfUs.Patches
     class VitalsMinigamePatch
     {
         private static List<TMPro.TextMeshPro> spyTexts = new List<TMPro.TextMeshPro>();
+
         [HarmonyPatch(typeof(VitalsMinigame), nameof(VitalsMinigame.Begin))]
         class VitalsMinigameStartPatch
         {
             static void Postfix(VitalsMinigame __instance)
             {
-                if (PlayerControl.LocalPlayer.isRole(RoleId.Spy))
+                if (Spy.spy != null && PlayerControl.LocalPlayer == Spy.spy)
                 {
                     spyTexts = new List<TMPro.TextMeshPro>();
                     foreach (VitalsPanel panel in __instance.vitals)
@@ -221,25 +405,34 @@ namespace TownOfUs.Patches
         }
 
         [HarmonyPatch(typeof(VitalsMinigame), nameof(VitalsMinigame.Update))]
-        class VitalsMinigameUpdatePatch {
-            static void Postfix(VitalsMinigame __instance) {
+        class VitalsMinigameUpdatePatch
+        {
+
+            static void Postfix(VitalsMinigame __instance)
+            {
                 // Spy show time since death
-                if (PlayerControl.LocalPlayer.isRole(RoleId.Spy)) {
-                    for (int k = 0; k < __instance.vitals.Length; k++) {
+                if (Spy.spy != null && Spy.spy == PlayerControl.LocalPlayer)
+                {
+                    for (int k = 0; k < __instance.vitals.Length; k++)
+                    {
                         VitalsPanel vitalsPanel = __instance.vitals[k];
                         NetworkedPlayerInfo player = vitalsPanel.PlayerInfo;
 
                         // Spy update
-                        if (vitalsPanel.IsDead) {
+                        if (vitalsPanel.IsDead)
+                        {
                             DeadPlayer deadPlayer = deadPlayers?.Where(x => x.player?.PlayerId == player?.PlayerId)?.FirstOrDefault();
-                            if (deadPlayer != null && k < spyTexts.Count && spyTexts[k] != null) {
+                            if (deadPlayer != null && k < spyTexts.Count && spyTexts[k] != null)
+                            {
                                 float timeSinceDeath = ((float)(DateTime.UtcNow - deadPlayer.timeOfDeath).TotalMilliseconds);
                                 spyTexts[k].gameObject.SetActive(true);
                                 spyTexts[k].text = Math.Round(timeSinceDeath / 1000) + "s";
                             }
                         }
                     }
-                } else {
+                }
+                else
+                {
                     foreach (TMPro.TextMeshPro text in spyTexts)
                         if (text != null && text.gameObject != null)
                             text.gameObject.SetActive(false);
@@ -252,12 +445,12 @@ namespace TownOfUs.Patches
     class AdminPanelPatch
     {
         static Dictionary<SystemTypes, List<Color>> players = new Dictionary<SystemTypes, System.Collections.Generic.List<Color>>();
-
         [HarmonyPatch(typeof(MapCountOverlay), nameof(MapCountOverlay.Update))]
         class MapCountOverlayUpdatePatch
         {
             static bool Prefix(MapCountOverlay __instance)
             {
+                // Save colors for the Spy
                 __instance.timer += Time.deltaTime;
                 if (__instance.timer < 0.1f)
                 {
@@ -265,10 +458,10 @@ namespace TownOfUs.Patches
                 }
                 __instance.timer = 0f;
                 players = new Dictionary<SystemTypes, List<Color>>();
-
                 bool commsActive = false;
                 foreach (PlayerTask task in PlayerControl.LocalPlayer.myTasks.GetFastEnumerator())
                     if (task.TaskType == TaskTypes.FixComms) commsActive = true;
+
 
                 if (!__instance.isSab && commsActive)
                 {
@@ -357,7 +550,7 @@ namespace TownOfUs.Patches
             static void Postfix(CounterArea __instance)
             {
                 // Spy display saved colors on the admin panel
-                bool showSpyInfo = PlayerControl.LocalPlayer.isRole(RoleId.Spy);
+                bool showSpyInfo = Spy.spy != null && Spy.spy == PlayerControl.LocalPlayer;
                 if (players.ContainsKey(__instance.RoomType))
                 {
                     List<Color> colors = players[__instance.RoomType];
@@ -399,104 +592,96 @@ namespace TownOfUs.Patches
     }
 
     [HarmonyPatch]
-    class CameraPatch
+    class SurveillanceMinigamePatch
     {
-        [HarmonyPatch]
-        public class SurveillanceMinigamePatch
+        private static int page = 0;
+        private static float timer = 0f;
+
+        [HarmonyPatch(typeof(SurveillanceMinigame), nameof(SurveillanceMinigame.Begin))]
+        class SurveillanceMinigameBeginPatch
         {
-            private static int page = 0;
-            private static float timer = 0f;
-
-            [HarmonyPatch(typeof(SurveillanceMinigame), nameof(SurveillanceMinigame.Begin))]
-            class SurveillanceMinigameBeginPatch
+            public static void Postfix(SurveillanceMinigame __instance)
             {
-                public static void Postfix(SurveillanceMinigame __instance)
+                // Add securityGuard cameras
+                page = 0;
+                timer = 0;
+                if (MapUtilities.CachedShipStatus.AllCameras.Length > 4 && __instance.FilteredRooms.Length > 0)
                 {
-                    // Add securityGuard cameras
-                    page = 0;
-                    timer = 0;
-                    if (MapUtilities.CachedShipStatus.AllCameras.Length > 4 && __instance.FilteredRooms.Length > 0)
+                    __instance.textures = __instance.textures.ToList().Concat(new RenderTexture[MapUtilities.CachedShipStatus.AllCameras.Length - 4]).ToArray();
+                    for (int i = 4; i < MapUtilities.CachedShipStatus.AllCameras.Length; i++)
                     {
-                        __instance.textures = __instance.textures.ToList().Concat(new RenderTexture[MapUtilities.CachedShipStatus.AllCameras.Length - 4]).ToArray();
-                        for (int i = 4; i < MapUtilities.CachedShipStatus.AllCameras.Length; i++)
-                        {
-                            SurvCamera surv = MapUtilities.CachedShipStatus.AllCameras[i];
-                            Camera camera = UnityEngine.Object.Instantiate<Camera>(__instance.CameraPrefab);
-                            camera.transform.SetParent(__instance.transform);
-                            camera.transform.position = new Vector3(surv.transform.position.x, surv.transform.position.y, 8f);
-                            camera.orthographicSize = 2.35f;
-                            RenderTexture temporary = RenderTexture.GetTemporary(256, 256, 16, (RenderTextureFormat)0);
-                            __instance.textures[i] = temporary;
-                            camera.targetTexture = temporary;
-                        }
+                        SurvCamera surv = MapUtilities.CachedShipStatus.AllCameras[i];
+                        Camera camera = UnityEngine.Object.Instantiate<Camera>(__instance.CameraPrefab);
+                        camera.transform.SetParent(__instance.transform);
+                        camera.transform.position = new Vector3(surv.transform.position.x, surv.transform.position.y, 8f);
+                        camera.orthographicSize = 2.35f;
+                        RenderTexture temporary = RenderTexture.GetTemporary(256, 256, 16, (RenderTextureFormat)0);
+                        __instance.textures[i] = temporary;
+                        camera.targetTexture = temporary;
                     }
-                }
-            }
-
-            [HarmonyPatch(typeof(SurveillanceMinigame), nameof(SurveillanceMinigame.Update))]
-            class SurveillanceMinigameUpdatePatch
-            {
-                public static bool Prefix(SurveillanceMinigame __instance)
-                {
-                    // Update normal and securityGuard cameras
-                    timer += Time.deltaTime;
-                    int numberOfPages = Mathf.CeilToInt(MapUtilities.CachedShipStatus.AllCameras.Length / 4f);
-
-                    bool update = false;
-
-                    if (timer > 3f || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
-                    {
-                        update = true;
-                        timer = 0f;
-                        page = (page + 1) % numberOfPages;
-                    }
-                    else if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
-                    {
-                        page = (page + numberOfPages - 1) % numberOfPages;
-                        update = true;
-                        timer = 0f;
-                    }
-
-                    if ((__instance.isStatic || update) && !PlayerTask.PlayerHasTaskOfType<IHudOverrideTask>(PlayerControl.LocalPlayer))
-                    {
-                        __instance.isStatic = false;
-                        for (int i = 0; i < __instance.ViewPorts.Length; i++)
-                        {
-                            __instance.ViewPorts[i].sharedMaterial = __instance.DefaultMaterial;
-                            __instance.SabText[i].gameObject.SetActive(false);
-                            if (page * 4 + i < __instance.textures.Length)
-                                __instance.ViewPorts[i].material.SetTexture("_MainTex", __instance.textures[page * 4 + i]);
-                            else
-                                __instance.ViewPorts[i].sharedMaterial = __instance.StaticMaterial;
-                        }
-                    }
-                    else if (!__instance.isStatic && PlayerTask.PlayerHasTaskOfType<HudOverrideTask>(PlayerControl.LocalPlayer))
-                    {
-                        __instance.isStatic = true;
-                        for (int j = 0; j < __instance.ViewPorts.Length; j++)
-                        {
-                            __instance.ViewPorts[j].sharedMaterial = __instance.StaticMaterial;
-                            __instance.SabText[j].gameObject.SetActive(true);
-                        }
-                    }
-                    return false;
                 }
             }
         }
 
-        [HarmonyPatch]
-        public class PlanetSurveillanceMinigamePatch
+        [HarmonyPatch(typeof(SurveillanceMinigame), nameof(SurveillanceMinigame.Update))]
+        class SurveillanceMinigameUpdatePatch
         {
-            [HarmonyPatch(typeof(PlanetSurveillanceMinigame), nameof(PlanetSurveillanceMinigame.Update))]
-            class PlanetSurveillanceMinigameUpdatePatch
+            public static bool Prefix(SurveillanceMinigame __instance)
             {
-                public static void Postfix(PlanetSurveillanceMinigame __instance)
+                // Update normal and securityGuard cameras
+                timer += Time.deltaTime;
+                int numberOfPages = Mathf.CeilToInt(MapUtilities.CachedShipStatus.AllCameras.Length / 4f);
+
+                bool update = false;
+
+                if (timer > 3f || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
                 {
-                    if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
-                        __instance.NextCamera(1);
-                    if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
-                        __instance.NextCamera(-1);
+                    update = true;
+                    timer = 0f;
+                    page = (page + 1) % numberOfPages;
                 }
+                else if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+                {
+                    page = (page + numberOfPages - 1) % numberOfPages;
+                    update = true;
+                    timer = 0f;
+                }
+
+                if ((__instance.isStatic || update) && !PlayerTask.PlayerHasTaskOfType<IHudOverrideTask>(PlayerControl.LocalPlayer))
+                {
+                    __instance.isStatic = false;
+                    for (int i = 0; i < __instance.ViewPorts.Length; i++)
+                    {
+                        __instance.ViewPorts[i].sharedMaterial = __instance.DefaultMaterial;
+                        __instance.SabText[i].gameObject.SetActive(false);
+                        if (page * 4 + i < __instance.textures.Length)
+                            __instance.ViewPorts[i].material.SetTexture("_MainTex", __instance.textures[page * 4 + i]);
+                        else
+                            __instance.ViewPorts[i].sharedMaterial = __instance.StaticMaterial;
+                    }
+                }
+                else if (!__instance.isStatic && PlayerTask.PlayerHasTaskOfType<HudOverrideTask>(PlayerControl.LocalPlayer))
+                {
+                    __instance.isStatic = true;
+                    for (int j = 0; j < __instance.ViewPorts.Length; j++)
+                    {
+                        __instance.ViewPorts[j].sharedMaterial = __instance.StaticMaterial;
+                        __instance.SabText[j].gameObject.SetActive(true);
+                    }
+                }
+                return false;
+            }
+        }
+
+        [HarmonyPatch(typeof(PlanetSurveillanceMinigame), nameof(PlanetSurveillanceMinigame.Update))]
+        class PlanetSurveillanceMinigameUpdatePatch
+        {
+            public static void Postfix(PlanetSurveillanceMinigame __instance)
+            {
+                if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+                    __instance.NextCamera(1);
+                if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+                    __instance.NextCamera(-1);
             }
         }
     }
