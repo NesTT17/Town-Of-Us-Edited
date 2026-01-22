@@ -3,7 +3,7 @@
 ![LOGO](./Images/TOU-logo.png)
 
 <p align="center">
-    <img src="https://badgen.net/static/AmongUs/16.0.2/red"> 
+    <img src="https://badgen.net/static/AmongUs/17.1/red"> 
     <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases/"><img alt="Release Version" src="https://badgen.net/github/release/NesTT17/Town-Of-Us-Edited?icon=github"></a>
   <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases"><img alt="Release Date" src="https://img.shields.io/github/release-date/NesTT17/Town-Of-Us-Edited?style=plastic"></a>
     <a href="https://github.com/NesTT17/Town-Of-Us-Edited/releases"><img alt="Total Downloads" src="https://img.shields.io/github/downloads/NesTT17/Town-Of-Us-Edited/total"></a>
