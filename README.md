@@ -19,6 +19,9 @@
   <a href="https://github.com/NesTT17"><img src="https://img.shields.io/github/followers/nestt17?style=social"></a>
 </p>
 
+<p align="center">
+This mod is not affiliated with Among Us or Innersloth LLC, and the content contained therein is not endorsed or otherwise sponsored by Innersloth LLC. Portions of the materials contained herein are property of Innersloth LLC. © Innersloth LLC.</p>
+
 | **Crewmate Roles** | **Neutral Non-Killing Roles**  | **Neutral Killing Roles** | **Impostor Roles** | **Modifiers**  |
 |:---------------------------------:|:---------------------------------:|:-----------------------------:|:---------------------------:|:-----------------------------:|
 | [Detective](#detective)           | [Amnesiac](#amnesiac)             | [Arsonist](#arsonist)         | [Assassin](#assassin)       | [Bait](#bait)                 |
@@ -51,14 +54,15 @@
 # Releases
 | Among Us - Version| Mod Version | Link |
 |----------|-------------|-----------------|
-| v17.1 | v1.4.0 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.4.0) |
-| v16.0.2 | v1.3.2 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.3.2) |
-| v16.0.2 | v1.3.0 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.3.0) |
-| v2024.11.26 | v1.2.0 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.2.0) |
-| v2024.11.26 | v1.1.4 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.1.4) |
-| v2024.11.26 | v1.1.3 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.1.3) |
-| v2024.11.26 | v1.1.2 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.1.2) |
-| v2024.11.26 | v1.1.1 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.1.1) |
-| v2024.11.26 | v1.1.0 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.1.0) |
-| v2024.11.26 | v1.0.2 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.0.2) |
-| v2024.11.26 | v1.0.1 | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.0.1) |
+| v17.1       | v1.4.0      | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.4.0) |
+| v16.0.2     | v1.3.2      | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.3.2) |
+| v16.0.2     | v1.3.1 Beta | Not Avaible                                                                  |
+| v16.0.2     | v1.3.0      | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.3.0) |
+| v2024.11.26 | v1.2.0      | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.2.0) |
+| v2024.11.26 | v1.1.4      | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.1.4) |
+| v2024.11.26 | v1.1.3      | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.1.3) |
+| v2024.11.26 | v1.1.2      | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.1.2) |
+| v2024.11.26 | v1.1.1      | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.1.1) |
+| v2024.11.26 | v1.1.0      | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.1.0) |
+| v2024.11.26 | v1.0.2      | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.0.2) |
+| v2024.11.26 | v1.0.1      | [Download](https://github.com/NesTT17/Town-Of-Us-Edited/releases/tag/v1.0.1) |
