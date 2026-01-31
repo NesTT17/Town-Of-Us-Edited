@@ -159,6 +159,7 @@ namespace TownOfUs.Patches
             impSettings.Add((byte)RoleId.Venerer, CustomOptionHolder.venererSpawnRate.getSelection());
             impSettings.Add((byte)RoleId.Scavenger, CustomOptionHolder.scavengerSpawnRate.getSelection());
             impSettings.Add((byte)RoleId.Escapist, CustomOptionHolder.escapistSpawnRate.getSelection());
+            impSettings.Add((byte)RoleId.Deceiver, CustomOptionHolder.deceiverSpawnRate.getSelection());
 
             return new RoleAssignmentData
             {
@@ -464,6 +465,7 @@ namespace TownOfUs.Patches
                 RoleId.SixthSense,
                 RoleId.Taskmaster,
                 RoleId.Disperser,
+                RoleId.Poucher,
             });
 
             if (rnd.Next(1, 101) <= CustomOptionHolder.modifierLover.getSelection() * 10)
@@ -736,13 +738,21 @@ namespace TownOfUs.Patches
                 playerList.RemoveAll(x => x.PlayerId == playerId);
                 modifiers.RemoveAll(x => x == RoleId.Taskmaster);
             }
-            
+
             if (modifiers.Contains(RoleId.Disperser))
             {
                 playerId = setModifierToRandomPlayer((byte)RoleId.Disperser, impPlayer);
                 impPlayer.RemoveAll(x => x.PlayerId == playerId);
                 playerList.RemoveAll(x => x.PlayerId == playerId);
                 modifiers.RemoveAll(x => x == RoleId.Disperser);
+            }
+            
+            if (modifiers.Contains(RoleId.Poucher))
+            {
+                playerId = setModifierToRandomPlayer((byte)RoleId.Poucher, impPlayer);
+                impPlayer.RemoveAll(x => x.PlayerId == playerId);
+                playerList.RemoveAll(x => x.PlayerId == playerId);
+                modifiers.RemoveAll(x => x == RoleId.Poucher);
             }
 
             foreach (RoleId modifier in modifiers)
@@ -824,6 +834,8 @@ namespace TownOfUs.Patches
                     selection = CustomOptionHolder.modifierTaskmaster.getSelection(); break;
                 case RoleId.Disperser:
                     selection = CustomOptionHolder.modifierDisperser.getSelection(); break;
+                case RoleId.Poucher:
+                    selection = CustomOptionHolder.modifierPoucher.getSelection(); break;
             }
 
             return selection;

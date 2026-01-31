@@ -12,7 +12,7 @@ using TMPro;
 
 namespace TownOfUs.Modules
 {
-    public enum CustomOptionType { General, Crewmate, NeutralBenign, NeutralEvil, NeutralKilling, Impostor, Modifier, Guesser }
+    public enum CustomOptionType { General, Crewmate, NeutralBenign, NeutralEvil, NeutralKilling, Impostor, Modifier, Guesser, CrewGhost, NeutGhost, ImpGhost }
     public class CustomOption
     {
         public static List<CustomOption> options = new();
@@ -516,7 +516,7 @@ namespace TownOfUs.Modules
 
         public static void drawTab(LobbyViewSettingsPane __instance, CustomOptionType optionType)
         {
-            var relevantOptions = options.Where(x => x.type == optionType || x.type == CustomOptionType.NeutralEvil && optionType == CustomOptionType.NeutralBenign).ToList();
+            var relevantOptions = options.Where(x => x.type == optionType || x.type == CustomOptionType.Guesser && optionType == CustomOptionType.General || x.type == CustomOptionType.NeutGhost && optionType == CustomOptionType.CrewGhost || x.type == CustomOptionType.ImpGhost && optionType == CustomOptionType.CrewGhost || x.type == CustomOptionType.NeutralEvil && optionType == CustomOptionType.NeutralBenign).ToList();
             if ((int)optionType == 99)
             {
                 relevantOptions.Clear();
@@ -526,6 +526,9 @@ namespace TownOfUs.Modules
                 relevantOptions.AddRange(options.Where(x => x.type == CustomOptionType.NeutralKilling && x.isHeader));
                 relevantOptions.AddRange(options.Where(x => x.type == CustomOptionType.Impostor && x.isHeader));
                 relevantOptions.AddRange(options.Where(x => x.type == CustomOptionType.Modifier && x.isHeader));
+                relevantOptions.AddRange(options.Where(x => x.type == CustomOptionType.CrewGhost && x.isHeader));
+                relevantOptions.AddRange(options.Where(x => x.type == CustomOptionType.NeutGhost && x.isHeader));
+                relevantOptions.AddRange(options.Where(x => x.type == CustomOptionType.ImpGhost && x.isHeader));
             }
 
             if (TOUEdMapOptions.gameMode == CustomGamemodes.Guesser) // Exclude guesser options in neutral mode
@@ -561,7 +564,7 @@ namespace TownOfUs.Modules
                     categoryHeaderMasked.SetHeader(StringNames.ImpostorsCategory, 61);
                     categoryHeaderMasked.Title.text = option.heading != "" ? option.heading : option.name;
                     if ((int)optionType == 99)
-                        categoryHeaderMasked.Title.text = new Dictionary<CustomOptionType, string>() { { CustomOptionType.Crewmate, "Crewmate Roles" }, { CustomOptionType.NeutralBenign, "Neutral Benign Roles" }, { CustomOptionType.NeutralEvil, "Neutral Evil Roles" }, { CustomOptionType.NeutralKilling, "Neutral Killing Roles" }, { CustomOptionType.Impostor, "Impostor Roles" }, { CustomOptionType.Modifier, "Modifiers" } }[curType];
+                        categoryHeaderMasked.Title.text = new Dictionary<CustomOptionType, string>() { { CustomOptionType.Crewmate, "Crewmate Roles" }, { CustomOptionType.CrewGhost, "Crewmate Ghost Roles" }, { CustomOptionType.NeutralBenign, "Neutral Benign Roles" }, { CustomOptionType.NeutralEvil, "Neutral Evil Roles" }, { CustomOptionType.NeutralKilling, "Neutral Killing Roles" }, { CustomOptionType.NeutGhost, "Neutral Ghost Roles" }, { CustomOptionType.Impostor, "Impostor Roles" }, { CustomOptionType.ImpGhost, "Impostor Ghost Roles" }, { CustomOptionType.Modifier, "Modifiers" } }[curType];
                     categoryHeaderMasked.Title.outlineColor = Color.white;
                     categoryHeaderMasked.Title.outlineWidth = 0.2f;
                     categoryHeaderMasked.transform.SetParent(__instance.settingsContainer);
@@ -597,7 +600,7 @@ namespace TownOfUs.Modules
                 var settingTuple = handleSpecialOptionsView(option, option.name, option.selections[value].ToString());
                 viewSettingsInfoPanel.SetInfo(StringNames.ImpostorsCategory, settingTuple.Item2, 61);
                 viewSettingsInfoPanel.titleText.text = settingTuple.Item1;
-                if (option.isHeader && (int)optionType != 99 && option.heading == "" && (option.type == CustomOptionType.NeutralBenign || option.type == CustomOptionType.NeutralEvil || option.type == CustomOptionType.NeutralKilling || option.type == CustomOptionType.Crewmate || option.type == CustomOptionType.Impostor || option.type == CustomOptionType.Modifier))
+                if (option.isHeader && (int)optionType != 99 && option.heading == "" && (option.type == CustomOptionType.NeutralBenign || option.type == CustomOptionType.CrewGhost || option.type == CustomOptionType.NeutGhost || option.type == CustomOptionType.ImpGhost || option.type == CustomOptionType.NeutralEvil || option.type == CustomOptionType.NeutralKilling || option.type == CustomOptionType.Crewmate || option.type == CustomOptionType.Impostor || option.type == CustomOptionType.Modifier))
                 {
                     viewSettingsInfoPanel.titleText.text = "Spawn Chance";
                 }
@@ -690,11 +693,6 @@ namespace TownOfUs.Modules
                 createCustomButton(__instance, next++, "TOUEdSettings", "TOU Ed Settings", CustomOptionType.General);
                 // create TOR settings
                 createCustomButton(__instance, next++, "RoleOverview", "Role Overview", (CustomOptionType)99);
-                // Guesser
-                if (gameMode == CustomGamemodes.Guesser)
-                {
-                    createCustomButton(__instance, next++, "GuesserSettings", "Guesser Settings", CustomOptionType.Guesser);
-                }
                 // Crew
                 createCustomButton(__instance, next++, "CrewmateSettings", "Crewmate Roles", CustomOptionType.Crewmate);
                 // Neutral
@@ -703,6 +701,8 @@ namespace TownOfUs.Modules
                 createCustomButton(__instance, next++, "NeutralKillingSettings", "Neutral Killing", CustomOptionType.NeutralKilling);
                 // IMp
                 createCustomButton(__instance, next++, "ImpostorSettings", "Impostor Roles", CustomOptionType.Impostor);
+                // Ghost Roles
+                createCustomButton(__instance, next++, "GhostSettings", "Ghost Roles", CustomOptionType.CrewGhost);
                 // Modifier
                 createCustomButton(__instance, next++, "ModifierSettings", "Modifiers", CustomOptionType.Modifier);
             }
@@ -857,7 +857,7 @@ namespace TownOfUs.Modules
                 var stringOption = optionBehaviour as StringOption;
                 stringOption.OnValueChanged = new Action<OptionBehaviour>((o) => { });
                 stringOption.TitleText.text = option.name;
-                if (option.isHeader && option.heading == "" && (option.type == CustomOptionType.NeutralBenign || option.type == CustomOptionType.NeutralEvil || option.type == CustomOptionType.NeutralKilling || option.type == CustomOptionType.Crewmate || option.type == CustomOptionType.Impostor || option.type == CustomOptionType.Modifier))
+                if (option.isHeader && option.heading == "" && (option.type == CustomOptionType.NeutralBenign || option.type == CustomOptionType.CrewGhost || option.type == CustomOptionType.NeutGhost || option.type == CustomOptionType.ImpGhost || option.type == CustomOptionType.NeutralEvil || option.type == CustomOptionType.NeutralKilling || option.type == CustomOptionType.Crewmate || option.type == CustomOptionType.Impostor || option.type == CustomOptionType.Modifier))
                 {
                     stringOption.TitleText.text = "Spawn Chance";
                 }
@@ -948,7 +948,7 @@ namespace TownOfUs.Modules
             }
             torSettingsGOM.scrollBar.transform.FindChild("SliderInner").DestroyChildren();
             torSettingsGOM.Children.Clear();
-            var relevantOptions = options.Where(x => x.type == optionType || x.type == CustomOptionType.NeutralEvil && optionType == CustomOptionType.NeutralBenign).ToList();
+            var relevantOptions = options.Where(x => x.type == optionType || x.type == CustomOptionType.Guesser && optionType == CustomOptionType.General || x.type == CustomOptionType.NeutGhost && optionType == CustomOptionType.CrewGhost || x.type == CustomOptionType.ImpGhost && optionType == CustomOptionType.CrewGhost || x.type == CustomOptionType.NeutralEvil && optionType == CustomOptionType.NeutralBenign).ToList();
             if (TOUEdMapOptions.gameMode == CustomGamemodes.Guesser) // Exclude guesser options in neutral mode
                 relevantOptions = relevantOptions.Where(x => !(new List<int> { 3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012, 3013, 3014, 3015, 3016 }).Contains(x.id)).ToList();
             createSettings(torSettingsGOM, relevantOptions);
@@ -964,12 +964,6 @@ namespace TownOfUs.Modules
                 // create TOR settings
                 createCustomButton(__instance, next++, "TOUEdSettings", "TOU Ed Settings");
                 createGameOptionsMenu(__instance, CustomOptionType.General, "TOUEdSettings");
-                // Guesser if applicable
-                if (gameMode == CustomGamemodes.Guesser)
-                {
-                    createCustomButton(__instance, next++, "GuesserSettings", "Guesser Settings");
-                    createGameOptionsMenu(__instance, CustomOptionType.Guesser, "GuesserSettings");
-                }
                 // Crew
                 createCustomButton(__instance, next++, "CrewmateSettings", "Crewmate Roles");
                 createGameOptionsMenu(__instance, CustomOptionType.Crewmate, "CrewmateSettings");
@@ -982,10 +976,12 @@ namespace TownOfUs.Modules
                 // IMp
                 createCustomButton(__instance, next++, "ImpostorSettings", "Impostor Roles");
                 createGameOptionsMenu(__instance, CustomOptionType.Impostor, "ImpostorSettings");
+                // Ghost
+                createCustomButton(__instance, next++, "GhostSettings", "Ghost Roles");
+                createGameOptionsMenu(__instance, CustomOptionType.CrewGhost, "GhostSettings");
                 // Modifier
                 createCustomButton(__instance, next++, "ModifierSettings", "Modifiers");
                 createGameOptionsMenu(__instance, CustomOptionType.Modifier, "ModifierSettings");
-
             }
         }
     }
@@ -1051,8 +1047,11 @@ namespace TownOfUs.Modules
             var neutraleRoles = "<b><size=110%>Neutral Evil Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutralEvil, true) + "\n";
             var neutralkRoles = "<b><size=110%>Neutral Killing Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutralKilling, true) + "\n";
             var impRoles = "<b><size=110%>Impostor Roles</size></b>" + buildOptionsOfType(CustomOptionType.Impostor, true) + "\n";
+            var crewGhostRoles = "<b><size=110%>Crewmate Ghost Roles</size></b>" + buildOptionsOfType(CustomOptionType.CrewGhost, true) + "\n";
+            var neutGhostRoles = "<b><size=110%>Neutral Ghost Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutGhost, true) + "\n";
+            var impGhostRoles = "<b><size=110%>Impostor Ghost Roles</size></b>" + buildOptionsOfType(CustomOptionType.ImpGhost, true) + "\n";
             var modifiers = "<b><size=110%>Modifiers</size></b>" + buildOptionsOfType(CustomOptionType.Modifier, true);
-            return crewRoles + neutralbRoles + neutraleRoles + neutralkRoles + impRoles + modifiers;
+            return crewRoles + neutralbRoles + neutraleRoles + neutralkRoles + impRoles + crewGhostRoles + neutGhostRoles + impGhostRoles + modifiers;
         }
 
         public static string buildModifierExtras(CustomOption customOption)
@@ -1075,7 +1074,9 @@ namespace TownOfUs.Modules
             var options = CustomOption.options.Where(o => o.type == type);
             if (gameMode == CustomGamemodes.Guesser)
             {
-                List<int> remove = new List<int> { 3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012, 3013, 3014, 3015, 3016 };
+                if (type == CustomOptionType.General)
+                    options = CustomOption.options.Where(o => o.type == type || o.type == CustomOptionType.Guesser);
+                List<int> remove = new List<int> { 310, 3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012, 3013, 3014, 3015, 3016 };
                 options = options.Where(x => !remove.Contains(x.id));
             }
             else if (gameMode == CustomGamemodes.Classic)
@@ -1196,65 +1197,35 @@ namespace TownOfUs.Modules
             int counter = TownOfUsPlugin.optionsPage;
             string hudString = counter != 0 && !hideExtras ? Helpers.cs(DateTime.Now.Second % 2 == 0 ? Color.white : Color.red, "(Use scroll wheel if necessary)\n\n") : "";
 
-            if (TOUEdMapOptions.gameMode == CustomGamemodes.Classic)
+            maxPage = 8;
+            switch (counter)
             {
-                maxPage = 7;
-                switch (counter)
-                {
-                    case 0:
-                        hudString += (!hideExtras ? "" : "Page 1: Vanilla Settings \n\n") + vanillaSettings;
-                        break;
-                    case 1:
-                        hudString += "Page 2: Town Of Us Settings \n" + buildOptionsOfType(CustomOptionType.General, false);
-                        break;
-                    case 2:
-                        hudString += "Page 3: Role and Modifier Rates \n" + buildRoleOptions();
-                        break;
-                    case 3:
-                        hudString += "Page 4: Crewmate Role Settings \n" + "<b><size=110%>Crewmate Roles</size></b>" + buildOptionsOfType(CustomOptionType.Crewmate, false);
-                        break;
-                    case 4:
-                        hudString += "Page 5: Neutral Role Settings \n" + "<b><size=110%>Neutral Benign Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutralBenign, false) + "\n<b><size=110%>Neutral Evil Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutralEvil, false) + "\n<b><size=110%>Neutral Killing Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutralKilling, false);
-                        break;
-                    case 5:
-                        hudString += "Page 6: Impostor Role Settings \n" + "<b><size=110%>Impostor Roles</size></b>" + buildOptionsOfType(CustomOptionType.Impostor, false);
-                        break;
-                    case 6:
-                        hudString += "Page 7: Modifier Settings \n" + "<b><size=110%>Modifiers</size></b>" + buildOptionsOfType(CustomOptionType.Modifier, false);
-                        break;
-                }
+                case 0:
+                    hudString += (!hideExtras ? "" : "Page 1: Vanilla Settings \n\n") + vanillaSettings;
+                    break;
+                case 1:
+                    hudString += "Page 2: Town Of Us Settings \n" + buildOptionsOfType(CustomOptionType.General, false);
+                    break;
+                case 2:
+                    hudString += "Page 3: Role and Modifier Rates \n" + buildRoleOptions();
+                    break;
+                case 3:
+                    hudString += "Page 4: Crewmate Role Settings \n" + "<b><size=110%>Crewmate Roles</size></b>" + buildOptionsOfType(CustomOptionType.Crewmate, false);
+                    break;
+                case 4:
+                    hudString += "Page 5: Neutral Role Settings \n" + "<b><size=110%>Neutral Benign Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutralBenign, false) + "\n<b><size=110%>Neutral Evil Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutralEvil, false) + "\n<b><size=110%>Neutral Killing Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutralKilling, false);
+                    break;
+                case 5:
+                    hudString += "Page 6: Impostor Role Settings \n" + "<b><size=110%>Impostor Roles</size></b>" + buildOptionsOfType(CustomOptionType.Impostor, false);
+                    break;
+                case 6:
+                    hudString += "Page 7: Ghost Role Settings \n" + "<b><size=110%>Crewmate Ghost Roles</size></b>" + buildOptionsOfType(CustomOptionType.CrewGhost, false) + "\n<b><size=110%>Neutral Ghost Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutGhost, false) + "\n<b><size=110%>Impostor Ghost Roles</size></b>" + buildOptionsOfType(CustomOptionType.ImpGhost, false);
+                    break;
+                case 7:
+                    hudString += "Page 8: Modifier Settings \n" + "<b><size=110%>Modifiers</size></b>" + buildOptionsOfType(CustomOptionType.Modifier, false);
+                    break;
             }
-            else if (TOUEdMapOptions.gameMode == CustomGamemodes.Guesser)
-            {
-                maxPage = 8;
-                switch (counter)
-                {
-                    case 0:
-                        hudString += (!hideExtras ? "" : "Page 1: Vanilla Settings \n\n") + vanillaSettings;
-                        break;
-                    case 1:
-                        hudString += "Page 2: Town Of Us Settings \n" + buildOptionsOfType(CustomOptionType.General, false);
-                        break;
-                    case 2:
-                        hudString += "Page 3: Guesser Settings \n" + buildOptionsOfType(CustomOptionType.Guesser, false);
-                        break;
-                    case 3:
-                        hudString += "Page 4: Role and Modifier Rates \n" + buildRoleOptions();
-                        break;
-                    case 4:
-                        hudString += "Page 5: Crewmate Role Settings \n" + "<b><size=110%>Crewmate Roles</size></b>" + buildOptionsOfType(CustomOptionType.Crewmate, false);
-                        break;
-                    case 5:
-                        hudString += "Page 6: Neutral Role Settings \n" + "<b><size=110%>Neutral Benign Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutralBenign, false) + "\n<b><size=110%>Neutral Evil Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutralEvil, false) + "\n<b><size=110%>Neutral Killing Roles</size></b>" + buildOptionsOfType(CustomOptionType.NeutralKilling, false);
-                        break;
-                    case 6:
-                        hudString += "Page 7: Impostor Role Settings \n" + "<b><size=110%>Impostor Roles</size></b>" + buildOptionsOfType(CustomOptionType.Impostor, false);
-                        break;
-                    case 7:
-                        hudString += "Page 8: Modifier Settings \n" + "<b><size=110%>Modifiers</size></b>" + buildOptionsOfType(CustomOptionType.Modifier, false);
-                        break;
-                }
-            }
+
 
             if (!hideExtras || counter != 0) hudString += $"\n Press TAB or Page Number for more... ({counter + 1}/{maxPage})";
             return hudString;

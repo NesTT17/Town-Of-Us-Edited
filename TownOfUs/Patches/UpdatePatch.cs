@@ -68,50 +68,45 @@ namespace TownOfUs.Patches
                         player.NameText.color = color;
         }
 
-        // This is a function to call IN-GAME, thus only locally known colors will be collected returned, else white!
-        public static Color GetNameColor(PlayerControl p)
-        {
-            Color color = Color.white;
-            var localPlayer = PlayerControl.LocalPlayer;
-            var localRole = RoleInfo.getRoleInfoForPlayer(localPlayer, false).FirstOrDefault();
-            var role = RoleInfo.getRoleInfoForPlayer(p, false).FirstOrDefault();
-
-            if (p == localPlayer)
-                color = role.color;
-
-            if (localRole == RoleInfo.dracula && (role == RoleInfo.vampire || Dracula.fakeVampire != null && p == Dracula.fakeVampire || role == RoleInfo.dracula))
-            {
-                color = Dracula.color;
-            }
-
-            // No else if here, as a Lover of team Dracula needs the colors
-            if (localRole == RoleInfo.vampire || localRole == RoleInfo.dracula && role == RoleInfo.dracula)
-            {
-                color = role.color;
-            }
-
-            // No else if here, as the Impostors need name to be colored
-            if (role == RoleInfo.vampire && Vampire.wasTeamRed && localPlayer.Data.Role.IsImpostor)
-            {
-                color = Palette.ImpostorRed;
-            }
-            if (role == RoleInfo.dracula && Dracula.wasTeamRed && localPlayer.Data.Role.IsImpostor)
-            {
-                color = Palette.ImpostorRed;
-            }
-
-            if (localRole.isImpostor && role.isImpostor)
-                color = Palette.ImpostorRed;
-
-            return color;
-        }
-
         static void setNameColors()
         {
-            foreach (var pc in PlayerControl.AllPlayerControls)
+            var localPlayer = PlayerControl.LocalPlayer;
+            var localRole = RoleInfo.getRoleInfoForPlayer(localPlayer, false).FirstOrDefault();
+            setPlayerNameColor(localPlayer, localRole.color);
+
+            if (Dracula.dracula != null && Dracula.dracula == localPlayer)
             {
-                Color c = GetNameColor(pc);
-                setPlayerNameColor(pc, c);
+                // Dracula can see his vampire
+                setPlayerNameColor(Dracula.dracula, Dracula.color);
+                if (Vampire.vampire != null)
+                {
+                    setPlayerNameColor(Vampire.vampire, Dracula.color);
+                }
+                if (Dracula.fakeVampire != null)
+                {
+                    setPlayerNameColor(Dracula.fakeVampire, Dracula.color);
+                }
+            }
+
+            // No else if here, as a Lover of team Vampires needs the colors
+            if (Vampire.vampire != null && Vampire.vampire == localPlayer)
+            {
+                // Vampire can see the dracula
+                setPlayerNameColor(Vampire.vampire, Vampire.color);
+                if (Dracula.dracula != null)
+                {
+                    setPlayerNameColor(Dracula.dracula, Vampire.color);
+                }
+            }
+
+            // No else if here, as the Impostors need the name to be colored
+            if (Dracula.dracula != null && Dracula.wasTeamRed && localPlayer.Data.Role.IsImpostor)
+            {
+                setPlayerNameColor(Dracula.dracula, Palette.ImpostorRed);
+            }
+            if (Vampire.vampire != null && Vampire.wasTeamRed && localPlayer.Data.Role.IsImpostor)
+            {
+                setPlayerNameColor(Vampire.vampire, Palette.ImpostorRed);
             }
         }
 
@@ -279,6 +274,7 @@ namespace TownOfUs.Patches
             Swooper.invisibleTimer -= dt;
             Grenadier.flashTimer -= dt;
             Satelite.corpsesTrackingTimer -= dt;
+            Banshee.scareTimer -= dt;
         }
 
         static void seerUpdate()
@@ -373,7 +369,7 @@ namespace TownOfUs.Patches
                 __instance.ImpostorVentButton.Show();
 
             }
-            if (Rewired.ReInput.players.GetPlayer(0).GetButtonDown(RewiredConsts.Action.UseVent) && !PlayerControl.LocalPlayer.Data.Role.IsImpostor && PlayerControl.LocalPlayer.roleCanUseVents())
+            if (Rewired.ReInput.players.GetPlayer(0).GetButtonDown(RewiredConsts.Action.UseVent) && PlayerControl.LocalPlayer.roleCanUseVents() && __instance.ImpostorVentButton.currentTarget != null)
             {
                 __instance.ImpostorVentButton.DoClick();
             }
@@ -414,11 +410,9 @@ namespace TownOfUs.Patches
 
             // Report, Sabotage, Use and Vent Button Disabling
             updateReportButton(__instance);
+            updateVentButton(__instance);
             updateSabotageButton(__instance);
             updateUseButton(__instance);
-            updateVentButton(__instance);
-            // Meeting hide buttons if needed (used for the map usage, because closing the map would show buttons)
-            if (!MeetingHud.Instance) __instance.AbilityButton?.Update();
 
             // Fix dead player's pets being visible by just always updating whether the pet should be visible at all.
             foreach (PlayerControl target in PlayerControl.AllPlayerControls)

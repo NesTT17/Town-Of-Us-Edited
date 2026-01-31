@@ -318,7 +318,7 @@ namespace TownOfUs.Patches
         public static void setupIntroTeam(IntroCutscene __instance, ref Il2CppSystem.Collections.Generic.List<PlayerControl> yourTeam)
         {
             List<RoleInfo> infos = RoleInfo.getRoleInfoForPlayer(PlayerControl.LocalPlayer);
-            RoleInfo roleInfo = infos.Where(info => info.factionId != FactionId.Modifier).FirstOrDefault();
+            RoleInfo roleInfo = infos.Where(info => info.factionId != FactionId.Modifier && info.factionId != FactionId.Ghost).FirstOrDefault();
             var neutralColor = new Color32(76, 84, 78, 255);
             if (roleInfo == null) return;
             if (roleInfo.factionId == FactionId.NeutralBenign || roleInfo.factionId == FactionId.NeutralEvil || roleInfo.factionId == FactionId.NeutralKilling)
@@ -368,7 +368,7 @@ namespace TownOfUs.Patches
                 
                 // Don't override the intro of the vanilla roles
                 List<RoleInfo> infos = RoleInfo.getRoleInfoForPlayer(PlayerControl.LocalPlayer);
-                RoleInfo roleInfo = infos.Where(info => info.factionId != FactionId.Modifier).FirstOrDefault();
+                RoleInfo roleInfo = infos.Where(info => info.factionId != FactionId.Modifier && info.factionId != FactionId.Ghost).FirstOrDefault();
                 RoleInfo modifierInfo = infos.Where(info => info.factionId == FactionId.Modifier).FirstOrDefault();
 
                 __instance.RoleBlurbText.text = "";

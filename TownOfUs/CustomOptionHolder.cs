@@ -327,6 +327,9 @@ namespace TownOfUs
         public static CustomOption poisonerSpawnRate;
         public static CustomOption poisonerKillDelay;
         public static CustomOption poisonerCooldown;
+        public static CustomOption poisonerTrapCooldown;
+        public static CustomOption poisonerTrapDuration;
+        public static CustomOption poisonerNumberOfTraps;
         public static CustomOption poisonerCanVent;
 
         public static CustomOption venererSpawnRate;
@@ -494,6 +497,25 @@ namespace TownOfUs
         public static CustomOption modifierDisperserDisperseToVents;
         public static CustomOption modifierDisperserCanRecharge;
         public static CustomOption modifierDisperserRechargeKillsNumber;
+
+        public static CustomOption modifierPoucher;
+
+        public static CustomOption bansheeSpawnRate;
+        public static CustomOption bansheeCooldown;
+        public static CustomOption bansheeDuration;
+        
+        public static CustomOption poltergeistSpawnRate;
+        public static CustomOption poltergeistCooldown;
+        public static CustomOption poltergeistRadius;
+
+        public static CustomOption deceiverSpawnRate;
+        public static CustomOption deceiverPlaceCooldown;
+        public static CustomOption deceiverDecoyDelayedDisplay;
+        public static CustomOption deceiverDecoyPermanent;
+        public static CustomOption deceiverResetPlaceAfterMeeting;
+        public static CustomOption deceiverDecoyDuration;
+        public static CustomOption deceiverSwapCooldown;
+        public static CustomOption deceiverShowDecoy;
 
         public static void Load()
         {
@@ -804,9 +826,9 @@ namespace TownOfUs
             draculaCanCreateVampire = CustomOption.Create(279, Types.NeutralKilling, "Can Create Vampire", false, draculaSpawnRate);
             draculaNumOfCreatedVampires = CustomOption.Create(280, Types.NeutralKilling, "Maximum Number Of Vampires", 1f, 1f, 5f, 1f, draculaCanCreateVampire);
             draculaCanCreateVampireFromNeutralBenign = CustomOption.Create(281, Types.NeutralKilling, "Can Create Vampire From Neutral Benign Role", false, draculaCanCreateVampire);
-            draculaCanCreateVampireFromNeutralEvil = CustomOption.Create(281, Types.NeutralKilling, "Can Create Vampire From Neutral Evil Role", false, draculaCanCreateVampire);
-            draculaCanCreateVampireFromNeutralKilling = CustomOption.Create(281, Types.NeutralKilling, "Can Create Vampire From Neutral Killing Role", false, draculaCanCreateVampire);
-            draculaCanCreateVampireFromImpostor = CustomOption.Create(281, Types.NeutralKilling, "Can Create Vampire From Impostor Role", false, draculaCanCreateVampire);
+            draculaCanCreateVampireFromNeutralEvil = CustomOption.Create(286, Types.NeutralKilling, "Can Create Vampire From Neutral Evil Role", false, draculaCanCreateVampire);
+            draculaCanCreateVampireFromNeutralKilling = CustomOption.Create(287, Types.NeutralKilling, "Can Create Vampire From Neutral Killing Role", false, draculaCanCreateVampire);
+            draculaCanCreateVampireFromImpostor = CustomOption.Create(288, Types.NeutralKilling, "Can Create Vampire From Impostor Role", false, draculaCanCreateVampire);
             vampireCanKill = CustomOption.Create(282, Types.NeutralKilling, "Vampire Can Bite", false, draculaCanCreateVampire);
             vampireKillCooldown = CustomOption.Create(283, Types.NeutralKilling, "Vampire Bite Cooldown", 30f, 10f, 60f, 2.5f, vampireCanKill);
             vampireCanUseVents = CustomOption.Create(284, Types.NeutralKilling, "Vampire Can Use Vents", false, draculaCanCreateVampire);
@@ -862,6 +884,15 @@ namespace TownOfUs
             camouflagerDuration = CustomOption.Create(102, Types.Impostor, "Camo Duration", 10f, 1f, 20f, 0.5f, camouflagerSpawnRate);
             camouflagerCanVent = CustomOption.Create(103, Types.Impostor, "Can Use Vents", true, camouflagerSpawnRate);
 
+            deceiverSpawnRate = CustomOption.Create(425, Types.Impostor, cs(Deceiver.color, "Deceiver"), rates, null, true);
+            deceiverPlaceCooldown = CustomOption.Create(426, Types.Impostor, "Place Cooldown", 30f, 10f, 60f, 2.5f, deceiverSpawnRate);
+            deceiverDecoyDelayedDisplay = CustomOption.Create(427, Types.Impostor, "Decoy Delayed Activation", 10f, 3f, 20f, 0.5f, deceiverSpawnRate);
+            deceiverResetPlaceAfterMeeting = CustomOption.Create(429, Types.Impostor, "Reset Deceiver After Meeting", false, deceiverSpawnRate);
+            deceiverDecoyPermanent = CustomOption.Create(428, Types.Impostor, "Decoy Not Permanence", false, deceiverSpawnRate);
+            deceiverDecoyDuration = CustomOption.Create(430, Types.Impostor, "Decoy Duration", 60f, 25f, 120f, 2.5f, deceiverDecoyPermanent);
+            deceiverSwapCooldown = CustomOption.Create(431, Types.Impostor, "Swap Cooldown", 10f, 3f, 20f, 0.5f, deceiverSpawnRate);
+            deceiverShowDecoy = CustomOption.Create(432, Types.Impostor, "Who Can See the Decoy", new string[] { "Only Deceiver", "Only Impostors", "All Players" }, deceiverSpawnRate);
+
             escapistSpawnRate = CustomOption.Create(365, Types.Impostor, cs(Escapist.color, "Escapist"), rates, null, true);
             escapistCooldown = CustomOption.Create(366, Types.Impostor, "Mark Cooldown", 30f, 10f, 60f, 2.5f, escapistSpawnRate);
             escapistCanVent = CustomOption.Create(367, Types.Impostor, "Can Use Vents", true, escapistSpawnRate);
@@ -886,10 +917,13 @@ namespace TownOfUs
             poisonerSpawnRate = CustomOption.Create(290, Types.Impostor, cs(Poisoner.color, "Poisoner"), rates, null, true);
             poisonerCooldown = CustomOption.Create(291, Types.Impostor, "Poison Cooldown", 30f, 10f, 60f, 2.5f, poisonerSpawnRate);
             poisonerKillDelay = CustomOption.Create(292, Types.Impostor, "Poison Kill Delay", 10f, 1f, 20f, 0.5f, poisonerSpawnRate);
+            poisonerTrapCooldown = CustomOption.Create(294, Types.Impostor, "Blind Trap Cooldown", 10f, 3f, 20f, 0.5f, poisonerSpawnRate);
+            poisonerTrapDuration = CustomOption.Create(289, Types.Impostor, "Blind Duration", 10f, 3f, 20f, 0.5f, poisonerSpawnRate);
+            poisonerNumberOfTraps = CustomOption.Create(249, Types.Impostor, "Number Of Blind Traps", 3f, 1f, 15f, 1f, poisonerSpawnRate);
             poisonerCanVent = CustomOption.Create(293, Types.Impostor, "Can Use Vents", true, poisonerSpawnRate);
 
             scavengerSpawnRate = CustomOption.Create(355, Types.Impostor, cs(Scavenger.color, "Scavenger"), rates, null, true);
-            scavengerBountyDuration = CustomOption.Create(356, Types.Impostor, "Duration After Which Bounty Changes",  60f, 10f, 180f, 10f, scavengerSpawnRate);
+            scavengerBountyDuration = CustomOption.Create(356, Types.Impostor, "Duration After Which Bounty Changes", 60f, 10f, 180f, 10f, scavengerSpawnRate);
             scavengerReducedCooldown = CustomOption.Create(357, Types.Impostor, "Cooldown After Killing Bounty", 2.5f, 0f, 30f, 2.5f, scavengerSpawnRate);
             scavengerPunishmentTime = CustomOption.Create(358, Types.Impostor, "Additional Cooldown After Killing Others", 20f, 0f, 60f, 2.5f, scavengerSpawnRate);
             scavengerShowArrow = CustomOption.Create(359, Types.Impostor, "Show Arrow Pointing Towards The Bounty", true, scavengerSpawnRate);
@@ -911,6 +945,16 @@ namespace TownOfUs
             undertakerDragingAfterVelocity = CustomOption.Create(257, Types.Impostor, "Speed While Dragging", 0.75f, 0.5f, 1.5f, 0.125f, undertakerSpawnRate);
             undertakerCanVent = CustomOption.Create(258, Types.Impostor, "Can Use Vents", true, undertakerSpawnRate);
             undertakerCanDragAndVent = CustomOption.Create(259, Types.Impostor, "Can Use Vents While Dragging", false, undertakerSpawnRate);
+            #endregion
+
+            #region Ghost Roles
+            poltergeistSpawnRate = CustomOption.Create(420, Types.CrewGhost, cs(Poltergeist.color, "Poltergeist"), rates, null, true);
+            poltergeistCooldown = CustomOption.Create(421, Types.CrewGhost, "Drag Cooldown", 30f, 10f, 60f, 2.5f, poltergeistSpawnRate);
+            poltergeistRadius = CustomOption.Create(422, Types.CrewGhost, "Drag Radius", 0.75f, 0.5f, 2f, 0.125f, poltergeistSpawnRate);
+
+            bansheeSpawnRate = CustomOption.Create(415, Types.ImpGhost, cs(Banshee.color, "Banshee"), rates, null, true);
+            bansheeCooldown = CustomOption.Create(416, Types.ImpGhost, "Scare Cooldown", 30f, 10f, 60f, 2.5f, bansheeSpawnRate);
+            bansheeDuration = CustomOption.Create(417, Types.ImpGhost, "Scare Duration", 10f, 1f, 20f, 0.5f, bansheeSpawnRate);
             #endregion
 
             #region Modifiers
@@ -988,6 +1032,8 @@ namespace TownOfUs
             modifierDisperserRechargeKillsNumber = CustomOption.Create(1074, Types.Modifier, "Number Of Kills Needed For Recharging", 2f, 1f, 10f, 1f, modifierDisperserCanRecharge);
 
             modifierDoubleShot = CustomOption.Create(1050, Types.Modifier, cs(DoubleShot.color, "Double Shot"), rates, null, true);
+
+            modifierPoucher = CustomOption.Create(1075, Types.Modifier, cs(Poucher.color, "Poucher"), rates, null, true);
 
             modifierRuthless = CustomOption.Create(1051, Types.Modifier, cs(Ruthless.color, "Ruthless"), rates, null, true);
 

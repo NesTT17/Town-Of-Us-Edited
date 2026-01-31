@@ -242,6 +242,13 @@ namespace TownOfUs.Patches
                 PlayerControlFixedUpdatePatch.vampireHunterCheckPromotion(true);
             }
 
+            // Clear Deceiver Decoys
+            if ((DeceiverDecoy.ResetPlaceAfterMeeting && DeceiverDecoy.DecoyPermanent) || !DeceiverDecoy.DecoyPermanent)
+            {
+                Deceiver.decoy?.Destroy();
+                Deceiver.decoy = null;
+            }
+
             // Random Spawn Positions
             if (CustomOptionHolder.randomSpawnPositions.getSelection() == 2)
             {

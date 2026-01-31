@@ -51,8 +51,12 @@ namespace TownOfUs.Patches
             {
                 __result = GetNeutralLightRadius(__instance, false);
             }
+
             if (Torch.torch.Any(x => x.PlayerId == player.PlayerId))
                 __result = __instance.MaxLightRadius * GameOptionsManager.Instance.currentNormalGameOptions.CrewLightMod * Torch.vision;
+            
+            if (Poisoner.blindTrappedPlayers != null && Poisoner.blindTrappedPlayers.Any(x => x == player.PlayerId))
+                __result = Mathf.Lerp(__instance.MinLightRadius, __instance.MaxLightRadius, 0.01f) * GameOptionsManager.Instance.currentNormalGameOptions.CrewLightMod;
             return false;
         }
 

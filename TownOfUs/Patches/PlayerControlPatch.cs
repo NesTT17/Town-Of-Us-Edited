@@ -16,13 +16,13 @@ namespace TownOfUs.Patches
     public static class PlayerControlFixedUpdatePatch
     {
         // Helpers
-        public static PlayerControl setTarget(bool onlyCrewmates = false, bool targetPlayersInVents = false, List<PlayerControl> untargetablePlayers = null, PlayerControl targetingPlayer = null)
+        public static PlayerControl setTarget(bool onlyCrewmates = false, bool targetPlayersInVents = false, List<PlayerControl> untargetablePlayers = null, PlayerControl targetingPlayer = null, bool evenWhenDead = false)
         {
             PlayerControl result = null;
             float num = AmongUs.GameOptions.NormalGameOptionsV09.KillDistances[Mathf.Clamp(GameOptionsManager.Instance.currentNormalGameOptions.KillDistance, 0, 2)];
             if (!MapUtilities.CachedShipStatus) return result;
             if (targetingPlayer == null) targetingPlayer = PlayerControl.LocalPlayer;
-            if (targetingPlayer.Data.IsDead) return result;
+            if (!evenWhenDead && targetingPlayer.Data.IsDead) return result;
 
             Vector2 truePosition = targetingPlayer.GetTruePosition();
             foreach (var playerInfo in GameData.Instance.AllPlayers.GetFastEnumerator())
@@ -199,7 +199,7 @@ namespace TownOfUs.Patches
 
                 p.cosmetics.nameText.transform.parent.SetLocalZ(-0.0001f);  // This moves both the name AND the colorblindtext behind objects (if the player is behind the object), like the rock on polus
 
-                if ((Lawyer.lawyerKnowsRole && PlayerControl.LocalPlayer == Lawyer.lawyer && p == Lawyer.target) || (Executioner.executionerKnowsRole && PlayerControl.LocalPlayer == Executioner.executioner && p == Executioner.target) || (Sleuth.sleuth != null && Sleuth.sleuth == PlayerControl.LocalPlayer && Sleuth.reported.Contains(p)) || (Mayor.mayor != null && Mayor.mayor == p && Mayor.mayor != PlayerControl.LocalPlayer) || (GuardianAngel.gaKnowsRole && PlayerControl.LocalPlayer == GuardianAngel.guardianAngel && p == GuardianAngel.target) || p == PlayerControl.LocalPlayer || PlayerControl.LocalPlayer.Data.IsDead)
+                if ((Lawyer.lawyerKnowsRole && PlayerControl.LocalPlayer == Lawyer.lawyer && p == Lawyer.target) || (Executioner.executionerKnowsRole && PlayerControl.LocalPlayer == Executioner.executioner && p == Executioner.target) || (Sleuth.sleuth != null && Sleuth.sleuth == PlayerControl.LocalPlayer && Sleuth.reported.Contains(p)) || (Poucher.poucher != null && Poucher.poucher == PlayerControl.LocalPlayer && Poucher.killed.Contains(p)) || (Mayor.mayor != null && Mayor.mayor == p && Mayor.mayor != PlayerControl.LocalPlayer) || (GuardianAngel.gaKnowsRole && PlayerControl.LocalPlayer == GuardianAngel.guardianAngel && p == GuardianAngel.target) || p == PlayerControl.LocalPlayer || PlayerControl.LocalPlayer.Data.IsDead)
                 {
                     Transform playerInfoTransform = p.cosmetics.nameText.transform.parent.FindChild("Info");
                     TMPro.TextMeshPro playerInfo = playerInfoTransform != null ? playerInfoTransform.GetComponent<TMPro.TextMeshPro>() : null;
@@ -264,7 +264,7 @@ namespace TownOfUs.Patches
                         playerInfoText = $"{roleText}";
                         meetingInfoText = playerInfoText;
                     }
-                    if (Lawyer.lawyerKnowsRole && PlayerControl.LocalPlayer == Lawyer.lawyer && p == Lawyer.target || Executioner.executionerKnowsRole && PlayerControl.LocalPlayer == Executioner.executioner && p == Executioner.target || Sleuth.sleuth != null && Sleuth.sleuth == PlayerControl.LocalPlayer && Sleuth.reported.Contains(p) || Mayor.mayor != null && Mayor.mayor == p && Mayor.mayor != PlayerControl.LocalPlayer || GuardianAngel.gaKnowsRole && PlayerControl.LocalPlayer == GuardianAngel.guardianAngel && p == GuardianAngel.target)
+                    if (Lawyer.lawyerKnowsRole && PlayerControl.LocalPlayer == Lawyer.lawyer && p == Lawyer.target || Executioner.executionerKnowsRole && PlayerControl.LocalPlayer == Executioner.executioner && p == Executioner.target || Sleuth.sleuth != null && Sleuth.sleuth == PlayerControl.LocalPlayer && Sleuth.reported.Contains(p) || Poucher.poucher != null && Poucher.poucher == PlayerControl.LocalPlayer && Poucher.killed.Contains(p) || Mayor.mayor != null && Mayor.mayor == p && Mayor.mayor != PlayerControl.LocalPlayer || GuardianAngel.gaKnowsRole && PlayerControl.LocalPlayer == GuardianAngel.guardianAngel && p == GuardianAngel.target)
                     {
                         roleText = RoleInfo.GetRolesString(p, true, false, true);
                         playerInfoText = $"{roleText}";
@@ -1233,6 +1233,13 @@ namespace TownOfUs.Patches
             }
         }
 
+        public static void bansheeSetTarget()
+        {
+            if (Banshee.banshee == null || Banshee.banshee != PlayerControl.LocalPlayer) return;
+            Banshee.currentTarget = setTarget(false, abilityPlayersInVent, evenWhenDead: true);
+            setPlayerOutline(Banshee.currentTarget, Banshee.color);
+        }
+
         public static void Postfix(PlayerControl __instance)
         {
             if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Started || GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.HideNSeek) return;
@@ -1322,6 +1329,7 @@ namespace TownOfUs.Patches
                 vampireCheckPromotion();
                 // Poisoner
                 poisonerSetTarget();
+                BlindTrap.Update();
                 // Plaguebearer
                 plaguebearerSetTarget();
                 // Pestilence
@@ -1364,6 +1372,9 @@ namespace TownOfUs.Patches
                 sateliteUpdate();
                 // Disperser
                 disperserUpdate();
+
+                // -- Ghost Roles --
+                bansheeSetTarget();
             }
         }
     }
@@ -1638,6 +1649,10 @@ namespace TownOfUs.Patches
             // Disperser add kills
             if (Disperser.disperser != null && Disperser.disperser == __instance)
                 Disperser.numberOfKills++;
+
+            // Poucher add info
+            if (Poucher.poucher != null && Poucher.poucher == __instance && target != null)
+                Poucher.killed.Add(target);
         }
     }
 

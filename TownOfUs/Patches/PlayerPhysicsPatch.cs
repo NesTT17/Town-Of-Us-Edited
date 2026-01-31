@@ -25,6 +25,7 @@ public static class PlayerPhysicsFixedUpdatePatch
         updateVenererMoveSpeed(__instance);
         updateFlashMoveSpeed(__instance);
         updateFrostyChillSpeed(__instance);
+        updateBansheeScaredPlayerSpeed(__instance);
     }
 
     static void updateUndertakerMoveSpeed(PlayerPhysics playerPhysics)
@@ -79,6 +80,15 @@ public static class PlayerPhysicsFixedUpdatePatch
                     Frosty.isChilled = false;
                 }
             }
+        }
+    }
+
+    static void updateBansheeScaredPlayerSpeed(PlayerPhysics playerPhysics)
+    {
+        if (Banshee.banshee != null && Banshee.scareVictim != null && Banshee.scareVictim == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead && Banshee.scareTimer > 0f)
+        {
+            if (playerPhysics.AmOwner && GameData.Instance && playerPhysics.myPlayer.CanMove)
+                playerPhysics.body.velocity *= 0f;
         }
     }
 }

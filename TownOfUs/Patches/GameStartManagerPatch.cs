@@ -11,6 +11,7 @@ namespace TownOfUs.Patches
     {
         public static Dictionary<int, PlayerVersion> playerVersions = new Dictionary<int, PlayerVersion>();
         public static float timer = 600f;
+        private static float kickingTimer = 0f;
         internal static bool versionSent = false;
         private static string lobbyCodeText = "";
 
@@ -36,6 +37,8 @@ namespace TownOfUs.Patches
                 versionSent = false;
                 // Reset lobby countdown timer
                 timer = 600f;
+                // Reset kicking timer
+                kickingTimer = 0f;
                 // Copy lobby code
                 string code = InnerNet.GameCode.IntToGameName(AmongUsClient.Instance.GameId);
                 GUIUtility.systemCopyBuffer = code;
@@ -73,23 +76,56 @@ namespace TownOfUs.Patches
                     }
                 }
 
+                // Check version handshake infos
+                bool versionMismatch = false;
+                string message = "";
+                foreach (InnerNet.ClientData client in AmongUsClient.Instance.allClients.ToArray())
+                {
+                    if (client.Character == null) continue;
+                    else if (!playerVersions.ContainsKey(client.Id))
+                    {
+                        versionMismatch = true;
+                        message += $"<color=#FF0000FF>{client.Character.Data.PlayerName} has a different or no version of Town Of Us\n</color>";
+                    }
+                    else
+                    {
+                        PlayerVersion PV = playerVersions[client.Id];
+                        int diff = TownOfUsPlugin.Version.CompareTo(PV.version);
+                        if (diff > 0)
+                        {
+                            message += $"<color=#FF0000FF>{client.Character.Data.PlayerName} has an older version of Town Of Us (v{playerVersions[client.Id].version.ToString()})\n</color>";
+                            versionMismatch = true;
+                        }
+                        else if (diff < 0)
+                        {
+                            message += $"<color=#FF0000FF>{client.Character.Data.PlayerName} has a newer version of Town Of Us (v{playerVersions[client.Id].version.ToString()})\n</color>";
+                            versionMismatch = true;
+                        }
+                    }
+                }
+
                 // Display message to the host
                 if (AmongUsClient.Instance.AmHost)
                 {
-                    __instance.GameStartText.transform.localPosition = Vector3.zero;
-                    __instance.GameStartText.transform.localScale = new Vector3(1.2f, 1.2f, 1f);
-                    if (!__instance.GameStartText.text.StartsWith("Starting"))
-                    {
-                        __instance.GameStartText.text = String.Empty;
-                        __instance.GameStartTextParent.SetActive(false);
+                    if (versionMismatch) {
+                        __instance.GameStartText.text = message;
+                        __instance.GameStartText.transform.localPosition = __instance.StartButton.transform.localPosition + Vector3.up * 5;
+                        __instance.GameStartText.transform.localScale = new Vector3(2f, 2f, 1f);
+                        __instance.GameStartTextParent.SetActive(true);
+                    } else {
+                        __instance.GameStartText.transform.localPosition = Vector3.zero;
+                        __instance.GameStartText.transform.localScale = new Vector3(1.2f, 1.2f, 1f);
+                        if (!__instance.GameStartText.text.StartsWith("Starting")) {
+                            __instance.GameStartText.text = String.Empty;
+                            __instance.GameStartTextParent.SetActive(false);
+                        }
                     }
 
                     if (__instance.startState != GameStartManager.StartingStates.Countdown)
                         copiedStartButton?.Destroy();
 
                     // Make starting info available to clients:
-                    if (startingTimer <= 0 && __instance.startState == GameStartManager.StartingStates.Countdown)
-                    {
+                    if (startingTimer <= 0 && __instance.startState == GameStartManager.StartingStates.Countdown) {
                         MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.SetGameStarting, Hazel.SendOption.Reliable, -1);
                         AmongUsClient.Instance.FinishRpcImmediately(writer);
                         RPCProcedure.setGameStarting();
@@ -103,8 +139,7 @@ namespace TownOfUs.Patches
                         startButtonText.fontSizeMax = startButtonText.fontSize;
                         startButtonText.gameObject.transform.localPosition = Vector3.zero;
                         PassiveButton startButtonPassiveButton = copiedStartButton.GetComponent<PassiveButton>();
-                        void StopStartFunc()
-                        {
+                        void StopStartFunc() {
                             __instance.ResetStartState();
                             MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.StopStart, Hazel.SendOption.Reliable, -1);
                             writer.Write(PlayerControl.LocalPlayer.PlayerId);
@@ -114,8 +149,7 @@ namespace TownOfUs.Patches
                             SoundManager.Instance.StopSound(GameStartManager.Instance.gameStartSound);
                         }
                         startButtonPassiveButton.OnClick.AddListener((Action)(() => StopStartFunc()));
-                        __instance.StartCoroutine(Effects.Lerp(.1f, new System.Action<float>((p) =>
-                        {
+                        __instance.StartCoroutine(Effects.Lerp(.1f, new System.Action<float>((p) => {
                             startButtonText.text = "";
                         })));
                     }
@@ -124,19 +158,42 @@ namespace TownOfUs.Patches
                 // Client update with handshake infos
                 else
                 {
-                    __instance.GameStartText.transform.localPosition = Vector3.zero;
-                    __instance.GameStartText.transform.localScale = new Vector3(1.2f, 1.2f, 1f);
-                    if (!__instance.GameStartText.text.StartsWith("Starting"))
+                    if (!playerVersions.ContainsKey(AmongUsClient.Instance.HostId) || TownOfUsPlugin.Version.CompareTo(playerVersions[AmongUsClient.Instance.HostId].version) != 0)
                     {
-                        __instance.GameStartText.text = String.Empty;
-                        __instance.GameStartTextParent.SetActive(false);
+                        kickingTimer += Time.deltaTime;
+                        if (kickingTimer > 10)
+                        {
+                            kickingTimer = 0;
+                            AmongUsClient.Instance.ExitGame(DisconnectReasons.ExitGame);
+                            SceneChanger.ChangeScene("MainMenu");
+                        }
+                        __instance.GameStartText.text = $"<color=#FF0000FF>The host has no or a different version of Town Of Us\nYou will be kicked in {Math.Round(10 - kickingTimer)}s</color>";
+                        __instance.GameStartText.transform.localPosition = __instance.StartButton.transform.localPosition + Vector3.up * 5;
+                        __instance.GameStartText.transform.localScale = new Vector3(2f, 2f, 1f);
+                        __instance.GameStartTextParent.SetActive(true);
+                    }
+                    else if (versionMismatch)
+                    {
+                        __instance.GameStartText.text = $"<color=#FF0000FF>Players With Different Versions:\n</color>" + message;
+                        __instance.GameStartText.transform.localPosition = __instance.StartButton.transform.localPosition + Vector3.up * 5;
+                        __instance.GameStartText.transform.localScale = new Vector3(2f, 2f, 1f);
+                        __instance.GameStartTextParent.SetActive(true);
+                    }
+                    else
+                    {
+                        __instance.GameStartText.transform.localPosition = Vector3.zero;
+                        __instance.GameStartText.transform.localScale = new Vector3(1.2f, 1.2f, 1f);
+                        if (!__instance.GameStartText.text.StartsWith("Starting"))
+                        {
+                            __instance.GameStartText.text = String.Empty;
+                            __instance.GameStartTextParent.SetActive(false);
+                        }
                     }
 
                     if (!__instance.GameStartText.text.StartsWith("Starting") || !CustomOptionHolder.anyPlayerCanStopStart.getBool())
                         copiedStartButton?.Destroy();
+                    if (CustomOptionHolder.anyPlayerCanStopStart.getBool() && copiedStartButton == null && __instance.GameStartText.text.StartsWith("Starting")) {
 
-                    if (CustomOptionHolder.anyPlayerCanStopStart.getBool() && copiedStartButton == null && __instance.startState == GameStartManager.StartingStates.Countdown)
-                    {
                         // Activate Stop-Button
                         copiedStartButton = GameObject.Instantiate(__instance.StartButton.gameObject, __instance.StartButton.gameObject.transform.parent);
                         copiedStartButton.transform.localPosition = __instance.StartButton.transform.localPosition;
@@ -148,8 +205,7 @@ namespace TownOfUs.Patches
                         startButtonText.gameObject.transform.localPosition = Vector3.zero;
                         PassiveButton startButtonPassiveButton = copiedStartButton.GetComponent<PassiveButton>();
 
-                        void StopStartFunc()
-                        {
+                        void StopStartFunc() {
                             MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.StopStart, Hazel.SendOption.Reliable, -1);
                             writer.Write(PlayerControl.LocalPlayer.PlayerId);
                             AmongUsClient.Instance.FinishRpcImmediately(writer);
@@ -159,8 +215,7 @@ namespace TownOfUs.Patches
                             SoundManager.Instance.StopSound(GameStartManager.Instance.gameStartSound);
                         }
                         startButtonPassiveButton.OnClick.AddListener((Action)(() => StopStartFunc()));
-                        __instance.StartCoroutine(Effects.Lerp(.1f, new System.Action<float>((p) =>
-                        {
+                        __instance.StartCoroutine(Effects.Lerp(.1f, new System.Action<float>((p) => {
                             startButtonText.text = "";
                         })));
                     }
@@ -203,7 +258,28 @@ namespace TownOfUs.Patches
                 bool continueStart = true;
 
                 if (AmongUsClient.Instance.AmHost)
-                {                    
+                {
+                    foreach (InnerNet.ClientData client in AmongUsClient.Instance.allClients.GetFastEnumerator())
+                    {
+                        if (client.Character == null) continue;
+                        var dummyComponent = client.Character.GetComponent<DummyBehaviour>();
+                        if (dummyComponent != null && dummyComponent.enabled)
+                            continue;
+
+                        if (!playerVersions.ContainsKey(client.Id))
+                        {
+                            continueStart = false;
+                            break;
+                        }
+
+                        PlayerVersion PV = playerVersions[client.Id];
+                        int diff = TownOfUsPlugin.Version.CompareTo(PV.version);
+                        if (diff != 0)
+                        {
+                            continueStart = false;
+                            break;
+                        }
+                    }        
                     if (CustomOptionHolder.dynamicMap.getBool() && continueStart)
                     {
                         // 0 = Skeld

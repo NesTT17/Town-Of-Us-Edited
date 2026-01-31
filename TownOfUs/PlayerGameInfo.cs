@@ -27,6 +27,7 @@ namespace TownOfUs
         public int Eats = 0;
         public int Cleans = 0;
         public readonly List<RoleInfo> Roles = new();
+        public readonly List<RoleInfo> GhostRoles = new();
         public readonly List<RoleInfo> Modifiers = new();
 
         public static int TotalKills(byte playerId)
@@ -90,6 +91,21 @@ namespace TownOfUs
             return roleInfo.Roles;
         }
 
+        public static List<RoleInfo> GetGhostRoles(PlayerControl player) => GetGhostRoles(player.Data);
+        public static List<RoleInfo> GetGhostRoles(NetworkedPlayerInfo player)
+        {
+            if (Mapping.TryGetValue(player.PlayerId, out PlayerGameInfo roleInfo))
+            {
+                if (roleInfo.GhostRoles?.Count != 0)
+                    return roleInfo.GhostRoles;
+            }
+            else
+            {
+                Mapping.Add(player.PlayerId, roleInfo = new PlayerGameInfo());
+            }
+            return roleInfo.GhostRoles;
+        }
+
         public static void EraseHistory(PlayerControl player)
         {
             if (Mapping.TryGetValue(player.PlayerId, out PlayerGameInfo roleInfo))
@@ -103,6 +119,15 @@ namespace TownOfUs
 
             if (!gameInfo.Roles.Any(r => r.roleId == role.roleId))
                 gameInfo.Roles.Add(role);
+        }
+
+        public static void AddGhostRole(byte playerId, RoleInfo role)
+        {
+            if (!Mapping.TryGetValue(playerId, out PlayerGameInfo gameInfo))
+                Mapping.Add(playerId, gameInfo = new PlayerGameInfo());
+
+            if (!gameInfo.GhostRoles.Any(r => r.roleId == role.roleId))
+                gameInfo.GhostRoles.Add(role);
         }
 
         public static List<RoleInfo> GetModifiers(byte playerId)

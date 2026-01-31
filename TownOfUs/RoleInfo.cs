@@ -80,6 +80,11 @@ namespace TownOfUs
         public static RoleInfo oracle = new RoleInfo("Oracle", Oracle.color, "Make the <color=#FF1919FF>Impostors</color> confess their sins", "Get another player to confess on your passing", RoleId.Oracle, FactionId.Crewmate);
         public static RoleInfo lookout = new RoleInfo("Lookout", Lookout.color, "Zoomout of the map and observe", "Zoomout of the map and observe", RoleId.Lookout, FactionId.Crewmate);
         public static RoleInfo plumber = new RoleInfo("Plumber", Plumber.color, "Maintain a clean vent system", "Maintain a clean vent system", RoleId.Plumber, FactionId.Crewmate);
+        public static RoleInfo deceiver = new RoleInfo("Deceiver", Deceiver.color, "You can leace decoys to deceive others", "You can leace decoys to deceive others", RoleId.Deceiver, FactionId.Impostor);
+
+        // Ghost Roles
+        public static RoleInfo banshee = new RoleInfo("Banshee", Banshee.color, "Scare the living", "Scare the living", RoleId.Banshee, FactionId.Ghost);
+        public static RoleInfo poltergeist = new RoleInfo("Poltergeist", Poltergeist.color, "Where them corpses at?", "Where them corpses at?", RoleId.Poltergeist, FactionId.Ghost);
 
         // Default Roles
         public static RoleInfo impostor = new RoleInfo("Impostor", Palette.ImpostorRed, "Sabotage and kill everyone", "Sabotage and kill everyone", RoleId.Impostor, FactionId.Impostor);
@@ -111,6 +116,7 @@ namespace TownOfUs
         public static RoleInfo sixthSense = new RoleInfo("Sixth Sense", SixthSense.color, "Know when someone interacts with you", "Know when someone interacts with you", RoleId.SixthSense, FactionId.Modifier);
         public static RoleInfo taskMaster = new RoleInfo("Taskmaster", Taskmaster.color, "Get tasks done fast", "Get tasks done fast", RoleId.Taskmaster, FactionId.Modifier);
         public static RoleInfo disperser = new RoleInfo("Disperser", Disperser.color, "Separate the Crewmates", "Separate the Crewmates", RoleId.Disperser, FactionId.Modifier);
+        public static RoleInfo poucher = new RoleInfo("Poucher", Poucher.color, "Keep info on the players you kill", "Keep info on the players you kill", RoleId.Poucher, FactionId.Modifier);
 
         public static List<RoleInfo> allRoleInfos = new()
         {
@@ -161,6 +167,7 @@ namespace TownOfUs
             assassin,
             blackmailer,
             camouflager,
+            deceiver,
             escapist,
             grenadier,
             janitor,
@@ -196,9 +203,13 @@ namespace TownOfUs
 
             disperser,
             doubleShot,
+            poucher,
             ruthless,
             saboteur,
             underdog,
+
+            banshee,
+            poltergeist,
         };
 
         public static List<RoleInfo> getRoleInfoForPlayer(PlayerControl p, bool showModifier = true)
@@ -233,6 +244,7 @@ namespace TownOfUs
                 if (p == SixthSense.sixthSense) infos.Add(sixthSense);
                 if (p == Taskmaster.taskMaster) infos.Add(taskMaster);
                 if (p == Disperser.disperser) infos.Add(disperser);
+                if (p == Poucher.poucher) infos.Add(poucher);
             }
             int count = infos.Count;
 
@@ -288,6 +300,11 @@ namespace TownOfUs
             if (p == Oracle.oracle) infos.Add(oracle);
             if (p == Lookout.lookout) infos.Add(lookout);
             if (p == Plumber.plumber) infos.Add(plumber);
+            if (p == Deceiver.deceiver) infos.Add(deceiver);
+
+            // Ghost Roles
+            if (p == Banshee.banshee) infos.Add(banshee);
+            if (p == Poltergeist.poltergeist) infos.Add(poltergeist);
 
             // Default roles
             if (infos.Count == count) infos.Add(p.Data.Role.IsImpostor ? impostor : crewmate);

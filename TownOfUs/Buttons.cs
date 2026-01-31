@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Reactor.Networking.Extensions;
 using Reactor.Utilities;
 using TMPro;
 using UnityEngine;
@@ -59,6 +60,8 @@ namespace TownOfUs
         public static CustomButton draculaButton;
         public static CustomButton vampireButton;
         public static CustomButton poisonButton;
+        public static CustomButton poisonBlindTrapButton;
+        public static TMP_Text poisonBlindTrapButtonText;
         public static CustomButton venererButton;
         public static CustomButton plaguebearerInfectButton;
         public static CustomButton pestilenceKillButton;
@@ -81,6 +84,11 @@ namespace TownOfUs
         public static TMP_Text plumberFlushButtonText;
         public static CustomButton disperserButton;
         public static TMP_Text disperserButtonText;
+        public static CustomButton bansheeScareButton;
+        public static CustomButton poltergeistButton;
+        public static CustomButton deceiverPlaceDecoyButton;
+        public static CustomButton deceiverDestroyDecoyButton;
+        public static CustomButton deceiverSwapDecoyButton;
 
         public static void setCustomButtonCooldowns()
         {
@@ -142,6 +150,7 @@ namespace TownOfUs
             vampireButton.MaxTimer = Vampire.cooldown;
             poisonButton.MaxTimer = Poisoner.cooldown;
             poisonButton.EffectDuration = Poisoner.delay;
+            poisonBlindTrapButton.MaxTimer = Poisoner.trapCooldown;
             venererButton.MaxTimer = Venerer.cooldown;
             venererButton.EffectDuration = Venerer.duration;
             plaguebearerInfectButton.MaxTimer = Plaguebearer.cooldown;
@@ -164,6 +173,12 @@ namespace TownOfUs
             plumberSealButton.MaxTimer = Plumber.sealVentCooldown;
             plumberFlushButton.MaxTimer = Plumber.flushCooldown;
             disperserButton.MaxTimer = 10f;
+            bansheeScareButton.MaxTimer = Banshee.cooldown;
+            bansheeScareButton.EffectDuration = Banshee.duration;
+            poltergeistButton.MaxTimer = Poltergeist.cooldown;
+            deceiverPlaceDecoyButton.MaxTimer = Deceiver.placeCooldown;
+            deceiverDestroyDecoyButton.MaxTimer = 3f;
+            deceiverSwapDecoyButton.MaxTimer = Deceiver.swapCooldown;
             // Already set the timer to the max, as the button is enabled during the game and not available at the start
             zoomOutButton.MaxTimer = 0f;
         }
@@ -1624,6 +1639,38 @@ namespace TownOfUs
                 false, 0f, () => { poisonButton.Timer = poisonButton.MaxTimer; }
             );
 
+            // Poisoner Blind trap
+            poisonBlindTrapButton = new CustomButton(
+                () =>
+                {
+                    var pos = PlayerControl.LocalPlayer.transform.position;
+                    byte[] buff = new byte[sizeof(float) * 2];
+                    Buffer.BlockCopy(BitConverter.GetBytes(pos.x), 0, buff, 0 * sizeof(float), sizeof(float));
+                    Buffer.BlockCopy(BitConverter.GetBytes(pos.y), 0, buff, 1 * sizeof(float), sizeof(float));
+
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.SetBlindTrap, Hazel.SendOption.Reliable);
+                    writer.WriteBytesAndSize(buff);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.setBlindTrap(buff);
+
+                    SoundEffectsManager.play("trapperTrap");
+                    poisonBlindTrapButton.Timer = poisonBlindTrapButton.MaxTimer;
+                },
+                () => { return Poisoner.poisoner != null && Poisoner.poisoner == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () =>
+                {
+                    if (poisonBlindTrapButtonText != null) poisonBlindTrapButtonText.text = $"{Poisoner.charges}";
+                    return Poisoner.charges > 0 && PlayerControl.LocalPlayer.CanMove;
+                },
+                () => { poisonBlindTrapButton.Timer = poisonBlindTrapButton.MaxTimer; },
+                Poisoner.getTrapButtonSprite(), CustomButton.ButtonPositions.upperRowCenter, __instance, KeyCode.G
+            );
+            poisonBlindTrapButtonText = GameObject.Instantiate(poisonBlindTrapButton.actionButton.cooldownTimerText, poisonBlindTrapButton.actionButton.cooldownTimerText.transform.parent);
+            poisonBlindTrapButtonText.text = "";
+            poisonBlindTrapButtonText.enableWordWrapping = false;
+            poisonBlindTrapButtonText.transform.localScale = Vector3.one * 0.5f;
+            poisonBlindTrapButtonText.transform.localPosition += new Vector3(-0.05f, 0.7f, 0);
+
             // Venerer Ability
             venererButton = new CustomButton(
                 () =>
@@ -2152,6 +2199,103 @@ namespace TownOfUs
             disperserButtonText.enableWordWrapping = false;
             disperserButtonText.transform.localScale = Vector3.one * 0.5f;
             disperserButtonText.transform.localPosition += new Vector3(-0.05f, 0.7f, 0);
+
+            // Banshee Scare
+            bansheeScareButton = new CustomButton(
+                () =>
+                {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.BansheeScare, Hazel.SendOption.Reliable);
+                    writer.Write(Banshee.currentTarget.PlayerId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.bansheeScare(Banshee.currentTarget.PlayerId);
+                },
+                () => { return Banshee.banshee != null && Banshee.banshee == PlayerControl.LocalPlayer && PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return Banshee.currentTarget != null && PlayerControl.LocalPlayer.CanMove; },
+                () =>
+                {
+                    bansheeScareButton.Timer = bansheeScareButton.MaxTimer;
+                    bansheeScareButton.isEffectActive = false;
+                    bansheeScareButton.actionButton.cooldownTimerText.color = Palette.EnabledColor;
+                },
+                Banshee.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q,
+                true, Banshee.duration, () => { bansheeScareButton.Timer = bansheeScareButton.MaxTimer; }
+            );
+
+            // Poltergeist move body
+            poltergeistButton = new CustomButton(
+                () =>
+                {
+                    var deadBody = Poltergeist.targetBody;
+                    if (deadBody == null) return;
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.PoltergeistMove, Hazel.SendOption.Reliable);
+                    writer.Write(deadBody.ParentId);
+                    writer.Write(PlayerControl.LocalPlayer.GetTruePosition());
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    Poltergeist.MoveDeadBody(deadBody.ParentId, PlayerControl.LocalPlayer.GetTruePosition());
+                    poltergeistButton.Timer = poltergeistButton.MaxTimer;
+                },
+                () => { return Poltergeist.poltergeist != null && Poltergeist.poltergeist == PlayerControl.LocalPlayer && PlayerControl.LocalPlayer.Data.IsDead; },
+                () =>
+                {
+                    Poltergeist.targetBody = Helpers.GetDeadBody(PlayerControl.LocalPlayer.GetTruePosition());
+                    return Poltergeist.targetBody && PlayerControl.LocalPlayer.CanMove;
+                },
+                () => { poltergeistButton.Timer = poltergeistButton.MaxTimer; },
+                Poltergeist.getButtonSprite(), CustomButton.ButtonPositions.upperRowRight, __instance, KeyCode.Q
+            );
+            
+            // Deceiver Place Decoy
+            deceiverPlaceDecoyButton = new CustomButton(
+                () =>
+                {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.DeceiverPlaceDecoy, Hazel.SendOption.Reliable);
+                    writer.Write(PlayerControl.LocalPlayer.PlayerId);
+                    writer.Write(PlayerControl.LocalPlayer.transform.position);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.deceiverPlaceDecoy(PlayerControl.LocalPlayer, PlayerControl.LocalPlayer.transform.position);
+                    deceiverDestroyDecoyButton.Timer = 3f;
+                },
+                () => { return Deceiver.deceiver != null && Deceiver.deceiver == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return Deceiver.decoy == null && PlayerControl.LocalPlayer.CanMove; },
+                () => { deceiverPlaceDecoyButton.Timer = deceiverPlaceDecoyButton.MaxTimer; },
+                Deceiver.getDecoyButtonSprite(), CustomButton.ButtonPositions.upperRowLeft, __instance, KeyCode.F
+            );
+
+            // Deceiver Destroy Decoy
+            deceiverDestroyDecoyButton = new CustomButton(
+                () =>
+                {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.DeceiverDecoyDestroy, Hazel.SendOption.Reliable);
+                    writer.Write(PlayerControl.LocalPlayer.PlayerId);
+                    writer.Write(Deceiver.decoy.Id);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.deceiverDecoyDestroy(PlayerControl.LocalPlayer, Deceiver.decoy.Id);
+                    deceiverPlaceDecoyButton.Timer = deceiverPlaceDecoyButton.MaxTimer;
+                },
+                () => { return Deceiver.deceiver != null && Deceiver.deceiver == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return Deceiver.decoy != null && PlayerControl.LocalPlayer.CanMove; },
+                () => { deceiverDestroyDecoyButton.Timer = deceiverDestroyDecoyButton.MaxTimer; },
+                Deceiver.getDecoyDestroyButtonSprite(), CustomButton.ButtonPositions.lowerRowCenter, __instance, KeyCode.G
+            );
+
+            // Deceiver Swap Decoy
+            deceiverSwapDecoyButton = new CustomButton(
+                () =>
+                {
+                    MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRPC.DeceiverDecoySwap, Hazel.SendOption.Reliable);
+                    writer.Write(PlayerControl.LocalPlayer.PlayerId);
+                    writer.Write(Deceiver.decoy.Id);
+                    writer.Write(PlayerControl.LocalPlayer.transform.position);
+                    writer.Write(Deceiver.decoy.GameObject.transform.position);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    RPCProcedure.deceiverDecoySwap(PlayerControl.LocalPlayer, Deceiver.decoy.Id, PlayerControl.LocalPlayer.transform.position, Deceiver.decoy.GameObject.transform.position);
+                    deceiverSwapDecoyButton.Timer = deceiverSwapDecoyButton.MaxTimer;
+                },
+                () => { return Deceiver.deceiver != null && Deceiver.deceiver == PlayerControl.LocalPlayer && !PlayerControl.LocalPlayer.Data.IsDead; },
+                () => { return Deceiver.decoy != null && PlayerControl.LocalPlayer.CanMove; },
+                () => { deceiverSwapDecoyButton.Timer = deceiverSwapDecoyButton.MaxTimer; },
+                Deceiver.getDecoySwapButtonSprite(), CustomButton.ButtonPositions.upperRowFarLeft, __instance, KeyCode.H
+            );
             
             // Zoom Button
             zoomOutButton = new CustomButton(

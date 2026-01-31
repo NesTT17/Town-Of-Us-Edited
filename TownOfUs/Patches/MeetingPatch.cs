@@ -39,7 +39,10 @@ namespace TownOfUs.Patches
                         if (Blackmailer.blackmailed != null && Blackmailer.blackmailed == PlayerControl.LocalPlayer && Blackmailer.blockTargetVote) continue;
 
                         int currentVotes;
-                        int additionalVotes = (Mayor.mayor != null && Mayor.mayor.PlayerId == playerVoteArea.TargetPlayerId) ? 3 : 1;
+                        int additionalVotes = 1;
+
+                        if (Mayor.mayor != null && Mayor.mayor == player) additionalVotes = 3;
+
                         if (dictionary.TryGetValue(playerVoteArea.VotedFor, out currentVotes))
                             dictionary[playerVoteArea.VotedFor] = currentVotes + additionalVotes;
                         else
@@ -254,6 +257,7 @@ namespace TownOfUs.Patches
 
                     playerVoteArea.ClearForResults();
                     int num2 = 0;
+                    Dictionary<int, int> votesApplied = new();
                     for (int j = 0; j < states.Length; j++)
                     {
                         MeetingHud.VoterState voterState = states[j];
@@ -275,19 +279,13 @@ namespace TownOfUs.Patches
                             num2++;
                         }
                         // Major vote, redo this iteration to place a votes
-                        else if (Mayor.mayor != null && voterState.VoterId == (sbyte)Mayor.mayor.PlayerId && i == 0 && voterState.SkippedVote && !playerById.IsDead)
+
+                        if (!votesApplied.ContainsKey(voterState.VoterId))
+                            votesApplied[voterState.VoterId] = 0;
+                        votesApplied[voterState.VoterId]++;
+                        if (Mayor.mayor != null && Mayor.mayor.PlayerId == voterState.VoterId && votesApplied[voterState.VoterId] < 3)
                         {
-                            __instance.BloopAVoteIcon(playerById, num, __instance.SkippedVoting.transform);
-                            __instance.BloopAVoteIcon(playerById, num, __instance.SkippedVoting.transform);
-                            num++;
-                            num++;
-                        }
-                        else if (Mayor.mayor != null && voterState.VoterId == (sbyte)Mayor.mayor.PlayerId && voterState.VotedForId == targetPlayerId && !playerById.IsDead)
-                        {
-                            __instance.BloopAVoteIcon(playerById, num2, playerVoteArea.transform);
-                            __instance.BloopAVoteIcon(playerById, num2, playerVoteArea.transform);
-                            num2++;
-                            num2++;
+                            j--;
                         }
                     }
                 }
@@ -582,7 +580,7 @@ namespace TownOfUs.Patches
             foreach (RoleInfo roleInfo in RoleInfo.allRoleInfos)
             {
                 RoleId guesserRole = PlayerControl.LocalPlayer == Vigilante.vigilante ? RoleId.Vigilante : (PlayerControl.LocalPlayer == Assassin.assassin ? RoleId.Assassin : RoleId.None);
-                if (roleInfo.factionId == FactionId.Modifier || roleInfo.roleId == guesserRole) continue;
+                if (roleInfo.factionId == FactionId.Modifier || roleInfo.factionId == FactionId.Ghost || roleInfo.roleId == guesserRole) continue;
                 if (HandleGuesser.isGuesserGm && (roleInfo.roleId == RoleId.Vigilante || roleInfo.roleId == RoleId.Assassin)) continue;
 
                 // remove all roles that cannot spawn due to the settings from the ui.
@@ -1030,6 +1028,9 @@ namespace TownOfUs.Patches
                         }
                     }
                 }
+
+                // Remove revealed blind traps
+                BlindTrap.clearRevealedBlindTraps();
             }
         }
 

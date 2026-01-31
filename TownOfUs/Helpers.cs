@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AmongUs.GameOptions;
 using Reactor.Utilities;
@@ -16,13 +17,14 @@ namespace TownOfUs
     public enum CustomGamemodes { Classic, Guesser }
     public enum BlockOptions { Off, Emergency, Always }
     public enum MurderAttemptResult { PerformKill, SuppressKill, BlankKill, DelayPoisonerKill, SurvivorReset, GAReset, ReverseKill }
-    public enum FactionId { Crewmate, NeutralBenign, NeutralEvil, NeutralKilling, Impostor, Modifier }
+    public enum FactionId { Crewmate, NeutralBenign, NeutralEvil, NeutralKilling, Impostor, Modifier, Ghost }
 
     public static class Helpers
     {
         public static string previousEndGameSummary = "";
         public static Dictionary<string, Sprite> CachedSprites = new();
         public static bool GameStarted => AmongUsClient.Instance?.GameState == InnerNet.InnerNetClient.GameStates.Started && !AmongUsClient.Instance.IsGameOver && ShipStatus.Instance != null;
+        public static bool TutorialActive => AmongUsClient.Instance?.NetworkMode == NetworkModes.FreePlay;
 
         public static Sprite loadSpriteFromResources(string path, float pixelsPerUnit, bool cache = true)
         {
@@ -130,6 +132,55 @@ namespace TownOfUs
             return null;
         }
 
+        public static DeadBody[] AllDeadBodies()
+        {
+            return UnityEngine.Object.FindObjectsOfType<DeadBody>();
+        }
+
+#nullable enable
+        public static DeadBody? GetDeadBody(byte id)
+        {
+#nullable disable
+            return AllDeadBodies().FirstOrDefault((p) => p.ParentId == id);
+        }
+
+#nullable enable
+        public static DeadBody? GetDeadBody(PlayerControl player)
+        {
+#nullable disable
+            if (player == null) return null;
+            return AllDeadBodies().FirstOrDefault((p) => p.ParentId == player.PlayerId);
+        }
+
+#nullable enable
+        public static DeadBody? GetDeadBody(Vector2 pos, float distance = 3f)
+        {
+            DeadBody? deadBody = null;
+#nullable disable
+            float closestDistSqr = float.MaxValue;
+
+            foreach (var collider in Physics2D.OverlapCircleAll(pos, Mathf.Sqrt(distance), Constants.PlayersOnlyMask))
+            {
+                if (!collider.CompareTag("DeadBody")) continue;
+
+                var body = collider.GetComponent<DeadBody>();
+                if (body == null) continue;
+
+                var player = playerById(body.ParentId);
+                if (player?.Data == null || !player.Data.IsDead || player.Data.Disconnected) continue;
+
+                float distSqr = (body.TruePosition - pos).sqrMagnitude;
+                if (distSqr < distance && distSqr < closestDistSqr)
+                {
+                    deadBody = body;
+                    closestDistSqr = distSqr;
+                }
+            }
+
+            if (deadBody == null) return null;
+            return deadBody;
+        }
+
         public static void refreshRoleDescription(PlayerControl player)
         {
             List<RoleInfo> infos = RoleInfo.getRoleInfoForPlayer(player);
@@ -171,7 +222,11 @@ namespace TownOfUs
 
         internal static string getRoleString(RoleInfo roleInfo)
         {
-            return cs(roleInfo.color, roleInfo.factionId == FactionId.Modifier ? $"Modifier: <b>{roleInfo.name}</b>\n{roleInfo.shortDescription}" : $"Role: <b>{roleInfo.name}</b>\n{roleInfo.shortDescription}");
+            if (roleInfo.factionId == FactionId.Modifier)
+                return cs(roleInfo.color, $"Modifier: <b>{roleInfo.name}</b>\n{roleInfo.shortDescription}");
+            if (roleInfo.factionId == FactionId.Ghost)
+                return cs(roleInfo.color, $"Ghost Role: <b>{roleInfo.name}</b>\n{roleInfo.shortDescription}");
+            return cs(roleInfo.color, $"Role: <b>{roleInfo.name}</b>\n{roleInfo.shortDescription}");
         }
 
         public static bool isD(byte playerId)
@@ -780,6 +835,7 @@ namespace TownOfUs
             if (player == VampireHunter.vampireHunter) VampireHunter.clearAndReload();
             if (player == Lookout.lookout) Lookout.clearAndReload();
             if (player == Plumber.plumber) Plumber.clearAndReload();
+            if (player == Oracle.oracle) Oracle.clearAndReload();
 
             // Neutral roles
             if (player.IsJester(out _)) Jester.RemoveJester(player.PlayerId);
@@ -815,6 +871,7 @@ namespace TownOfUs
             if (player == Venerer.venerer) Venerer.clearAndReload();
             if (player == Scavenger.scavenger) Scavenger.clearAndReload();
             if (player == Escapist.escapist) Escapist.clearAndReload();
+            if (player == Deceiver.deceiver) Deceiver.clearAndReload();
 
             if (!ignoreModifier)
             {
@@ -843,6 +900,7 @@ namespace TownOfUs
                 if (player == SixthSense.sixthSense) SixthSense.clearAndReload();
                 if (player == Taskmaster.taskMaster) Taskmaster.clearAndReload();
                 if (player == Disperser.disperser) Disperser.clearAndReload();
+                if (player == Poucher.poucher) Poucher.clearAndReload();
             }
 
             if (addHistory)
@@ -1125,7 +1183,6 @@ namespace TownOfUs
                 yield break;
             }
             Glitch.hackedPlayers.Add(hackPlayer, DateTime.UtcNow);
-            float savedReportDistance = PlayerControl.LocalPlayer.MaxReportDistance;
 
             bool useButtonEnabled = false;
             bool petButtonEnabled = false;
@@ -1277,8 +1334,6 @@ namespace TownOfUs
                         MapBehaviour.Instance.Close();
                         MapBehaviour.Instance.Close();
                     }
-
-                    PlayerControl.LocalPlayer.MaxReportDistance = 0f;
                 }
 
                 double totalHacktime = (DateTime.UtcNow - Glitch.hackedPlayers[hackPlayer]).TotalMilliseconds / 1000;
@@ -1305,7 +1360,6 @@ namespace TownOfUs
                 {
                     CustomButton.buttons.ForEach(x => x.UnHack());
                 }
-                PlayerControl.LocalPlayer.MaxReportDistance = savedReportDistance;
             }
             Glitch.hackedPlayers.Remove(hackPlayer);
             Glitch.hackedPlayer = null;
@@ -1331,6 +1385,7 @@ namespace TownOfUs
             {
                 if (roleId == RoleId.Mayor) return false;
                 else if (roleId == RoleId.Pestilence) return false;
+                else if (factionId == FactionId.Ghost) return false;
                 else if (roleId == RoleId.Crewmate)
                     return
                         !player.isEvil() && CustomOptionHolder.guesserGamemodeCrewmateGuesserCanGuessCrewmateRoles.getBool()
@@ -1479,6 +1534,7 @@ namespace TownOfUs
                 {
                     if (roleId == RoleId.Mayor) return false;
                     else if (roleId == RoleId.Pestilence) return false;
+                    else if (factionId == FactionId.Ghost) return false;
                     else if (roleId == RoleId.Crewmate)
                         return Vigilante.canGuessCrewmateRoles;
                     else if (roleId == RoleId.Impostor)
@@ -1538,6 +1594,7 @@ namespace TownOfUs
                 {
                     if (roleId == RoleId.Mayor) return false;
                     else if (roleId == RoleId.Pestilence) return false;
+                    else if (factionId == FactionId.Ghost) return false;
                     else if (roleId == RoleId.Crewmate)
                         return true;
                     else if (roleId == RoleId.Impostor)
@@ -1597,6 +1654,7 @@ namespace TownOfUs
                 {
                     if (roleId == RoleId.Mayor) return false;
                     else if (roleId == RoleId.Pestilence) return false;
+                    else if (factionId == FactionId.Ghost) return false;
                     else if (roleId == RoleId.Crewmate)
                         return true;
                     else if (roleId == RoleId.Impostor)
@@ -1675,7 +1733,7 @@ namespace TownOfUs
             if (GuesserGM.isGuesser(player.PlayerId) && CustomOptionHolder.guesserGamemodeHasMultipleShotsPerMeeting.getBool()) return true;
             return false;
         }
-        
+
         public static bool killsThroughShield(this PlayerControl player)
         {
             if (Assassin.assassin != null && Assassin.assassin == player && Assassin.canKillsThroughShield) return true;
@@ -1683,6 +1741,45 @@ namespace TownOfUs
             if (Doomsayer.doomsayer != null && Doomsayer.doomsayer == player && Doomsayer.canKillsThroughShield) return true;
             if (GuesserGM.isGuesser(player.PlayerId) && CustomOptionHolder.guesserGamemodeKillsThroughShield.getBool()) return true;
             return false;
+        }
+
+        public static void SetTargetWithLight(this FollowerCamera camera, MonoBehaviour target)
+        {
+            camera.Target = target;
+            PlayerControl.LocalPlayer.lightSource?.transform?.SetParent(target.transform, false);
+            if (target != PlayerControl.LocalPlayer) PlayerControl.LocalPlayer.NetTransform.Halt();
+        }
+        
+        private const float MIN = -50f;
+        private const float MAX = 50f;
+        public static Vector3 ReadVector3(this MessageReader reader)
+        {
+            var x = reader.ReadUInt16() / (float)ushort.MaxValue;
+            var y = reader.ReadUInt16() / (float)ushort.MaxValue;
+            var z = reader.ReadUInt16() / (float)ushort.MaxValue;
+            return new Vector3(Mathf.Lerp(MIN, MAX, x), Mathf.Lerp(MIN, MAX, y), Mathf.Lerp(MIN, MAX, z));
+        }
+
+        public static PlayerControl ReadPlayer(this MessageReader reader)
+        {
+            var id = reader.ReadByte();
+            return PlayerControl.AllPlayerControls.ToArray().FirstOrDefault(n => n.PlayerId == id);
+        }
+
+        public static void Write(this MessageWriter writer, Vector3 value)
+        {
+            var x = (ushort)(ReverseLerp(value.x) * ushort.MaxValue);
+            var y = (ushort)(ReverseLerp(value.y) * ushort.MaxValue);
+            var z = (ushort)(ReverseLerp(value.z) * ushort.MaxValue);
+
+            writer.Write(x);
+            writer.Write(y);
+            writer.Write(z);
+        }
+
+        private static float ReverseLerp(float t)
+        {
+            return Mathf.Clamp((t - MIN) / (MAX - MIN), 0f, 1f);
         }
 
         public static bool IsSheriff(this PlayerControl player, out Sheriff sheriff) => Sheriff.IsSheriff(player.PlayerId, out sheriff);

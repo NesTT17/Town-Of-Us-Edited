@@ -72,6 +72,7 @@ namespace TownOfUs
             Oracle.clearAndReload();
             Lookout.clearAndReload();
             Plumber.clearAndReload();
+            Deceiver.clearAndReload();
 
             // Modifiers
             Bait.clearAndReload();
@@ -99,6 +100,11 @@ namespace TownOfUs
             SixthSense.clearAndReload();
             Taskmaster.clearAndReload();
             Disperser.clearAndReload();
+            Poucher.clearAndReload();
+
+            // Ghost Roles
+            Banshee.clearAndReload();
+            Poltergeist.clearAndReload();
 
             HandleGuesser.clearAndReload();
         }
@@ -1832,10 +1838,14 @@ namespace TownOfUs
         public static PlayerControl poisoner;
         public static PlayerControl poisoned;
         public static PlayerControl currentTarget;
+        public static List<byte> blindTrappedPlayers = new List<byte>();
         public static Color color = Palette.ImpostorRed;
 
         public static float cooldown = 30f;
         public static float delay = 10f;
+        public static float trapCooldown = 20f;
+        public static float trapDuration = 10f;
+        public static int charges = 1;
         public static bool canVent = false;
 
         public static void clearAndReload()
@@ -1843,8 +1853,12 @@ namespace TownOfUs
             poisoner = null;
             poisoned = null;
             currentTarget = null;
+            blindTrappedPlayers = new List<byte>();
             cooldown = CustomOptionHolder.poisonerCooldown.getFloat();
             delay = CustomOptionHolder.poisonerKillDelay.getFloat();
+            trapCooldown = CustomOptionHolder.poisonerTrapCooldown.getFloat();
+            trapDuration = CustomOptionHolder.poisonerTrapDuration.getFloat();
+            charges = CustomOptionHolder.poisonerNumberOfTraps.getInt();
             canVent = CustomOptionHolder.poisonerCanVent.getBool();
         }
 
@@ -1854,6 +1868,14 @@ namespace TownOfUs
             if (buttonSprite) return buttonSprite;
             buttonSprite = Helpers.loadSpriteFromResources("TownOfUs.Resources.PoisonButton.png", 100f);
             return buttonSprite;
+        }
+
+        private static Sprite trapButtonSprite;
+        public static Sprite getTrapButtonSprite()
+        {
+            if (trapButtonSprite) return trapButtonSprite;
+            trapButtonSprite = Helpers.loadSpriteFromResources("TownOfUs.Resources.Plant_BlindTraps.png", 115f);
+            return trapButtonSprite;
         }
     }
 
@@ -2062,7 +2084,7 @@ namespace TownOfUs
             RoleManagerSelectRolesPatch.RoleAssignmentData roleData = RoleManagerSelectRolesPatch.getRoleAssignmentData();
             foreach (var role in RoleInfo.allRoleInfos)
             {
-                if (role.factionId == FactionId.Modifier || role.roleId == RoleId.Mayor || role.roleId == RoleId.Pestilence) continue;
+                if (role.factionId == FactionId.Modifier || role.factionId == FactionId.Ghost || role.roleId == RoleId.Mayor || role.roleId == RoleId.Pestilence) continue;
                 else if (roleData.crewSettings.ContainsKey((byte)role.roleId) && roleData.crewSettings[(byte)role.roleId] == 0) continue;
                 else if ((role.roleId != RoleId.Amnesiac || role.roleId != RoleId.Survivor || role.roleId != RoleId.Pursuer || role.roleId != RoleId.Thief) && roleData.neutralSettings.ContainsKey((byte)role.roleId) && roleData.neutralSettings[(byte)role.roleId] == 0) continue;
                 else if (roleData.neutralKillingSettings.ContainsKey((byte)role.roleId) && roleData.neutralKillingSettings[(byte)role.roleId] == 0) continue;
@@ -2671,6 +2693,50 @@ namespace TownOfUs
             return fungleVentSealedSprite;
         }
     }
+
+    public static class Deceiver
+    {
+        public static PlayerControl deceiver;
+        public static DeceiverDecoy decoy;
+        public static Color color = Palette.ImpostorRed;
+
+        public static float placeCooldown = 30f;
+        public static float swapCooldown = 30f;
+        public static int showDecoy = 0;
+
+        public static void clearAndReload()
+        {
+            deceiver = null;
+            decoy = null;
+            placeCooldown = CustomOptionHolder.deceiverPlaceCooldown.getFloat();
+            swapCooldown = CustomOptionHolder.deceiverSwapCooldown.getFloat();
+            showDecoy = CustomOptionHolder.deceiverShowDecoy.getSelection();
+        }
+
+        private static Sprite buttonSprite;
+        public static Sprite getDecoyButtonSprite()
+        {
+            if (buttonSprite) return buttonSprite;
+            buttonSprite = Helpers.loadSpriteFromResources("TownOfUs.Resources.DecoyButton.png", 115f);
+            return buttonSprite;
+        }
+
+        private static Sprite swapButtonSprite;
+        public static Sprite getDecoySwapButtonSprite()
+        {
+            if (swapButtonSprite) return swapButtonSprite;
+            swapButtonSprite = Helpers.loadSpriteFromResources("TownOfUs.Resources.DecoySwapButton.png", 115f);
+            return swapButtonSprite;
+        }
+
+        private static Sprite destroyButtonSprite;
+        public static Sprite getDecoyDestroyButtonSprite()
+        {
+            if (destroyButtonSprite) return destroyButtonSprite;
+            destroyButtonSprite = Helpers.loadSpriteFromResources("TownOfUs.Resources.DecoyDestroyButton.png", 115f);
+            return destroyButtonSprite;
+        }
+    }
     #endregion
 
     #region Modifiers
@@ -3211,6 +3277,112 @@ namespace TownOfUs
         {
             if (buttonSprite) return buttonSprite;
             buttonSprite = Helpers.loadSpriteFromResources("TownOfUs.Resources.DisperseButton.png", 100f);
+            return buttonSprite;
+        }
+    }
+
+    public static class Poucher
+    {
+        public static PlayerControl poucher;
+        public static Color color = Palette.ImpostorRed;
+
+        public static List<PlayerControl> killed = new();
+
+        public static void clearAndReload()
+        {
+            poucher = null;
+            killed = new();
+        }
+    }
+    #endregion
+
+    #region Ghost Roles
+    public static class Banshee
+    {
+        public static PlayerControl banshee;
+        public static PlayerControl currentTarget;
+        public static PlayerControl scareVictim;
+        public static Color color = Palette.ImpostorRed;
+
+        public static float scareTimer = 0f;
+
+        public static float cooldown = 30f;
+        public static float duration = 10f;
+
+        public static void clearAndReload()
+        {
+            banshee = null;
+            scareTimer = 0f;
+            cooldown = CustomOptionHolder.bansheeCooldown.getFloat();
+            duration = CustomOptionHolder.bansheeDuration.getFloat();
+        }
+
+        private static Sprite buttonSprite;
+        public static Sprite getButtonSprite()
+        {
+            if (buttonSprite) return buttonSprite;
+            buttonSprite = Helpers.loadSpriteFromResources("TownOfUs.Resources.ScareButton.png", 115f);
+            return buttonSprite;
+        }
+    }
+
+    public static class Poltergeist
+    {
+        public static PlayerControl poltergeist;
+        public static DeadBody targetBody;
+        public static Color color = Palette.CrewmateBlue;
+
+        public static float cooldown = 30f;
+        public static float radius = 1f;
+
+        public static void clearAndReload()
+        {
+            poltergeist = null;
+            targetBody = null;
+            cooldown = CustomOptionHolder.poltergeistCooldown.getFloat();
+            radius = CustomOptionHolder.poltergeistRadius.getFloat();
+        }
+
+        public static void MoveDeadBody(byte targetId, Vector2 pos) => Coroutines.Start(CoMoveDeadBody(Helpers.GetDeadBody(targetId), pos));
+        public static IEnumerator CoMoveDeadBody(DeadBody deadBody, Vector2 pos)
+        {
+            if (deadBody == null)
+            {
+                yield break;
+            }
+
+            float p = 0f;
+            Vector2 beginPos = deadBody.transform.position;
+
+            while (deadBody)
+            {
+                p += Time.deltaTime * 0.85f;
+                if (!(p < 1f)) break;
+
+                float pp = p * p;
+                Vector3 currentPos = (beginPos * (1 - pp)) + (pos * pp);
+                currentPos.z = currentPos.y / 1000f;
+                deadBody.transform.position = currentPos;
+
+                yield return null;
+            }
+
+            if (deadBody) deadBody.transform.position = AsVector3(pos, pos.y / 1000f);
+
+            yield break;
+            static Vector3 AsVector3(Vector2 vec, float z)
+            {
+                Vector3 result = vec;
+                result.z = z;
+                return result;
+            }
+        }
+
+        private static Sprite buttonSprite;
+        public static Sprite getButtonSprite()
+        {
+            if (buttonSprite) return buttonSprite;
+            buttonSprite = Helpers.loadSpriteFromResources("TownOfUs.Resources.DragButton.png", 100f);
             return buttonSprite;
         }
     }

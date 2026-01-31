@@ -92,6 +92,7 @@ namespace TownOfUs.Patches
                 }
             }
             public List<RoleInfo> Roles { get; set; }
+            public List<RoleInfo> GhostRoles { get; set; }
             public List<RoleInfo> Modifiers { get; set; }
             public int TasksCompleted { get; set; }
             public int TasksTotal { get; set; }
@@ -134,6 +135,7 @@ namespace TownOfUs.Patches
             foreach (PlayerControl player in PlayerControl.AllPlayerControls)
             {
                 var roles = PlayerGameInfo.GetRoles(player);
+                var ghostRoles = PlayerGameInfo.GetGhostRoles(player);
                 var (tasksCompleted, tasksTotal) = TasksHandler.taskInfo(player.Data);
                 AdditionalTempData.playerRoles.Add(new AdditionalTempData.PlayerRoleInfo()
                 {
@@ -144,6 +146,7 @@ namespace TownOfUs.Patches
                     IsGATarget = GuardianAngel.target != null && GuardianAngel.target.PlayerId == player.PlayerId,
                     DeathReason = player.getDeathReasonString(),
                     Roles = roles,
+                    GhostRoles = ghostRoles,
                     Modifiers = PlayerGameInfo.GetModifiers(player.PlayerId),
                     TasksCompleted = tasksCompleted,
                     TasksTotal = tasksTotal,
@@ -779,6 +782,7 @@ namespace TownOfUs.Patches
                     string guesserInfo = data.IsGuesser ? " (Guesser)" : "";
 
                     string roles = data.Roles.Count > 0 ? string.Join(" -> ", data.Roles.Select(x => Helpers.cs(x.color, x.name))) : "";
+                    string ghostRoles = data.GhostRoles.Count > 0 ? $" (Ghost: {string.Join(" -> ", data.GhostRoles.Select(x => Helpers.cs(x.color, x.name)))})" : "";
                     string modifiers = data.Modifiers.Count > 0 ? string.Join(" ", data.Modifiers.Select(x => Helpers.cs(x.color, $"({x.name}) "))) : "";
                     string taskInfo = data.TasksTotal > 0 ? (data.TasksCompleted == data.TasksTotal ? $" - Tasks: {Helpers.cs(Color.green, $"{data.TasksCompleted}/{data.TasksTotal}")}" : $" - Tasks: {Helpers.cs(Color.red, $"{data.TasksCompleted}/{data.TasksTotal}")}") : "";
                     string abilityKillsInfo = data.AbilityKills > 0 ? $" ({data.AbilityKills} Ability)" : "";
@@ -789,7 +793,7 @@ namespace TownOfUs.Patches
                     string incorrectGuessInfo = data.IncorrectGuesses > 0 ? $" - {Helpers.cs(Palette.ImpostorRed, $"Incorrect Guesses: {data.IncorrectGuesses}")}" : "";
                     string scavengerEaten = data.Eats > 0 ? $" - {Helpers.cs(Color.white, $"Bodies Eaten: {data.Eats}")}" : "";
                     string bodiesClean = data.Cleans > 0 ? $" - {Helpers.cs(Palette.ImpostorRed, $"Cleaned Bodies: {data.Cleans}")}" : "";
-                    summaryText.Add($"{name}{formerThief}{lawyerClient}{exeTarget}{gaTarget}{deathReason} | {modifiers}{roles}{guesserInfo}{taskInfo}{killInfo}{misfireInfo}{correctShotsInfo}{correctGuessInfo}{incorrectGuessInfo}{scavengerEaten}{bodiesClean}");
+                    summaryText.Add($"{name}{formerThief}{lawyerClient}{exeTarget}{gaTarget}{deathReason} | {modifiers}{roles}{ghostRoles}{guesserInfo}{taskInfo}{killInfo}{misfireInfo}{correctShotsInfo}{correctGuessInfo}{incorrectGuessInfo}{scavengerEaten}{bodiesClean}");
 
                     string dataString = $"<size=70%>{string.Join("", summaryText)}</size>";
 

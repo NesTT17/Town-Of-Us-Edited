@@ -43,7 +43,7 @@ namespace TownOfUs.Objects
                     players[entry.PlayerId] += Time.deltaTime;
                     if (players[entry.PlayerId] > Trapper.timeInTrap)
                     {
-                        RoleInfo roleInfo = RoleInfo.getRoleInfoForPlayer(entry, false).Where(x => x.factionId != FactionId.Modifier).FirstOrDefault();
+                        RoleInfo roleInfo = RoleInfo.getRoleInfoForPlayer(entry, false).Where(x => x.factionId != FactionId.Modifier && x.factionId != FactionId.Ghost).FirstOrDefault();
                         if (!Trapper.trappedPlayers.Contains(roleInfo) && entry != Trapper.trapper) Trapper.trappedPlayers.Add(roleInfo);
                     }
                 }

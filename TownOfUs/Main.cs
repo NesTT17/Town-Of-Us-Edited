@@ -37,7 +37,7 @@ namespace TownOfUs
     public class TownOfUsPlugin : BasePlugin
     {
         public const string Id = "com.nestt.townofus.edited";
-        public const string VersionString = "1.4.0";
+        public const string VersionString = "1.4.1";
 
         public static Version Version = Version.Parse(VersionString);
         internal static BepInEx.Logging.ManualLogSource Logger;
@@ -109,8 +109,6 @@ namespace TownOfUs
             ShowPopUpVersion = Config.Bind("Custom", "Show PopUp", "0");
 
             defaultRegions = ServerManager.DefaultRegions;
-            // Removes vanilla Servers
-            ServerManager.DefaultRegions = new Il2CppReferenceArray<IRegionInfo>(new IRegionInfo[0]);
             UpdateRegions();
 
             Harmony.PatchAll();

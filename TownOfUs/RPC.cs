@@ -4,6 +4,7 @@ using System.Linq;
 using AmongUs.Data;
 using AmongUs.GameOptions;
 using Assets.CoreScripts;
+using Reactor.Networking.Extensions;
 using Reactor.Utilities;
 using Reactor.Utilities.Extensions;
 using UnityEngine;
@@ -61,6 +62,7 @@ namespace TownOfUs
         Oracle,
         Lookout,
         Plumber,
+        Deceiver,
         // Modifiers
         Bait,
         Blind,
@@ -87,6 +89,10 @@ namespace TownOfUs
         SixthSense,
         Taskmaster,
         Disperser,
+        Poucher,
+        // Ghost Roles
+        Banshee,
+        Poltergeist,
         // Default Roles
         Crewmate, Impostor,
         None
@@ -100,6 +106,7 @@ namespace TownOfUs
         ForceEnd,
         SetRole,
         SetModifier,
+        SetGhostRole,
         VersionHandshake,
         UseUncheckedVent,
         UncheckedMurderPlayer,
@@ -165,6 +172,13 @@ namespace TownOfUs
         SealVent,
         PlumberFlush,
         DisperserDisperse,
+        BansheeScare,
+        PoltergeistMove,
+        DeceiverPlaceDecoy,
+        DeceiverDecoyDestroy,
+        DeceiverDecoySwap,
+        SetBlindTrap,
+        TriggerBlindTrap,
 
         // Other functionality
         ShareGhostInfo,
@@ -184,10 +198,13 @@ namespace TownOfUs
             setCustomButtonCooldowns();
             CustomButton.ReloadHotkeys();
             reloadPluginOptions();
+            GhostRole.clearAndReload();
             Helpers.toggleZoom(reset: true);
             GameStartManagerUpdatePatch.startingTimer = 0;
             MapBehaviourPatch.clearAndReload();
             HudManagerUpdate.CloseSummary();
+            CustomObject.DestroyAll();
+            BlindTrap.clearBlindTraps();
         }
 
         public static void HandleShareOptions(byte numberOfOptions, MessageReader reader)
@@ -390,6 +407,9 @@ namespace TownOfUs
                         case RoleId.Plumber:
                             Plumber.plumber = player;
                             break;
+                        case RoleId.Deceiver:
+                            Deceiver.deceiver = player;
+                            break;
                     }
                     PlayerGameInfo.AddRole(player.PlayerId, RoleInfo.roleInfoById[(RoleId)roleId]);
                 }
@@ -477,8 +497,26 @@ namespace TownOfUs
                 case RoleId.Disperser:
                     Disperser.disperser = player;
                     break;
+                case RoleId.Poucher:
+                    Poucher.poucher = player;
+                    break;
             }
             PlayerGameInfo.AddModifier(player.PlayerId, RoleInfo.roleInfoById[(RoleId)modifierId]);
+        }
+
+        public static void setGhostRole(byte playerId, byte roleId)
+        {
+            var player = Helpers.playerById(playerId);
+            switch ((RoleId)roleId)
+            {
+                case RoleId.Banshee:
+                    Banshee.banshee = player;
+                    break;
+                case RoleId.Poltergeist:
+                    Poltergeist.poltergeist = player;
+                    break;
+            }
+            PlayerGameInfo.AddGhostRole(player.PlayerId, RoleInfo.roleInfoById[(RoleId)roleId]);
         }
 
         public static void versionHandshake(int major, int minor, int build, int revision, Guid guid, int clientId)
@@ -693,7 +731,7 @@ namespace TownOfUs
             if (target == null || amnesiac == null) return;
             Amnesiac.RemoveAmnesiac(amnesiac.PlayerId);
 
-            RoleInfo roleInfo = RoleInfo.getRoleInfoForPlayer(target).Where(info => info.factionId != FactionId.Modifier).FirstOrDefault();
+            RoleInfo roleInfo = RoleInfo.getRoleInfoForPlayer(target).Where(info => info.factionId != FactionId.Modifier && info.factionId != FactionId.Ghost).FirstOrDefault();
             if (roleInfo.roleId == RoleId.Crewmate || roleInfo.roleId == RoleId.Impostor)
             {
                 if (roleInfo.roleId == RoleId.Crewmate)
@@ -721,6 +759,7 @@ namespace TownOfUs
                 Dracula.formerDraculas.Add(target);
                 if (HandleGuesser.isGuesserGm && CustomOptionHolder.guesserGamemodeVampireGetsGuesser.getBool() && !HandleGuesser.isGuesser(amnesiac.PlayerId))
                     setGuesserGm(amnesiac.PlayerId);
+                Dracula.currentCreatedVampires++;
                 if (amnesiac == PlayerControl.LocalPlayer) CustomButton.ResetAllCooldowns();
             }
             else
@@ -739,7 +778,7 @@ namespace TownOfUs
             if (target == null || thief == null) return;
             Thief.RemoveThief(thief.PlayerId);
 
-            RoleInfo roleInfo = RoleInfo.getRoleInfoForPlayer(target).Where(info => info.factionId != FactionId.Modifier).FirstOrDefault();
+            RoleInfo roleInfo = RoleInfo.getRoleInfoForPlayer(target).Where(info => info.factionId != FactionId.Modifier && info.factionId != FactionId.Ghost).FirstOrDefault();
             if (roleInfo.roleId == RoleId.Impostor)
             {
                 Helpers.TurnToImpostor(thief);
@@ -1513,7 +1552,7 @@ namespace TownOfUs
             if (Immovable.immovable.Any(x => x.PlayerId == PlayerControl.LocalPlayer.PlayerId)) return;
 
             if (MapBehaviour.Instance)
-                    MapBehaviour.Instance.Close();
+                MapBehaviour.Instance.Close();
             if (Minigame.Instance)
                 Minigame.Instance.ForceClose();
             if (PlayerControl.LocalPlayer.inVent)
@@ -1534,6 +1573,67 @@ namespace TownOfUs
             };
             PlayerControl.LocalPlayer.NetTransform.RpcSnapTo(SpawnPositions[rnd.Next(SpawnPositions.Count)]);
             SoundEffectsManager.play("disperserDisperse");
+        }
+
+        public static void bansheeScare(byte playerId)
+        {
+            PlayerControl player = Helpers.playerById(playerId);
+            if (Banshee.banshee == null || player == null) return;
+
+            Banshee.scareTimer = Banshee.duration;
+            Banshee.scareVictim = player;
+            if (Banshee.scareVictim == PlayerControl.LocalPlayer)
+            {
+                if (MapBehaviour.Instance)
+                    MapBehaviour.Instance.Close();
+                if (Minigame.Instance)
+                    Minigame.Instance.ForceClose();
+
+                PlayerControl.LocalPlayer.NetTransform.Halt();
+                new CustomMessage("Petrified by Banshee", Banshee.duration);
+            }
+        }
+
+        public static void deceiverPlaceDecoy(PlayerControl player, Vector3 pos)
+        {
+            Deceiver.decoy = new DeceiverDecoy(player, pos);
+        }
+
+        public static void deceiverDecoyDestroy(PlayerControl player, int? decoyId)
+        {
+            var decoy = DeceiverDecoy.AllObjects.FirstOrDefault(x => x.Id == decoyId);
+            decoy?.Destroy();
+            Deceiver.decoy = null;
+        }
+
+        public static void deceiverDecoySwap(PlayerControl player, int? decoyId, Vector3 playerPos, Vector3 decoyPos)
+        {
+            var decoy = DeceiverDecoy.AllObjects.FirstOrDefault(x => x.Id == decoyId);
+            if (decoy?.GameObject == null || decoy?.Renderer == null) return;
+
+            bool playerFlip = player.cosmetics.FlipX;
+            bool decoyFlip = decoy.Renderer.flipX;
+
+            player.NetTransform.SnapTo(decoyPos);
+            decoy.GameObject.transform.position = playerPos;
+
+            player.cosmetics.SetFlipX(decoyFlip);
+            decoy.Renderer.flipX = playerFlip;
+        }
+
+        public static void setBlindTrap(byte[] buff)
+        {
+            if (Poisoner.poisoner == null) return;
+            Poisoner.charges -= 1;
+            Vector3 position = Vector3.zero;
+            position.x = BitConverter.ToSingle(buff, 0 * sizeof(float));
+            position.y = BitConverter.ToSingle(buff, 1 * sizeof(float));
+            new BlindTrap(position);
+        }
+
+        public static void triggerBlindTrap(byte playerId, byte trapId)
+        {
+            BlindTrap.triggerTrap(playerId, trapId);
         }
 
         // Other functionality
@@ -1614,6 +1714,9 @@ namespace TownOfUs
                     byte flag = reader.ReadByte();
                     RPCProcedure.setModifier(modifierId, pId, flag);
                     break;
+                case (byte)CustomRPC.SetGhostRole:
+                    RPCProcedure.setGhostRole(reader.ReadByte(), reader.ReadByte());
+                    break;
                 case (byte)CustomRPC.VersionHandshake:
                     byte major = reader.ReadByte();
                     byte minor = reader.ReadByte();
@@ -1623,12 +1726,15 @@ namespace TownOfUs
                     int versionOwnerId = reader.ReadPackedInt32();
                     byte revision = 0xFF;
                     Guid guid;
-                    if (reader.Length - reader.Position >= 17) { // enough bytes left to read
+                    if (reader.Length - reader.Position >= 17)
+                    { // enough bytes left to read
                         revision = reader.ReadByte();
                         // GUID
                         byte[] gbytes = reader.ReadBytes(16);
                         guid = new Guid(gbytes);
-                    } else {
+                    }
+                    else
+                    {
                         guid = new Guid(new byte[16]);
                     }
                     RPCProcedure.versionHandshake(major, minor, patch, revision == 0xFF ? -1 : revision, guid, versionOwnerId);
@@ -1711,13 +1817,13 @@ namespace TownOfUs
                     RPCProcedure.thiefStealsRole(reader.ReadByte(), reader.ReadByte());
                     break;
                 case (byte)CustomRPC.LawyerSetTarget:
-                    RPCProcedure.lawyerSetTarget(reader.ReadByte()); 
+                    RPCProcedure.lawyerSetTarget(reader.ReadByte());
                     break;
                 case (byte)CustomRPC.LawyerPromotes:
                     RPCProcedure.lawyerPromotes();
                     break;
                 case (byte)CustomRPC.ExecutionerSetTarget:
-                    RPCProcedure.executionerSetTarget(reader.ReadByte()); 
+                    RPCProcedure.executionerSetTarget(reader.ReadByte());
                     break;
                 case (byte)CustomRPC.ExecutionerPromotes:
                     RPCProcedure.executionerPromotes();
@@ -1747,7 +1853,7 @@ namespace TownOfUs
                     RPCProcedure.guardianAngelProtect();
                     break;
                 case (byte)CustomRPC.GuardianAngelSetTarget:
-                    RPCProcedure.guardianAngelSetTarget(reader.ReadByte()); 
+                    RPCProcedure.guardianAngelSetTarget(reader.ReadByte());
                     break;
                 case (byte)CustomRPC.GuardianAngelPromotes:
                     RPCProcedure.guardianAngelPromotes();
@@ -1843,6 +1949,27 @@ namespace TownOfUs
                     break;
                 case (byte)CustomRPC.DisperserDisperse:
                     RPCProcedure.disperserDisperse();
+                    break;
+                case (byte)CustomRPC.BansheeScare:
+                    RPCProcedure.bansheeScare(reader.ReadByte());
+                    break;
+                case (byte)CustomRPC.PoltergeistMove:
+                    Poltergeist.MoveDeadBody(reader.ReadByte(), reader.ReadVector2());
+                    break;
+                case (byte)CustomRPC.DeceiverPlaceDecoy:
+                    RPCProcedure.deceiverPlaceDecoy(reader.ReadPlayer(), reader.ReadVector3());
+                    break;
+                case (byte)CustomRPC.DeceiverDecoyDestroy:
+                    RPCProcedure.deceiverDecoyDestroy(reader.ReadPlayer(), reader.ReadInt32());
+                    break;
+                case (byte)CustomRPC.DeceiverDecoySwap:
+                    RPCProcedure.deceiverDecoySwap(reader.ReadPlayer(), reader.ReadInt32(), reader.ReadVector3(), reader.ReadVector3());
+                    break;
+                case (byte)CustomRPC.SetBlindTrap:
+                    RPCProcedure.setBlindTrap(reader.ReadBytesAndSize());
+                    break;
+                case (byte)CustomRPC.TriggerBlindTrap:
+                    RPCProcedure.triggerBlindTrap(reader.ReadByte(), reader.ReadByte());
                     break;
 
                 // Other functionality
